@@ -8,6 +8,9 @@ import android.text.method.ScrollingMovementMethod
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.TextView
+import com.google.android.gms.common.api.GoogleApiClient
+
+import com.google.android.gms.drive.*
 
 import java.io.File
 import kotlinx.android.synthetic.activity_main.*
@@ -18,26 +21,10 @@ public class MainActivity : Activity() {
         setContentView(R.layout.activity_main)
         val xMindFileToText = XMindFileToText(tempDirectory = getCacheDir())
         val s = xMindFileToText(File("/storage/emulated/0/documents/Projects.xmind"))
+        val a = Drive.DriveApi.newOpenFileActivityBuilder()
+        val i = a.build(GoogleApiClient.Builder(this).build())
 
-        //mainTextView.setVerticalScrollBarEnabled(true)
         mainTextView.setText(s)
-        //mainTextView.setMovementMethod(ScrollingMovementMethod())
-        //alert(s)
-    }
-
-    private fun alert(s: String) {
-        val alert = AlertDialog.Builder(this)
-        alert.setMessage(s)
-        alert.setTitle("App Title")
-        alert.setPositiveButton("OK", null)
-        alert.setCancelable(true)
-        alert.create().show()
-
-        alert.setPositiveButton("Ok",
-                object : DialogInterface.OnClickListener {
-                    override fun onClick(dialog: DialogInterface, which: Int) {
-                    }
-                })
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
