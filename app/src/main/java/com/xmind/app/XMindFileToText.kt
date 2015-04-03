@@ -1,16 +1,15 @@
 package com.xmind.app
 
-import android.app.AlertDialog
 import android.content.Context
-import android.content.DialogInterface
+import org.xmind.core.ITopic
 import org.xmind.core.internal.InternalCore
 import org.xmind.core.internal.dom.WorkbookBuilderImpl
 import org.xmind.core.util.ILogger
 import java.io.File
 
-class XMindFileLoader(val context : Context) {
+class XMindFileToText(val tempDirectory : File) {
     init {
-        System.setProperty("org.xmind.core.workspace", context.getCacheDir().getAbsolutePath())
+        System.setProperty("org.xmind.core.workspace", tempDirectory.getAbsolutePath())
 
         InternalCore.getInstance().setLogger(object : ILogger {
             override fun log(p0: Throwable?) {
@@ -28,9 +27,14 @@ class XMindFileLoader(val context : Context) {
         })
     }
 
-    fun load(file: File) : String {
+    fun invoke(file: File) : String {
         val builder = WorkbookBuilderImpl()
         val workbook = builder.loadFromFile(file)
-        return workbook.getSheets().single().getRootTopic().getAllChildren().map { it.getTitleText() }.join(", ")
+        val rootTopic = workbook.getSheets().single().getRootTopic()
+        return rootTopic.toText()
     }
+
+    fun ITopic.toText(): String = getTitleText() + "\n" + getAllChildren().map { it.toText() }.join("\n").indented()
 }
+
+fun String.indented(indentation: String = "\t") = this.split("\n").map { indentation + it }.join("\n")

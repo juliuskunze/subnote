@@ -8,7 +8,8 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:1.1.1'
-        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:0.1-SNAPSHOT'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:0.11.91.1'
+        classpath 'org.jetbrains.kotlin:kotlin-android-extensions:0.11.91.1'
     }
 }
 apply plugin: 'com.android.application'
@@ -48,6 +49,5 @@ android {
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile 'org.jetbrains.kotlin:kotlin-stdlib:0.1-SNAPSHOT'
-    compile 'commons-io:commons-io:2.4'
+    compile 'org.jetbrains.kotlin:kotlin-stdlib:0.11.91.1'
 }

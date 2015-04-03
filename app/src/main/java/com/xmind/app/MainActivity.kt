@@ -4,18 +4,25 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.DialogInterface
 import android.os.Bundle
+import android.text.method.ScrollingMovementMethod
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.TextView
 
 import java.io.File
+import kotlinx.android.synthetic.activity_main.*
 
 public class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        val s = XMindFileLoader(this).load(File("/storage/emulated/0/documents/Projects.xmind"))
+        val xMindFileToText = XMindFileToText(tempDirectory = getCacheDir())
+        val s = xMindFileToText(File("/storage/emulated/0/documents/Projects.xmind"))
 
-        alert(s)
+        //mainTextView.setVerticalScrollBarEnabled(true)
+        mainTextView.setText(s)
+        //mainTextView.setMovementMethod(ScrollingMovementMethod())
+        //alert(s)
     }
 
     private fun alert(s: String) {
