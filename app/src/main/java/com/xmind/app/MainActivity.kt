@@ -61,7 +61,12 @@ public class MainActivity : Activity() {
     }
 
     private fun openFromDrive() {
-        driveFileOpenerApiClient.connect()
+        if (!driveFileOpenerApiClient.isConnected()) {
+            driveFileOpenerApiClient.connect()
+            // chooseFileFromDrive will be called in onConnected.
+            return
+        }
+        chooseFileFromDrive()
     }
 
     private fun startDriveAPIExampleActivity() {
@@ -110,7 +115,7 @@ public class MainActivity : Activity() {
 
                     driveFile.open(driveFileOpenerApiClient, DriveFile.MODE_READ_ONLY, object : DriveFile.DownloadProgressListener {
                         override fun onProgress(bytesDownloaded: Long, bytesExpected: Long) {
-                            mainTextView.setText("$bytesDownloaded/$bytesExpected")
+                            mainTextView.setText("loading... " + if(bytesExpected > 0) "$bytesDownloaded / $bytesExpected bytes" else "")
                         }
                     }).setResultCallback (object : ResultCallback<DriveApi.DriveContentsResult> {
                         override fun onResult(result: DriveApi.DriveContentsResult) {
