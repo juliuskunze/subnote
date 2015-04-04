@@ -21,6 +21,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name="com.xmind.app.DriveSampleActivity"
+            android:label="@string/drive_title"
+            android:parentActivityName="com.xmind.app.MainActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.xmind.app.MainActivity" />
+        </activity>
     </application>
 
 </manifest>

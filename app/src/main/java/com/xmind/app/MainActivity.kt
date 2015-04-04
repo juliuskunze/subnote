@@ -3,6 +3,7 @@ package com.xmind.app
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.DialogInterface
+import android.content.Intent
 import android.os.Bundle
 import android.text.method.ScrollingMovementMethod
 import android.view.Menu
@@ -35,7 +36,10 @@ public class MainActivity : Activity() {
 
         return when (id) {
             R.id.action_settings -> true
-            R.id.open_from_drive -> true
+            R.id.open_from_drive -> {
+                startActivity(Intent(this, javaClass<DriveSampleActivity>()))
+                true
+            }
             R.id.open_from_documents -> {
                 val xMindFileToText = XMindFileToText(tempDirectory = getCacheDir())
                 val s = xMindFileToText(File("/storage/emulated/0/documents/Projects.xmind"))
