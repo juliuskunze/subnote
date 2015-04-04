@@ -24,7 +24,6 @@ public class MainActivity : Activity() {
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         getMenuInflater().inflate(R.menu.menu_main, menu)
-
         return true
     }
 
@@ -37,15 +36,15 @@ public class MainActivity : Activity() {
         return when (id) {
             R.id.action_settings -> true
             R.id.open_from_drive -> {
-                startActivity(Intent(this, javaClass<DriveSampleActivity>()))
+                openFromDrive()
                 true
             }
             R.id.open_from_documents -> {
-                val xMindFileToText = XMindFileToText(tempDirectory = getCacheDir())
-                val s = xMindFileToText(File("/storage/emulated/0/documents/Projects.xmind"))
-
-                mainTextView.setText(s)
-
+                openFromDocuments()
+                true
+            }
+            R.id.drive_example -> {
+                startDriveAPIExampleActivity()
                 true
             }
             else -> {
@@ -53,4 +52,25 @@ public class MainActivity : Activity() {
             }
         }
     }
+
+    private fun openFromDocuments() {
+        open(File("/storage/emulated/0/documents/Projects.xmind"))
+    }
+
+    private fun openFromDrive() {
+
+    }
+
+    private fun startDriveAPIExampleActivity() {
+        startActivity(Intent(this, javaClass<DriveSampleActivity>()))
+    }
+
+    private fun open(file: File) {
+        val xMindFileToText = XMindFileToText(tempDirectory = getCacheDir())
+        val s = xMindFileToText(file)
+
+        mainTextView.setText(s)
+    }
+
+
 }

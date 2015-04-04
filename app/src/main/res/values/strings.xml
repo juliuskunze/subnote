@@ -5,4 +5,5 @@
     <string name="open_from_drive">Open from drive</string>
     <string name="open_from_documents">Open from file</string>
     <string name="drive_title">From Drive</string>
+    <string name="drive_example">Drive Example</string>
 </resources>
