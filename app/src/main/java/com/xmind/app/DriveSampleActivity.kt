@@ -62,7 +62,7 @@ public class DriveSampleActivity : Activity() {
                 return
             }
             // Called typically when the app is not yet authorized, and an authorization dialog is displayed to the user.
-            result.startResolutionForResult(this@DriveSampleActivity, RequestCode.googleClientResolution)
+            result.startResolutionForResult(this@DriveSampleActivity, IntentCode.googleClientResolution)
         }
     }).build() }
 
@@ -84,7 +84,7 @@ public class DriveSampleActivity : Activity() {
                 writeBitmapToOutputStream(outputStream)
 
                 try {
-                    startIntentSenderForResult(intentSender(result), RequestCode.saveFile, null, 0, 0, 0)
+                    startIntentSenderForResult(intentSender(result), IntentCode.saveFile, null, 0, 0, 0)
                 } catch (e: SendIntentException) {
                     log("Failed to launch file chooser.")
                 }
@@ -121,11 +121,11 @@ public class DriveSampleActivity : Activity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         when (requestCode) {
-            RequestCode.captureImage ->
+            IntentCode.captureImage ->
                 if (resultCode == Activity.RESULT_OK) {
                     bitmap = data!!.getExtras().get("data") as Bitmap
                 }
-            RequestCode.saveFile ->
+            IntentCode.saveFile ->
                 if (resultCode == Activity.RESULT_OK) {
                     bitmap = null
                     startCamera()
@@ -134,7 +134,7 @@ public class DriveSampleActivity : Activity() {
     }
 
     private fun startCamera() {
-        startActivityForResult(Intent(MediaStore.ACTION_IMAGE_CAPTURE), RequestCode.captureImage)
+        startActivityForResult(Intent(MediaStore.ACTION_IMAGE_CAPTURE), IntentCode.captureImage)
     }
 
 
@@ -142,7 +142,7 @@ public class DriveSampleActivity : Activity() {
         Log.i("android-drive-quickstart", message)
     }
 
-    private object RequestCode {
+    private object IntentCode {
         val captureImage = 1
         val saveFile = 2
         val googleClientResolution = 3
