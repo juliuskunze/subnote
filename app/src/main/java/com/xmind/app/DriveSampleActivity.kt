@@ -96,17 +96,17 @@ public class DriveSampleActivity : Activity() {
                 val fileChooserIntentSender = Drive.DriveApi.newCreateFileActivityBuilder().setInitialMetadata(initialMetadataChangeSet).setInitialDriveContents(result.getDriveContents()).build(apiClient)
                 return fileChooserIntentSender
             }
-
-            private fun writeBitmapToOutputStream(outputStream: OutputStream) {
-                val bitmapStream = ByteArrayOutputStream()
-                bitmap!!.compress(Bitmap.CompressFormat.PNG, 100, bitmapStream)
-                try {
-                    outputStream.write(bitmapStream.toByteArray())
-                } catch (e1: IOException) {
-                    log("Unable to write file contents.")
-                }
-            }
         })
+    }
+
+    private fun writeBitmapToOutputStream(outputStream: OutputStream) {
+        val bitmapStream = ByteArrayOutputStream()
+        bitmap!!.compress(Bitmap.CompressFormat.PNG, 100, bitmapStream)
+        try {
+            outputStream.write(bitmapStream.toByteArray())
+        } catch (e1: IOException) {
+            log("Unable to write file contents.")
+        }
     }
 
     override fun onResume() {
