@@ -2,4 +2,6 @@
     <string name="app_name">XMind</string>
 
     <string name="action_settings">Settings</string>
+    <string name="open_from_drive">Open from drive</string>
+    <string name="open_from_documents">Open from file</string>
 </resources>

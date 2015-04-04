@@ -19,17 +19,11 @@ public class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        val xMindFileToText = XMindFileToText(tempDirectory = getCacheDir())
-        val s = xMindFileToText(File("/storage/emulated/0/documents/Projects.xmind"))
-        val a = Drive.DriveApi.newOpenFileActivityBuilder()
-        val i = a.build(GoogleApiClient.Builder(this).build())
-
-        mainTextView.setText(s)
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu)
+
         return true
     }
 
@@ -39,11 +33,20 @@ public class MainActivity : Activity() {
         // as you specify a parent activity in AndroidManifest.xml.
         val id = item!!.getItemId()
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true
-        }
+        return when (id) {
+            R.id.action_settings -> true
+            R.id.open_from_drive -> true
+            R.id.open_from_documents -> {
+                val xMindFileToText = XMindFileToText(tempDirectory = getCacheDir())
+                val s = xMindFileToText(File("/storage/emulated/0/documents/Projects.xmind"))
 
-        return super.onOptionsItemSelected(item)
+                mainTextView.setText(s)
+
+                true
+            }
+            else -> {
+                super.onOptionsItemSelected(item)
+            }
+        }
     }
 }
