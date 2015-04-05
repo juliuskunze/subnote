@@ -102,7 +102,7 @@ public class MainActivity : Activity() {
     }
 
     private fun chooseFileFromDrive() {
-        val intentSender = Drive.DriveApi.newOpenFileActivityBuilder().build(driveFileOpenerApiClient)
+        val intentSender = Drive.DriveApi.newOpenFileActivityBuilder().setMimeType(array("application/zip")).build(driveFileOpenerApiClient)
 
         startIntentSenderForResult(intentSender, IntentCode.openFileFromDrive, null, 0, 0, 0);
     }
