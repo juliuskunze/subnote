@@ -6,7 +6,9 @@
         android:title="@string/action_settings"/>
     <item
         android:id="@+id/open_from_drive"
-        android:title="@string/open_from_drive"/>
+        android:title="@string/open_from_drive"
+        android:showAsAction="always"
+        android:icon="@mipmap/ic_launcher"/>
     <item
         android:id="@+id/open_from_documents"
         android:title="@string/open_from_documents"/>
