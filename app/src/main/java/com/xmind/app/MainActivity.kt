@@ -74,7 +74,7 @@ public class MainActivity : Activity() {
     }
 
     private fun open(file: File) {
-        val xMindFileToText = XMindFileToText(tempDirectory = getCacheDir())
+        val xMindFileToText = XMindFileToText(cacheDirectory = getCacheDir())
         val s = xMindFileToText(file)
 
         mainTextView.setText(s)

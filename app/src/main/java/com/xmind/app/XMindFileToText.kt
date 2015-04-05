@@ -7,9 +7,9 @@ import org.xmind.core.internal.dom.WorkbookBuilderImpl
 import org.xmind.core.util.ILogger
 import java.io.File
 
-class XMindFileToText(val tempDirectory : File) {
+class XMindFileToText(val cacheDirectory: File) {
     init {
-        System.setProperty("org.xmind.core.workspace", tempDirectory.getAbsolutePath())
+        System.setProperty("org.xmind.core.workspace", cacheDirectory.getAbsolutePath())
 
         InternalCore.getInstance().setLogger(object : ILogger {
             override fun log(p0: Throwable?) {
