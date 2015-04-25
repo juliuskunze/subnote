@@ -111,5 +111,6 @@
     <orderEntry type="library" exported="" name="play-services-identity-7.0.0" level="project" />
     <orderEntry type="library" exported="" name="play-services-games-7.0.0" level="project" />
     <orderEntry type="library" exported="" name="play-services-wallet-7.0.0" level="project" />
+    <orderEntry type="library" name="org.xmind.ui.taskinfo" level="project" />
   </component>
 </module>

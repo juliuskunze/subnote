@@ -30,11 +30,11 @@ class XMindFileToText(val cacheDirectory: File) {
     fun invoke(file: File) : String {
         val builder = WorkbookBuilderImpl()
         val workbook = builder.loadFromFile(file)
-        val rootTopic = workbook.getSheets().single().getRootTopic()
-        return rootTopic.toText()
+        val rootTopics = workbook.getSheets().map { it.getRootTopic() }
+        return rootTopics.map { it.toText() }.join("\n\n")
     }
 
-    fun ITopic.toText(): String = getTitleText() + "\n" + getAllChildren().map { it.toText() }.join("\n").indented()
+    fun ITopic.toText(): String = getTitleText() + "\n" + getAllChildren().map { it.toText() + if(it.getHyperlink() != null) "[" + it.getHyperlink() + "]" else ""}.join("\n").indented()
 }
 
 fun String.indented(indentation: String = "\t") = this.split("\n").map { indentation + it }.join("\n")
