@@ -1,12 +1,13 @@
 package com.mindforge.app
 
-import com.mindforge.*
 import com.mindforge.graphics.*
 import com.mindforge.graphics.interaction.*
 import com.mindforge.graphics.math.rectangle
+import org.xmind.core.ITopic
+import org.xmind.core.internal.Topic
 import java.util.Date
 
-class Shell(val screen: Screen, val pointers: ObservableIterable<PointerKeys>, val keys: ObservableIterable<Key>, defaultFont: Font) {
+class Shell(val screen: Screen, val pointers: ObservableIterable<PointerKeys>, val keys: ObservableIterable<Key>, defaultFont: Font, rootTopics: List<ITopic>) {
     private val exampleContent = object {
         fun rotatedScaledRectangles(): Composed<*> {
             fun logoRect(angle: Number) = button(
@@ -86,10 +87,36 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
             }
             return composed(observableIterable(listOf<TransformedElement<*>>(transformedElement(textElement))))
         }
+
+        fun mindMap(): Element<*> = topicElement(rootTopics.single()).element
+
+        class ElementWithHeight(val element: Element<*>, val height: Int)
+
+        fun topicElement(topic: ITopic): ElementWithHeight {
+            val text = topic.getTitleText()
+            val fontHeight = 60
+            val textElement = textElement(text, defaultFont, fontHeight, Fills.solid(Colors.white))
+
+            val subTopics = topic.getAllChildren()
+
+            if (subTopics.none()) return ElementWithHeight(textElement, fontHeight)
+
+            val subElements = subTopics.map { topicElement(it) }
+            val transformedSubElements = arrayListOf<TransformedElement<*>>()
+
+            var height = fontHeight
+            for(e in subElements.withIndex()) {
+                transformedSubElements.add(transformedElement(e.value.element, Transforms2.translation(vector(fontHeight, -height))))
+
+                height += e.value.height
+            }
+
+            return ElementWithHeight(composed(observableIterable(listOf<TransformedElement<*>>(transformedElement(textElement)) + transformedSubElements)), height)
+        }
     }
 
     init {
-        screen.content = exampleContent.composedWithButton()
+        screen.content = composed(observableIterable(listOf<TransformedElement<*>>(transformedElement(exampleContent.mindMap()))))
         registerInputs()
     }
 
