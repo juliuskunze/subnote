@@ -31,7 +31,7 @@
         </activity>
         <activity
             android:name="com.mindforge.app.PurealActivity"
-            android:label="@string/drive_title"
+            android:label="@string/graphics_demo"
             android:parentActivityName="com.mindforge.app.MainActivity" >
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"

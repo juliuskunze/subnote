@@ -18,6 +18,6 @@ class PurealActivity : Activity() {
             Shell(it, observableIterable(listOf(it.pointerKeys)), it.keyboard, GlFont(getResources()!!));
         }
         setContentView(screen);
-        getWindow()!!.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+        //getWindow()!!.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
     }
 }
