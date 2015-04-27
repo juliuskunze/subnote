@@ -1,4 +1,4 @@
-package net.pureal.android.backend
+package com.mindforge.graphics.android
 
 import com.mindforge.graphics.math.Shape
 import com.mindforge.graphics.Vector2

@@ -29,14 +29,6 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.mindforge.app.MainActivity" />
         </activity>
-        <activity
-            android:name="com.mindforge.app.PurealActivity"
-            android:label="@string/graphics_demo"
-            android:parentActivityName="com.mindforge.app.MainActivity" >
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value="com.mindforge.app.MainActivity" />
-        </activity>
     </application>
 
 </manifest>

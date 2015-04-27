@@ -13,6 +13,8 @@ import com.google.android.gms.drive.Drive
 import com.google.android.gms.drive.DriveApi
 import com.google.android.gms.drive.DriveFile
 import com.google.android.gms.drive.DriveId
+import com.mindforge.graphics.android.*
+import com.mindforge.graphics.observableIterable
 import kotlinx.android.synthetic.activity_main.mainTextView
 import java.io.File
 import java.io.FileOutputStream
@@ -22,7 +24,11 @@ import kotlin.properties.Delegates
 public class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        // setContentView(R.layout.activity_main)
+        val screen = GlScreen(this) {
+            Shell(it, observableIterable(listOf(it.pointerKeys)), it.keyboard, GlFont(getResources()!!));
+        }
+        setContentView(screen);
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -38,7 +44,6 @@ public class MainActivity : Activity() {
 
         return when (id) {
             R.id.action_settings -> {
-                startActivity(Intent(this, javaClass<PurealActivity>()))
                 true
             }
             R.id.open_from_drive -> {

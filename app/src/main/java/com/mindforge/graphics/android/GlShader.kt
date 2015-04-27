@@ -1,4 +1,4 @@
-package net.pureal.android.backend
+package com.mindforge.graphics.android
 
 import android.opengl.GLES20
 

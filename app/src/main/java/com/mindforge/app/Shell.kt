@@ -1,4 +1,4 @@
-package net.pureal.shell
+package com.mindforge.app
 
 import com.mindforge.*
 import com.mindforge.graphics.*
