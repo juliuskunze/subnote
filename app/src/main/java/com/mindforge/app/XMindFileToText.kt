@@ -1,4 +1,4 @@
-package com.xmind.app
+package com.mindforge.app
 
 import android.content.Context
 import org.xmind.core.ITopic

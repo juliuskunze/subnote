@@ -1,4 +1,4 @@
-package com.xmind.app
+package com.mindforge.app
 
 import android.app.Activity
 import android.content.Intent
@@ -39,7 +39,7 @@ public class MainActivity : Activity() {
         return when (id) {
             R.id.action_settings -> true
             R.id.open_from_drive -> {
-                mindforge.graphics.main.foo()
+                com.mindforge.graphics.main.foo()
                 openFromDrive()
                 true
             }

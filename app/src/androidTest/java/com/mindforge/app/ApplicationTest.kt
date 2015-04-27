@@ -1,4 +1,4 @@
-package com.xmind.app
+package com.mindforge.app
 
 import android.app.Application
 import android.test.ApplicationTestCase

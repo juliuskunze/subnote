@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package com.xmind.app
+package com.mindforge.app
 
 import android.app.Activity
 import android.content.Intent
