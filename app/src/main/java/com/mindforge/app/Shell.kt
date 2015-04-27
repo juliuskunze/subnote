@@ -45,7 +45,7 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
         }
 
         fun composedWithButton(): Composed<*> {
-            fun randomColor() = color(Math.random(), Math.random(), Math.random())
+            fun randomColor() = color(Math.random(), Math.random(), Math.random(), Math.random())
 
             val text = textElement("not a button!", defaultFont, 60, Fills.solid(Colors.white))
 
