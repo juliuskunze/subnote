@@ -1,4 +1,4 @@
-package com.mindforge.graphics.graphics
+package com.mindforge.graphics
 
 import com.mindforge.graphics.*
 import com.mindforge.graphics.math.*

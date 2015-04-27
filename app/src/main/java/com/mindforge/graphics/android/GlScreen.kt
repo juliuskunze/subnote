@@ -6,7 +6,7 @@ import javax.microedition.khronos.opengles.GL10
 import javax.microedition.khronos.egl.EGLConfig
 import android.opengl.GLES20
 import android.app.Activity
-import com.mindforge.graphics.graphics.*
+import com.mindforge.graphics.*
 import com.mindforge.graphics.math.*
 import com.mindforge.graphics.*
 import android.view.MotionEvent

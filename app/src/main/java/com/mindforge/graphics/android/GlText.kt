@@ -1,8 +1,8 @@
 package net.pureal.android.backend
 
-import com.mindforge.graphics.graphics.TextElement
-import com.mindforge.graphics.graphics.Font
-import com.mindforge.graphics.graphics.Fill
+import com.mindforge.graphics.TextElement
+import com.mindforge.graphics.Font
+import com.mindforge.graphics.Fill
 import com.mindforge.graphics.math.Shape
 import android.content.res.Resources
 import java.util.HashMap

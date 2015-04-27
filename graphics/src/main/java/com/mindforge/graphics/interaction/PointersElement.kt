@@ -1,6 +1,6 @@
 package com.mindforge.graphics.interaction
 
-import com.mindforge.graphics.graphics.Element
+import com.mindforge.graphics.Element
 
 trait PointersElement<T> : Element<T> {
     fun onPointerKeyPressed(pointerKey: PointerKey) {}

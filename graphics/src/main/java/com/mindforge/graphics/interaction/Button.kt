@@ -1,7 +1,7 @@
 package com.mindforge.graphics.interaction
 
 import com.mindforge.graphics.*
-import com.mindforge.graphics.graphics.*
+import com.mindforge.graphics.*
 import com.mindforge.graphics.math.*
 
 trait Button : Clickable<Trigger<Unit>>, ColoredElement<Trigger<Unit>> {
