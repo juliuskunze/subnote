@@ -39,6 +39,7 @@ public class MainActivity : Activity() {
         return when (id) {
             R.id.action_settings -> true
             R.id.open_from_drive -> {
+                mindforge.graphics.main.foo()
                 openFromDrive()
                 true
             }
