@@ -39,7 +39,7 @@ public class MainActivity : Activity() {
         return when (id) {
             R.id.action_settings -> true
             R.id.open_from_drive -> {
-                com.mindforge.graphics.main.foo()
+                com.mindforge.graphics.vector(1, 1)
                 openFromDrive()
                 true
             }
