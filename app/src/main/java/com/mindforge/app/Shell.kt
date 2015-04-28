@@ -45,21 +45,19 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
             return composed(observableIterable(listOf<TransformedElement<*>>(t)))//k, h)))
         }
 
+        private fun randomColor() = color(Math.random(), Math.random(), Math.random(), Math.random())
+
         fun composedWithButton(): Composed<*> {
-            fun randomColor() = color(Math.random(), Math.random(), Math.random(), Math.random())
-
-            val text = textElement("not a button!", defaultFont, 60, Fills.solid(Colors.white))
-
             val size = vector(100, 100)
             fun b(x: Int, y: Int): TransformedElement<Any?> {
                 var color = randomColor()
-                return transformedElement(coloredButton(shape = rectangle(size), fill = object : Fill {
+                return transformedElement(textButton(text = x.toString(), font = defaultFont, size = 100, fill = object : Fill {
                     override fun colorAt(location: Vector2) = color
                 }) {
                     color = randomColor()
                 }, object : Transform2 {
                     override val matrix: Matrix3 get() = (
-                                    Transforms2.rotation(Date().getTime() * -0.0003 + Math.sin(Date().getTime() * 0.005) / 5) before
+                            Transforms2.rotation(Date().getTime() * -0.0003 + Math.sin(Date().getTime() * 0.005) / 5) before
                                     Transforms2.translation(vector(x * size.x.toDouble(), y * size.y.toDouble())) before
                                     Transforms2.rotation(Date().getTime() * 0.0005) before
                                     Transforms2.scale(.2 + Math.pow(1 + Math.pow(Math.sin(Date().getTime() * 0.0002), 5.0), 5.0))
@@ -73,7 +71,7 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
             return composed(observableIterable(-a..a flatMap { x -> -a..a map { y -> b(x, y) : TransformedElement<*> } }))
         }
 
-        fun keyboardText() : Composed<*> {
+        fun keyboardText(): Composed<*> {
             val textElement = object : TextElement {
                 override val font: Font = defaultFont
                 override val size: Number = 40
@@ -88,41 +86,56 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
             return composed(observableIterable(listOf<TransformedElement<*>>(transformedElement(textElement))))
         }
 
-        fun mindMap(): Element<*> = topicElement(rootTopics.single()).element
+        fun mindMap(): Composed<*> = composed(listOf(transformedElement(topicElement(rootTopics.single()).element)))
 
         class ElementWithHeight(val element: Element<*>, val height: Int)
 
         fun topicElement(topic: ITopic): ElementWithHeight {
             val text = topic.getTitleText()
             val fontHeight = 60
-            val textElement = textElement(text, defaultFont, fontHeight, Fills.solid(Colors.white))
+            val textElement = textButton(text, fill = Fills.solid(Colors.white), font = defaultFont, size = fontHeight) {
+                topic.setFolded(!topic.isFolded())
+                render()
+            }
 
-            val subTopics = topic.getAllChildren()
+            val unfoldedSubTopics = topic.getAllChildren().filter { !it.isFolded() }
 
-            if (subTopics.none()) return ElementWithHeight(textElement, fontHeight)
+            if (unfoldedSubTopics.none()) return ElementWithHeight(textElement, fontHeight)
 
-            val subElements = subTopics.map { topicElement(it) }
+            val subElements = unfoldedSubTopics.map { topicElement(it) }
             val transformedSubElements = arrayListOf<TransformedElement<*>>()
 
             var height = fontHeight
-            for(e in subElements.withIndex()) {
+            for (e in subElements.withIndex()) {
                 transformedSubElements.add(transformedElement(e.value.element, Transforms2.translation(vector(fontHeight, -height))))
 
                 height += e.value.height
             }
 
-            return ElementWithHeight(composed(listOf(transformedElement(textElement)) + transformedSubElements), height)
+            return ElementWithHeight(composed(topic, listOf(transformedElement(textElement)) + transformedSubElements), height)
+        }
+
+        fun render() {
+            screen.content = mindMap() //composedWithButton()
+        }
+
+        private fun textButton(text: String, fill: Fill, font: Font, size: Number, onClick: () -> Unit): Button {
+            val textElement = textElement(text, font, size, fill)
+
+            val shape = textElement.shape.bounds()
+
+            return button(
+                    shape = shape,
+                    elements = observableIterable(listOf(transformedElement(coloredElement(shape, object : Fill {
+                        override fun colorAt(location: Vector2) = fill.colorAt(location) * 0.5
+                    })), transformedElement(textElement))),
+                    onClick = onClick
+            )
         }
     }
 
-    fun textButton(onClick: () -> Unit = {}, textElement: TextElement) = button(
-            shape = textElement.shape,
-            elements = observableIterable(listOf(transformedElement(textElement))),
-            onClick = onClick
-    )
-
     init {
-        screen.content = exampleContent.composedWithButton() //composed(listOf(transformedElement(exampleContent.mindMap())))
+        exampleContent.render()
         registerInputs()
     }
 
@@ -130,14 +143,18 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
         pointers mapObservable { it.pressed } startKeepingAllObserved { p ->
             screen.content.elementsAt(p.pointer.location) forEach {
                 val element = it.element
-                if (element is Clickable<*>) element.onClick(pointerKey(p.pointer relativeTo it.transform, p.key))
+                if (element is Clickable<*>) {
+                    element.onClick(pointerKey(p.pointer relativeTo it.transform, p.key))
+                }
             }
         }
 
         keys mapObservable { it.pressed } startKeepingAllObserved { p ->
             screen.content.elements forEach {
                 val element = it.element
-                if (element is KeysElement<*>) element.onKeyPressed(p)
+                if (element is KeysElement<*>) {
+                    element.onKeyPressed(p)
+                }
             }
         }
     }
