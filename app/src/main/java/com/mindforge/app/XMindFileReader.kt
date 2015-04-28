@@ -1,4 +1,4 @@
-package com.xmind.app
+package com.mindforge.app
 
 import android.content.Context
 import org.xmind.core.ITopic
@@ -7,7 +7,7 @@ import org.xmind.core.internal.dom.WorkbookBuilderImpl
 import org.xmind.core.util.ILogger
 import java.io.File
 
-class XMindFileToText(val cacheDirectory: File) {
+class XMindFileReader(val cacheDirectory: File) {
     init {
         System.setProperty("org.xmind.core.workspace", cacheDirectory.getAbsolutePath())
 
@@ -27,12 +27,14 @@ class XMindFileToText(val cacheDirectory: File) {
         })
     }
 
-    fun invoke(file: File) : String {
+    fun rootTopics(file: File) : List<ITopic> {
         val builder = WorkbookBuilderImpl()
         val workbook = builder.loadFromFile(file)
-        val rootTopics = workbook.getSheets().map { it.getRootTopic() }
-        return rootTopics.map { it.toText() }.join("\n\n")
+
+        return workbook.getSheets().map { it.getRootTopic() }
     }
+
+    fun getText(file: File) = rootTopics(file).map { it.toText() }.join("\n\n")
 
     fun ITopic.toText(): String = getTitleText() + "\n" + getAllChildren().map { it.toText() + if(it.getHyperlink() != null) "[" + it.getHyperlink() + "]" else ""}.join("\n").indented()
 }

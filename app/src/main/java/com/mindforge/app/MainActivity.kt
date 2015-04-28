@@ -1,4 +1,4 @@
-package com.xmind.app
+package com.mindforge.app
 
 import android.app.Activity
 import android.content.Intent
@@ -13,7 +13,12 @@ import com.google.android.gms.drive.Drive
 import com.google.android.gms.drive.DriveApi
 import com.google.android.gms.drive.DriveFile
 import com.google.android.gms.drive.DriveId
+import com.mindforge.graphics.Screen
+import com.mindforge.graphics.android.*
+import com.mindforge.graphics.observableIterable
 import kotlinx.android.synthetic.activity_main.mainTextView
+import org.xmind.core.ITopic
+import org.xmind.core.internal.Topic
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -37,7 +42,9 @@ public class MainActivity : Activity() {
         val id = item!!.getItemId()
 
         return when (id) {
-            R.id.action_settings -> true
+            R.id.action_settings -> {
+                true
+            }
             R.id.open_from_drive -> {
                 openFromDrive()
                 true
@@ -74,10 +81,10 @@ public class MainActivity : Activity() {
     }
 
     private fun open(file: File) {
-        val xMindFileToText = XMindFileToText(cacheDirectory = getCacheDir())
-        val s = xMindFileToText(file)
+        val reader = XMindFileReader(cacheDirectory = getCacheDir())
+        // mainTextView.setText(reader(file))
 
-        mainTextView.setText(s)
+        setDemoScreen(reader.rootTopics(file))
     }
 
     private val driveFileOpenerApiClient: GoogleApiClient by Delegates.lazy {
@@ -132,6 +139,14 @@ public class MainActivity : Activity() {
         }
     }
 
+    private fun setDemoScreen(rootTopics : List<ITopic>) {
+        val screen = GlScreen(this) {
+            Shell(it, observableIterable(listOf(it.pointerKeys)), it.keyboard, GlFont(getResources()!!), rootTopics)
+        }
+
+        setContentView(screen)
+    }
+
     private fun InputStream.writeToFile(file: File) {
         try {
             val output = FileOutputStream(file)
@@ -157,4 +172,3 @@ public class MainActivity : Activity() {
         val openFileFromDrive = 1
     }
 }
-
