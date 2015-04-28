@@ -120,14 +120,15 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
         }
 
         private fun textButton(text: String, fill: Fill, font: Font, size: Number, onClick: () -> Unit): Button {
-            val rect = rectangle(vector((size.toDouble() / 2) * text.count(), size))
-            val shape = rect.transformed(Transforms2.translation(vector(rect.halfSize.x,-rect.halfSize.y.toDouble())))
+            val textElement = textElement(text, font, size, fill)
+
+            val shape = textElement.shape.bounds()
 
             return button(
                     shape = shape,
                     elements = observableIterable(listOf(transformedElement(coloredElement(shape, object : Fill {
                         override fun colorAt(location: Vector2) = fill.colorAt(location) * 0.5
-                    })), transformedElement(textElement(text, font, size, fill)))),
+                    })), transformedElement(textElement))),
                     onClick = onClick
             )
         }

@@ -28,5 +28,5 @@ trait TextShape : BoundedShape {
 }
 
 trait Font {
-    fun shape(text: String): Shape
+    fun shape(text: String): BoundedShape
 }

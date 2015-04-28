@@ -24,10 +24,9 @@ trait BoundedShape : Shape {
 
     fun width(): Number = right.toDouble () - left.toDouble()
     fun height(): Number = top.toDouble () - bottom.toDouble()
-    fun bounds(): Shape = object : Shape {
-        override fun contains(location: Vector2) =
-                location.x in left.toDouble()..right.toDouble () && location.y in bottom.toDouble()..top.toDouble()
-    }
+    fun size() = vector(width(), height())
+    fun center() = vector((right.toDouble() + left.toDouble())/2, (top.toDouble() + bottom.toDouble())/2)
+    fun bounds() = rectangle(size()) transformed Transforms2.translation(center())
 }
 
 fun shape(contains: (Vector2) -> Boolean) = object : Shape {
