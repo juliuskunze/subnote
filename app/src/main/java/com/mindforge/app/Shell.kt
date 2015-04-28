@@ -85,20 +85,23 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
             return composed(observableIterable(listOf<TransformedElement<*>>(transformedElement(textElement))))
         }
 
-        fun mindMap(): Element<*> = topicElement(rootTopics.single()).element
+        fun mindMap(): Composed<*> = composed(listOf(transformedElement(topicElement(rootTopics.single()).element)))
 
         class ElementWithHeight(val element: Element<*>, val height: Int)
 
         fun topicElement(topic: ITopic): ElementWithHeight {
             val text = topic.getTitleText()
             val fontHeight = 60
-            val textElement = textElement(text, defaultFont, fontHeight, Fills.solid(Colors.white))
+            val textElement = textButton(text, fill = Fills.solid(Colors.white), font = defaultFont, size = fontHeight) {
+                topic.setFolded(!topic.isFolded())
+                render()
+            }
 
-            val subTopics = topic.getAllChildren()
+            val unfoldedSubTopics = topic.getAllChildren().filter { !it.isFolded() }
 
-            if (subTopics.none()) return ElementWithHeight(textElement, fontHeight)
+            if (unfoldedSubTopics.none()) return ElementWithHeight(textElement, fontHeight)
 
-            val subElements = subTopics.map { topicElement(it) }
+            val subElements = unfoldedSubTopics.map { topicElement(it) }
             val transformedSubElements = arrayListOf<TransformedElement<*>>()
 
             var height = fontHeight
@@ -108,7 +111,11 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
                 height += e.value.height
             }
 
-            return ElementWithHeight(composed(listOf(transformedElement(textElement)) + transformedSubElements), height)
+            return ElementWithHeight(composed(topic, listOf(transformedElement(textElement)) + transformedSubElements), height)
+        }
+
+        fun render() {
+            screen.content = mindMap() //composedWithButton()
         }
 
         private fun textButton(text: String, fill: Fill, font: Font, size: Number, onClick: () -> Unit): Button {
@@ -126,7 +133,7 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
     }
 
     init {
-        screen.content = exampleContent.composedWithButton() //composed(listOf(transformedElement(exampleContent.mindMap())))
+        exampleContent.render()
         registerInputs()
     }
 
@@ -134,14 +141,18 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
         pointers mapObservable { it.pressed } startKeepingAllObserved { p ->
             screen.content.elementsAt(p.pointer.location) forEach {
                 val element = it.element
-                if (element is Clickable<*>) element.onClick(pointerKey(p.pointer relativeTo it.transform, p.key))
+                if (element is Clickable<*>) {
+                    element.onClick(pointerKey(p.pointer relativeTo it.transform, p.key))
+                }
             }
         }
 
         keys mapObservable { it.pressed } startKeepingAllObserved { p ->
             screen.content.elements forEach {
                 val element = it.element
-                if (element is KeysElement<*>) element.onKeyPressed(p)
+                if (element is KeysElement<*>) {
+                    element.onKeyPressed(p)
+                }
             }
         }
     }

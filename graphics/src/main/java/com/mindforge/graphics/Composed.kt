@@ -15,10 +15,11 @@ fun transformedElement<T>(element: Element<T>, transform: Transform2 = Transform
 
 trait Composed<T> : Element<T> {
     fun elementsAt(location: Vector2): Iterable<TransformedElement<*>> = elements flatMap {
-        val transformedLocation = it.transform.inverse()(location)
-        val contains = it.element.shape.contains(transformedLocation)
+        val locationRelativeToElement = it.transform.inverse()(location)
+        val contains = it.element.shape.contains(locationRelativeToElement)
 
-        if (!contains) listOf<TransformedElement<*>>() else if (it is Composed<*>) it.elementsAt(transformedLocation) map {x -> transformedElement(it, it.transform before x.transform)} else listOf(it)}
+        if (!contains) listOf<TransformedElement<*>>() else if (it is Composed<*>) it.elementsAt(locationRelativeToElement) map {x -> transformedElement(it, it.transform before x.transform)} else listOf(it)
+    }
 
     val elements : ObservableIterable<TransformedElement<*>>
 
@@ -35,8 +36,10 @@ fun composed<T>(
     override val changed = changed
 }
 
+fun composed<T>(content: T, elements: List<TransformedElement<*>>, changed: Observable<Unit> = observable<Unit>()): Composed<T> = composed(content, observableIterable(elements), changed)
+
 fun composed(elements: ObservableIterable<TransformedElement<*>>, changed: Observable<Unit> = observable<Unit>()) = composed(Unit, elements, changed)
-fun composed(elements: List<TransformedElement<*>>, changed: Observable<Unit> = observable<Unit>()) = composed(Unit, observableIterable(elements), changed)
+fun composed(elements: List<TransformedElement<*>>, changed: Observable<Unit> = observable<Unit>()) = composed(Unit, elements, changed)
 
 fun observableIterable<T>(
         elements: Iterable<T>,
