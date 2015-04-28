@@ -4,13 +4,12 @@ import com.mindforge.graphics.*
 import com.mindforge.graphics.interaction.*
 import com.mindforge.graphics.math.rectangle
 import org.xmind.core.ITopic
-import org.xmind.core.internal.Topic
 import java.util.Date
 
 class Shell(val screen: Screen, val pointers: ObservableIterable<PointerKeys>, val keys: ObservableIterable<Key>, defaultFont: Font, rootTopics: List<ITopic>) {
     private val exampleContent = object {
         fun rotatedScaledRectangles(): Composed<*> {
-            fun logoRect(angle: Number) = button(
+            fun logoRect(angle: Number) = coloredButton(
                     shape = rectangle(vector(300, 100)) transformed (Transforms2.translation(vector(-70, 60)) before Transforms2.rotation(angle) before Transforms2.scale(0.5 * angle.toDouble())),
                     fill = Fills.solid(Colors.white),
                     onClick = { println("This is da fucking Pureal logo!") })
@@ -53,7 +52,7 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
             val size = vector(100, 100)
             fun b(x: Int, y: Int): TransformedElement<Any?> {
                 var color = randomColor()
-                return transformedElement(button(shape = rectangle(size), fill = object : Fill {
+                return transformedElement(coloredButton(shape = rectangle(size), fill = object : Fill {
                     override fun colorAt(location: Vector2) = color
                 }) {
                     color = randomColor()
@@ -111,12 +110,18 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
                 height += e.value.height
             }
 
-            return ElementWithHeight(composed(observableIterable(listOf<TransformedElement<*>>(transformedElement(textElement)) + transformedSubElements)), height)
+            return ElementWithHeight(composed(listOf(transformedElement(textElement)) + transformedSubElements), height)
         }
     }
 
+    fun textButton(onClick: () -> Unit = {}, textElement: TextElement) = button(
+            shape = textElement.shape,
+            elements = observableIterable(listOf(transformedElement(textElement))),
+            onClick = onClick
+    )
+
     init {
-        screen.content = composed(observableIterable(listOf<TransformedElement<*>>(transformedElement(exampleContent.mindMap()))))
+        screen.content = exampleContent.composedWithButton() //composed(listOf(transformedElement(exampleContent.mindMap())))
         registerInputs()
     }
 

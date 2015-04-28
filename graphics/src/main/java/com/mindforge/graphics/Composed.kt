@@ -36,6 +36,7 @@ fun composed<T>(
 }
 
 fun composed(elements: ObservableIterable<TransformedElement<*>>, changed: Observable<Unit> = observable<Unit>()) = composed(Unit, elements, changed)
+fun composed(elements: List<TransformedElement<*>>, changed: Observable<Unit> = observable<Unit>()) = composed(Unit, observableIterable(elements), changed)
 
 fun observableIterable<T>(
         elements: Iterable<T>,
