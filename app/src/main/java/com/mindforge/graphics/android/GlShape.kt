@@ -2,6 +2,7 @@ package com.mindforge.graphics.android
 
 import android.opengl.GLES20
 import com.mindforge.graphics.Vector2
+import com.mindforge.graphics.math.BoundedShape
 import com.mindforge.graphics.math.Rectangle
 import com.mindforge.graphics.math.Shape
 import com.mindforge.graphics.math.TransformedShape
@@ -17,12 +18,24 @@ abstract class GlShape(open val original: Shape? = null) : Shape {
 }
 
 fun glShape(original: Shape): GlShape {
-    return when (original) {
+    val glShape: GlShape = when (original) {
         is GlShape -> original
         is TransformedShape -> GlTransformedShape(original)
         is Rectangle -> GlRectangle(original)
         else -> throw UnsupportedOperationException("No OpenGL implementation for shape '${original}'.")
     }
+    return when (original) {
+        is BoundedShape -> GlBoundedShape(original, glShape)
+        else -> glShape
+    }
+}
+
+class GlBoundedShape(override val original: BoundedShape, val glShape: GlShape) : GlShape(original), BoundedShape by original {
+    override val vertexCoordinates: FloatArray get() = glShape.vertexCoordinates
+    override val textureCoordinates: FloatArray get() = glShape.textureCoordinates
+    override val textureName: Int? get() = glShape.textureName
+    override val drawOrder: ShortArray get() = glShape.drawOrder
+    override val glVertexMode: Int get() = glShape.glVertexMode
 }
 
 class GlTransformedShape(override val original: TransformedShape) : GlShape(original) {
@@ -33,9 +46,7 @@ class GlTransformedShape(override val original: TransformedShape) : GlShape(orig
         val transformed = (glOriginal.vertexCoordinates.withIndices() groupBy { it.first / 2 }).toSortedMap().values() flatMap {
             original.transform(vector(it[0].second, it[1].second)) map { it.toFloat() }
         }
-        for (i in transformed.withIndices()) {
-            result[i.first] = i.second
-        }
+        transformed.withIndex().forEach { result[it.index] = it.value }
         return result
     }
     override val textureCoordinates: FloatArray get() = glOriginal.textureCoordinates

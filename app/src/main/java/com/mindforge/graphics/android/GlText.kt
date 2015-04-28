@@ -8,13 +8,14 @@ import android.graphics.BitmapFactory
 import android.opengl.GLUtils
 import com.mindforge.app.R
 import com.mindforge.graphics.*
+import com.mindforge.graphics.math.BoundedShape
 import com.mindforge.graphics.math.Shape
 import java.util.ArrayList
 
 //TODO: "override val original" instad of "val originalTextElement  (runtime compiler barf)
 class GlTextElement(val originalTextElement: TextElement, screen: GlScreen) : TextElement, GlColoredElement(originalTextElement, screen) {
     override val shader = screen.fontShader
-    override val shape: GlGlyphs get() = super<GlColoredElement>.shape as GlGlyphs
+    override val shape: GlBoundedShape get() = super<GlColoredElement>.shape as GlBoundedShape
     override val font: GlFont get() = glFont(originalTextElement.font)
     override val size: Number get() = originalTextElement.size
     override val fill: Fill get() = originalTextElement.fill
