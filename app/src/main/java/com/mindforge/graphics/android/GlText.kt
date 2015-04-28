@@ -107,10 +107,10 @@ class GlGlyphs(val font: GlFont, override val text: String) : GlShape(), TextSha
 
     private val glyphShapes = ArrayList<GlyphShape>()
     override fun get(index: Int): GlyphShape = glyphShapes[index]
-    override val top = glyphShapes.map { it.top.toFloat () }.max()!!
-    override val right = glyphShapes.map { it.right.toFloat () }.max()!!
-    override val bottom = glyphShapes.map { it.bottom.toFloat () }.min()!!
-    override val left = glyphShapes.map { it.left.toFloat () }.min()!!
+    override val top = glyphShapes.map { it.top.toFloat () }.max() ?: 0f
+    override val right = glyphShapes.map { it.right.toFloat () }.max() ?: 0f
+    override val bottom = glyphShapes.map { it.bottom.toFloat () }.min() ?: 0f
+    override val left = glyphShapes.map { it.left.toFloat () }.min() ?: 0f
     override fun contains(location: Vector2) = glyphShapes.any({ it.contains(location) })
 
     init {
