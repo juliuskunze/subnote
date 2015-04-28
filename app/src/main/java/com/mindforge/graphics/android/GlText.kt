@@ -11,14 +11,14 @@ import com.mindforge.graphics.*
 import com.mindforge.graphics.math.Shape
 import java.util.ArrayList
 
-//TODO: override val original (runtime compiler barf)
-class GlTextElement(val originalText: TextElement, screen: GlScreen) : TextElement, GlColoredElement(originalText, screen) {
+//TODO: "override val original" instad of "val originalTextElement  (runtime compiler barf)
+class GlTextElement(val originalTextElement: TextElement, screen: GlScreen) : TextElement, GlColoredElement(originalTextElement, screen) {
     override val shader = screen.fontShader
-    override val shape: GlShape get() = super<GlColoredElement>.shape
-    override val font: GlFont get() = glFont(originalText.font)
-    override val size: Number get() = originalText.size
-    override val fill: Fill get() = originalText.fill
-    override val content: String get() = originalText.content
+    override val shape: GlGlyphs get() = super<GlColoredElement>.shape as GlGlyphs
+    override val font: GlFont get() = glFont(originalTextElement.font)
+    override val size: Number get() = originalTextElement.size
+    override val fill: Fill get() = originalTextElement.fill
+    override val content: String get() = originalTextElement.content
 }
 
 class GlFont(resources: Resources) : Font {
@@ -150,7 +150,7 @@ class GlGlyphs(val font: GlFont, override val text: String) : GlShape(), TextSha
                 override val bottom = y - h
                 override val left = x
                 //TODO: use actual glyph shape?
-                override fun contains(location: Vector2) = bounds.contains(location)
+                override fun contains(location: Vector2) = bounds().contains(location)
             })
         }
 
