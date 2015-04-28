@@ -122,7 +122,7 @@ public class MainActivity : Activity() {
 
                     driveFile.open(driveFileOpenerApiClient, DriveFile.MODE_READ_ONLY, object : DriveFile.DownloadProgressListener {
                         override fun onProgress(bytesDownloaded: Long, bytesExpected: Long) {
-                            mainTextView.setText("loading... " + if(bytesExpected > 0) "$bytesDownloaded / $bytesExpected bytes" else "")
+                            mainTextView.setText("loading... " + if (bytesExpected > 0) "$bytesDownloaded / $bytesExpected bytes" else "")
                         }
                     }).setResultCallback (object : ResultCallback<DriveApi.DriveContentsResult> {
                         override fun onResult(result: DriveApi.DriveContentsResult) {
@@ -139,9 +139,9 @@ public class MainActivity : Activity() {
         }
     }
 
-    private fun setDemoScreen(rootTopics : List<ITopic>) {
+    private fun setDemoScreen(rootTopics: List<ITopic>) {
         val screen = GlScreen(this) {
-            Shell(it, observableIterable(listOf(it.pointerKeys)), it.keyboard, GlFont(getResources()!!), rootTopics)
+            Shell(it, observableIterable(listOf(it.touchPointerKeys)), it.keyboard, GlFont(getResources()!!), rootTopics)
         }
 
         setContentView(screen)

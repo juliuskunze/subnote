@@ -1,9 +1,5 @@
 package com.mindforge.graphics.android
 
-import com.mindforge.graphics.TextElement
-import com.mindforge.graphics.Font
-import com.mindforge.graphics.Fill
-import com.mindforge.graphics.math.Shape
 import android.content.res.Resources
 import java.util.HashMap
 import java.io.InputStreamReader
@@ -11,6 +7,9 @@ import android.opengl.GLES20
 import android.graphics.BitmapFactory
 import android.opengl.GLUtils
 import com.mindforge.app.R
+import com.mindforge.graphics.*
+import com.mindforge.graphics.math.Shape
+import java.util.ArrayList
 
 //TODO: override val original (runtime compiler barf)
 class GlTextElement(val originalText: TextElement, screen: GlScreen) : TextElement, GlColoredElement(originalText, screen) {
@@ -67,8 +66,10 @@ class GlFont(resources: Resources) : Font {
             stream.close()
         }
     }
+
     private val textureNames: IntArray = IntArray(1);
-    val textureName : Int get() = textureNames[0]
+    val textureName: Int get() = textureNames[0]
+
     init {
         GLES20.glGenTextures(textureNames.size, textureNames, 0);
         val bmp = BitmapFactory.decodeResource(resources, R.drawable.roboto_regular)!!;
@@ -85,12 +86,8 @@ class GlFont(resources: Resources) : Font {
 
     }
 
-    override fun shape(text: String): Shape {
+    override fun shape(text: String): TextShape {
         return GlGlyphs(this, text)
-    }
-
-    private fun measureString(text: String): Number {
-        return text.length // TODO: fix this
     }
 }
 
@@ -101,16 +98,25 @@ fun glFont(original: Font): GlFont {
     }
 }
 
-class GlGlyphs(val font: GlFont, val text: String) : GlShape() {
+class GlGlyphs(val font: GlFont, override val text: String) : GlShape(), TextShape {
     override val textureName: Int = font.textureName
-    override val vertexCoordinates = FloatArray(text.length * 2 * 4)
-    override val textureCoordinates = FloatArray(text.length * 2 * 4)
-    override val drawOrder = ShortArray(text.length * 6)
+    override val vertexCoordinates = FloatArray(text.length() * 2 * 4)
+    override val textureCoordinates = FloatArray(text.length() * 2 * 4)
+    override val drawOrder = ShortArray(text.length() * 6)
     override val glVertexMode: Int = GLES20.GL_TRIANGLES
+
+    private val glyphShapes = ArrayList<GlyphShape>()
+    override fun get(index: Int): GlyphShape = glyphShapes[index]
+    override val top = glyphShapes.map { it.top.toFloat () }.max()!!
+    override val right = glyphShapes.map { it.right.toFloat () }.max()!!
+    override val bottom = glyphShapes.map { it.bottom.toFloat () }.min()!!
+    override val left = glyphShapes.map { it.left.toFloat () }.min()!!
+    override fun contains(location: Vector2) = glyphShapes.any({ it.contains(location) })
+
     init {
         var ic = 0
         var it = 0
-        var n : Short = 0
+        var n: Short = 0
 
         fun addVertex(x: Float, y: Float, tx: Float, ty: Float): Short {
             vertexCoordinates[ic++] = x / 40
@@ -136,13 +142,30 @@ class GlGlyphs(val font: GlFont, val text: String) : GlShape() {
 
         }
 
+        fun addGlyphShape(c: Char, x: Float, y: Float, w: Float, h: Float) {
+            glyphShapes.add(object : GlyphShape {
+                override val character = c
+                override val top = y
+                override val right = x + w
+                override val bottom = y - h
+                override val left = x
+                //TODO: use actual glyph shape?
+                override fun contains(location: Vector2) = bounds.contains(location)
+            })
+        }
+
         var cx = 0f
         var cy = 0f
         for (char in text) {
             val glyph = font.glyphs[char] ?: font.glyphs[' ']!!
-            addQuad(cx + glyph.xOffset, cy - glyph.height - glyph.yOffset,
-                    glyph.width.toFloat(), glyph.height.toFloat(),
-                    glyph.x.toFloat(), glyph.y.toFloat())
+            val x = cx + glyph.xOffset
+            val y = cy - glyph.height - glyph.yOffset
+            val w = glyph.width.toFloat()
+            val h = glyph.height.toFloat()
+            val tx = glyph.x.toFloat()
+            val ty = glyph.y.toFloat()
+            addQuad(x, y, w, h, tx, ty)
+            addGlyphShape(char, x, y, w, h)
             cx += glyph.xAdvance
             if (char == 10.toChar()) {
                 cx = 0f
@@ -150,5 +173,4 @@ class GlGlyphs(val font: GlFont, val text: String) : GlShape() {
             }
         }
     }
-    //override fun contains(location: Vector2): Boolean = //TODO
 }

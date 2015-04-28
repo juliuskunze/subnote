@@ -1,7 +1,5 @@
 package com.mindforge.graphics.android
 
-import com.mindforge.graphics.*
-import com.mindforge.graphics.*
 import android.opengl.GLES20
 import java.nio.FloatBuffer
 import java.nio.ByteBuffer
@@ -9,6 +7,7 @@ import java.nio.ByteOrder
 import java.nio.ShortBuffer
 import java.util.ArrayList
 import android.opengl.GLES10
+import com.mindforge.graphics.*
 import java.nio.IntBuffer
 
 
@@ -158,6 +157,7 @@ open class GlColoredElement(override val original: ColoredElement<*>, screen: Gl
     }
     init {
         changed addObserver {
+            //TODO synchronize with GL Thread!!!
             glShape = glShape(original.shape)
             vertexBuffer = buildVertexBuffer()
             uvBuffer = buildUvBuffer()

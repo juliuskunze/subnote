@@ -8,7 +8,7 @@ import com.mindforge.graphics.interaction.PointersElement
 trait TextElement : ColoredElement<String> {
     val font: Font
     val size: Number
-    override val shape: Shape get() = font.shape(content).transformed(Transforms2.scale(size))
+    override val shape: BoundedShape get() = font.shape(content).scaled(size)
 }
 
 fun textElement(content: String, font: Font, size: Number, fill: Fill) = object : TextElement {
@@ -18,9 +18,19 @@ fun textElement(content: String, font: Font, size: Number, fill: Fill) = object 
     override val fill = fill
 }
 
-trait Font {
-    fun shape(text: String): Shape
+trait GlyphShape : BoundedShape {
+    val character: Char
 }
+
+trait TextShape : BoundedShape {
+    val text: String
+    fun get(index: Int): GlyphShape
+}
+
+trait Font {
+    fun shape(text: String): TextShape
+}
+
 
 trait TextInput : Composed<String>, KeysElement<String>, PointersElement<String> {
     var text: String
