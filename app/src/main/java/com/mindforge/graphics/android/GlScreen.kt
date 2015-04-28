@@ -6,12 +6,14 @@ import javax.microedition.khronos.opengles.GL10
 import javax.microedition.khronos.egl.EGLConfig
 import android.opengl.GLES20
 import android.app.Activity
-import com.mindforge.graphics.*
-import com.mindforge.graphics.math.*
-import com.mindforge.graphics.*
 import android.view.MotionEvent
-import com.mindforge.graphics.interaction.*
 import android.view.KeyEvent
+import com.mindforge.graphics.*
+import com.mindforge.graphics.interaction.Commands
+import com.mindforge.graphics.interaction.pointerKeys
+import com.mindforge.graphics.math.Rectangle
+import com.mindforge.graphics.math.rectangle
+import java.util.HashMap
 
 class GlScreen (activity: Activity, onReady: (GlScreen) -> Unit) : GLSurfaceView(activity), Screen {
     init {
@@ -94,57 +96,36 @@ class GlScreen (activity: Activity, onReady: (GlScreen) -> Unit) : GLSurfaceView
                 }
             """)
 
-     override fun onTouchEvent(event : MotionEvent) : Boolean {
-        val location = Transforms2.scale(1, -1)(vector(event.getX(), event.getY()) - shape.halfSize)
+    val keyboard = AndroidKeyboard()
+    val touchKey = AndroidKey(Commands.Touch.touch)
+    val touchPointer = AndroidPointer()
+    val touchPointerKeys = pointerKeys(touchPointer, listOf(touchKey))
 
-        when(event.getAction()) {
-            MotionEvent.ACTION_DOWN -> { pointer.move(location) ; touch.press() }
-            MotionEvent.ACTION_UP -> { pointer.move(location) ; touch.release() }
-            MotionEvent.ACTION_MOVE -> pointer.move(location)
-        }
-
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        keyboard[event]?.press()
         return true
     }
 
-    class AndroidKey(val command: Command) : Key {
-        override val definition: KeyDefinition = keyDefinition(command)
-        override var isPressed: Boolean = false
-        override val pressed = trigger<Key>()
-        override val released = trigger<Key>()
-
-        fun press() {
-            isPressed = true
-            pressed(this)
-        }
-
-        fun release() {
-            isPressed = false
-            released(this)
-        }
+    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
+        keyboard[event]?.release()
+        return true
     }
 
-    class TouchPointer : Pointer {
-        override val moved = trigger<Pointer>()
-        override var location: Vector2 = zeroVector2
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        val location = Transforms2.scale(1, -1)(vector(event.getX(), event.getY()) - shape.halfSize)
 
-        fun move(location : Vector2) {
-            this.location = location
-            moved(this)
+        when (event.getAction()) {
+            MotionEvent.ACTION_DOWN -> {
+                touchPointer.move(location)
+                touchKey.press()
+            }
+            MotionEvent.ACTION_UP -> {
+                touchPointer.move(location)
+                touchKey.release()
+            }
+            MotionEvent.ACTION_MOVE -> touchPointer.move(location)
         }
-    }
 
-    val touch = AndroidKey(Commands.Touch.touch)
-    val pointer = TouchPointer()
-    val pointerKeys : PointerKeys = pointerKeys(pointer, listOf(touch))
-
-    val keyboard = observableList<Key>()
-
-    override fun onKeyDown(keyCode: Int, event : KeyEvent) : Boolean {
-        val key = AndroidKey(Commands.Keyboard.character(event.getKeyCharacterMap()!!.getDisplayLabel(keyCode)))
-        keyboard.add(key)
-        key.press()
-        key.release()
-        keyboard.remove(key)
         return true
     }
 }

@@ -1,7 +1,5 @@
 package com.mindforge.graphics.android
 
-import com.mindforge.graphics.*
-import com.mindforge.graphics.*
 import android.opengl.GLES20
 import java.nio.FloatBuffer
 import java.nio.ByteBuffer
@@ -9,6 +7,7 @@ import java.nio.ByteOrder
 import java.nio.ShortBuffer
 import java.util.ArrayList
 import android.opengl.GLES10
+import com.mindforge.graphics.*
 import java.nio.IntBuffer
 
 
@@ -34,12 +33,12 @@ trait GlTransformedElement : TransformedElement<Any?> {
     override val transform: Transform2
 }
 
-fun glTransformedElement(element : GlElement, transform : Transform2 = Transforms2.identity) = object : GlTransformedElement {
+fun glTransformedElement(element: GlElement, transform: Transform2 = Transforms2.identity) = object : GlTransformedElement {
     override val element = element
     override val transform = transform
 }
 
-fun glTransformedElement(element : TransformedElement<*>, screen : GlScreen) = glTransformedElement(glElement(element.element, screen), element.transform)
+fun glTransformedElement(element: TransformedElement<*>, screen: GlScreen) = glTransformedElement(glElement(element.element, screen), element.transform)
 
 class GlComposed(override val original: Composed<*>, screen: GlScreen) : GlElement(original, screen), Composed<Any?> {
     val e = (original.elements mapObservable { glTransformedElement(it, screen) }).toArrayList()
@@ -68,9 +67,8 @@ class GlComposed(override val original: Composed<*>, screen: GlScreen) : GlEleme
 }
 
 
-
 open class GlColoredElement(override val original: ColoredElement<*>, screen: GlScreen) : GlElement(original, screen), ColoredElement<Any?> {
-    override val shape: GlShape  get () = glShape
+    override val shape: GlShape  get() = glShape
     override val fill: Fill get() = original.fill
 
     open val shader = screen.flatShader
@@ -125,7 +123,8 @@ open class GlColoredElement(override val original: ColoredElement<*>, screen: Gl
         GLES20.glDisableVertexAttribArray(positionHandle);
         GLES20.glDisableVertexAttribArray(texCoordHandle)
     }
-    private var glShape : GlShape = glShape(original.shape)
+
+    private var glShape: GlShape = glShape(original.shape)
     private var vertexBuffer = buildVertexBuffer()
     private var uvBuffer = buildUvBuffer()
     private var drawListBuffer = buildDrawListBuffer()
@@ -138,6 +137,7 @@ open class GlColoredElement(override val original: ColoredElement<*>, screen: Gl
         floatBuffer position 0
         return floatBuffer
     }
+
     fun buildUvBuffer(): FloatBuffer {
         // 4 bytes per float
         val byteBuffer = ByteBuffer.allocateDirect(shape.textureCoordinates.size * 4)
@@ -147,6 +147,7 @@ open class GlColoredElement(override val original: ColoredElement<*>, screen: Gl
         floatBuffer position 0
         return floatBuffer
     }
+
     fun buildDrawListBuffer(): ShortBuffer {
         // 2 bytes per short
         val byteBuffer = ByteBuffer.allocateDirect(shape.drawOrder.size * 2)
@@ -156,8 +157,10 @@ open class GlColoredElement(override val original: ColoredElement<*>, screen: Gl
         shortBuffer position 0
         return shortBuffer
     }
+
     init {
         changed addObserver {
+            //TODO synchronize with GL Thread!!!
             glShape = glShape(original.shape)
             vertexBuffer = buildVertexBuffer()
             uvBuffer = buildUvBuffer()

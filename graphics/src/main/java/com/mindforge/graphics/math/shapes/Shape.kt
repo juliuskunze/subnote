@@ -4,9 +4,29 @@ import com.mindforge.graphics.*
 
 trait Shape {
     fun contains(location: Vector2): Boolean
-    fun transformed(transform: Transform2): Shape = object : TransformedShape {
+    fun transformed(transform: Transform2): TransformedShape = object : TransformedShape {
         override val original = this@Shape
         override val transform = transform
+    }
+}
+
+trait BoundedShape : Shape {
+    val top: Number
+    val right: Number
+    val bottom: Number
+    val left: Number
+    fun scaled(factor: Number): BoundedShape = object : BoundedShape, TransformedShape by this transformed Transforms2.scale(factor) {
+        override val top: Number = this@BoundedShape.top.toDouble() * factor.toDouble()
+        override val right: Number = this@BoundedShape.right.toDouble() * factor.toDouble()
+        override val bottom: Number = this@BoundedShape.bottom.toDouble() * factor.toDouble()
+        override val left: Number = this@BoundedShape.left.toDouble() * factor.toDouble()
+    }
+
+    fun width(): Number = right.toDouble () - left.toDouble()
+    fun height(): Number = top.toDouble () - bottom.toDouble()
+    fun bounds(): Shape = object : Shape {
+        override fun contains(location: Vector2) =
+                location.x in left.toDouble()..right.toDouble () && location.y in bottom.toDouble()..top.toDouble()
     }
 }
 

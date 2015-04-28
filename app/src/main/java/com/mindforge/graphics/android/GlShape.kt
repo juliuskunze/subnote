@@ -1,11 +1,11 @@
 package com.mindforge.graphics.android
 
-import com.mindforge.graphics.math.Shape
+import android.opengl.GLES20
 import com.mindforge.graphics.Vector2
 import com.mindforge.graphics.math.Rectangle
+import com.mindforge.graphics.math.Shape
 import com.mindforge.graphics.math.TransformedShape
 import com.mindforge.graphics.vector
-import android.opengl.GLES20
 
 abstract class GlShape(open val original: Shape? = null) : Shape {
     override fun contains(location: Vector2): Boolean = original?.contains(location) ?: false
