@@ -52,6 +52,7 @@
       <sourceFolder url="file://$MODULE_DIR$/src/main/assets" type="java-resource" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/aidl" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/java" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/kotlin" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/jni" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/rs" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/androidTest/res" type="java-test-resource" />
@@ -83,7 +84,7 @@
       <excludeFolder url="file://$MODULE_DIR$/build/outputs" />
       <excludeFolder url="file://$MODULE_DIR$/build/tmp" />
     </content>
-    <orderEntry type="jdk" jdkName="Android API 22 Platform" jdkType="Android SDK" />
+    <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" exported="" name="play-services-drive-7.0.0" level="project" />
     <orderEntry type="library" exported="" name="commons-io-2.4" level="project" />
@@ -93,9 +94,11 @@
     <orderEntry type="library" exported="" name="play-services-cast-7.0.0" level="project" />
     <orderEntry type="library" exported="" name="play-services-wearable-7.0.0" level="project" />
     <orderEntry type="library" exported="" name="play-services-panorama-7.0.0" level="project" />
+    <orderEntry type="library" exported="" name="org.xmind.core-sources" level="project" />
+    <orderEntry type="library" exported="" name="org.xmind.ui.taskinfo" level="project" />
     <orderEntry type="library" exported="" name="support-annotations-22.0.0" level="project" />
     <orderEntry type="library" exported="" name="play-services-plus-7.0.0" level="project" />
-    <orderEntry type="library" exported="" name="kotlin-runtime-0.11.91.1" level="project" />
+    <orderEntry type="library" exported="" name="kotlin-runtime-0.11.91.2" level="project" />
     <orderEntry type="library" exported="" name="play-services-7.0.0" level="project" />
     <orderEntry type="library" exported="" name="play-services-ads-7.0.0" level="project" />
     <orderEntry type="library" exported="" name="play-services-base-7.0.0" level="project" />
@@ -103,7 +106,7 @@
     <orderEntry type="library" exported="" name="play-services-gcm-7.0.0" level="project" />
     <orderEntry type="library" exported="" name="play-services-safetynet-7.0.0" level="project" />
     <orderEntry type="library" exported="" name="play-services-nearby-7.0.0" level="project" />
-    <orderEntry type="library" exported="" name="kotlin-stdlib-0.11.91.1" level="project" />
+    <orderEntry type="library" exported="" name="kotlin-stdlib-0.11.91.2" level="project" />
     <orderEntry type="library" exported="" name="play-services-fitness-7.0.0" level="project" />
     <orderEntry type="library" exported="" name="support-v4-22.0.0" level="project" />
     <orderEntry type="library" exported="" name="play-services-analytics-7.0.0" level="project" />
