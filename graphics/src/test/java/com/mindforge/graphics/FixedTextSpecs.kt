@@ -9,7 +9,6 @@ import com.mindforge.graphics.Font
 import com.mindforge.graphics.Fill
 import com.mindforge.graphics.Fills
 import com.mindforge.graphics.Colors
-import com.mindforge.graphics.math.BoundedShape
 import com.mindforge.graphics.math.Shape
 
 class FixedTextSpecs : Spek() {init {
@@ -18,16 +17,17 @@ class FixedTextSpecs : Spek() {init {
         val x = textElement(
                 content = s,
                 font = object : Font {
-                    override fun shape(text: String) = object : BoundedShape {
+                    override fun shape(text: String, lineHeight: Number) = object : TextShape {
                         override fun contains(location: Vector2) = false
 
-                        override val top = 1
-                        override val right = 1
-                        override val bottom = -1
-                        override val left = -1
+                        override val lineHeight = lineHeight
+                        override val baseline = 0
+                        override val leading = 0
+                        override val lines = listOf<LineShape>()
+                        override val text = text
                     }
                 },
-                fill = Fills.solid(Colors.black), size = 0.01)
+                fill = Fills.solid(Colors.black), lineHeight = 0.01)
 
         on("getting the content") {
             val c = x.content
