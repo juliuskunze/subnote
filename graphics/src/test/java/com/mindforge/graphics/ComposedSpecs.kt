@@ -1,7 +1,11 @@
-package com.mindforge.graphics.math
+package com.mindforge.graphics
 
-import com.mindforge.graphics.*
-import org.jetbrains.spek.api.*
+import com.mindforge.graphics.math.circle
+import com.mindforge.graphics.math.rectangle
+import org.jetbrains.spek.api.Spek
+import org.jetbrains.spek.api.shouldBeFalse
+import org.jetbrains.spek.api.shouldBeTrue
+import org.jetbrains.spek.api.shouldEqual
 
 class ComposedSpecs : Spek() {init {
     given("a composed element of a rectangle and a circle") {
