@@ -8,16 +8,15 @@ import android.graphics.BitmapFactory
 import android.opengl.GLUtils
 import com.mindforge.app.R
 import com.mindforge.graphics.*
-import com.mindforge.graphics.math.BoundedShape
 import com.mindforge.graphics.math.Shape
 import java.util.ArrayList
 
 //TODO: "override val original" instad of "val originalTextElement  (runtime compiler barf)
 class GlTextElement(val originalTextElement: TextElement, screen: GlScreen) : TextElement, GlColoredElement(originalTextElement, screen) {
     override val shader = screen.fontShader
-    override val shape: GlBoundedShape get() = super<GlColoredElement>.shape as GlBoundedShape
+    override val shape: GlGlyphs get() = super<GlColoredElement>.shape as GlGlyphs
     override val font: GlFont get() = glFont(originalTextElement.font)
-    override val size: Number get() = originalTextElement.size
+    override val lineHeight: Float get() = originalTextElement.lineHeight.toFloat()
     override val fill: Fill get() = originalTextElement.fill
     override val content: String get() = originalTextElement.content
 }
@@ -87,8 +86,8 @@ class GlFont(resources: Resources) : Font {
 
     }
 
-    override fun shape(text: String): TextShape {
-        return GlGlyphs(this, text)
+    override fun shape(text: String, lineHeight: Number): TextShape {
+        return GlGlyphs(this, text, lineHeight.toFloat())
     }
 }
 
@@ -99,16 +98,27 @@ fun glFont(original: Font): GlFont {
     }
 }
 
-class GlGlyphs(val font: GlFont, override val text: String) : GlShape(), TextShape {
+class GlGlyphs(val font: GlFont, override val text: String, override val lineHeight: Float) : GlShape(), TextShape {
     override val textureName: Int = font.textureName
     override val vertexCoordinates = FloatArray(text.length() * 2 * 4)
     override val textureCoordinates = FloatArray(text.length() * 2 * 4)
     override val drawOrder = ShortArray(text.length() * 6)
     override val glVertexMode: Int = GLES20.GL_TRIANGLES
 
-    private val glyphShapes = ArrayList<GlyphShape>()
-    override fun get(index: Int): GlyphShape = glyphShapes[index]
-    override fun contains(location: Vector2) = glyphShapes.any({ it.contains(location) })
+    override val lines = ArrayList<LineShape>()
+
+    // TODO: should technically test for the exact text shape, but YAGNI
+    override fun contains(location: Vector2) = box().contains(location)
+
+    //TODO: read these from texture file
+    val templateSize = 40
+    val textureSize = 1024
+    val templateBaseline = 6.0f
+
+    override val baseline = templateBaseline * lineHeight / templateSize
+
+    //TODO (YAGNI?)
+    override val leading = 0
 
     init {
         var ic = 0
@@ -116,10 +126,10 @@ class GlGlyphs(val font: GlFont, override val text: String) : GlShape(), TextSha
         var n: Short = 0
 
         fun addVertex(x: Float, y: Float, tx: Float, ty: Float): Short {
-            vertexCoordinates[ic++] = x / 40
-            vertexCoordinates[ic++] = y / 40
-            textureCoordinates[it++] = tx / 1024
-            textureCoordinates[it++] = ty / 1024
+            vertexCoordinates[ic++] = x * lineHeight / templateSize
+            vertexCoordinates[ic++] = y * lineHeight / templateSize
+            textureCoordinates[it++] = tx / textureSize
+            textureCoordinates[it++] = ty / textureSize
             return n++
         }
 
@@ -139,20 +149,16 @@ class GlGlyphs(val font: GlFont, override val text: String) : GlShape(), TextSha
 
         }
 
-        fun addGlyphShape(c: Char, x: Float, y: Float, w: Float, h: Float) {
-            glyphShapes.add(object : GlyphShape {
-                override val character = c
-                override val left = x / 40
-                override val right = (x + w) / 40
-                override val bottom = (y) / 40
-                override val top = (y + h) / 40
-                //TODO: use actual glyph shape?
-                override fun contains(location: Vector2) = bounds().contains(location)
+        fun addLine(width: Float) {
+            lines.add(object : LineShape {
+                override val width = width * lineHeight / templateSize
+                override fun contains(location: Vector2) =
+                        location.x.toFloat () < width && (location.y.toFloat () + baseline) < lineHeight.toFloat()
             })
         }
 
         var cx = 0f
-        var cy = 0f
+        var cy = templateSize.toFloat()
         for (char in text) {
             val glyph = font.glyphs[char] ?: font.glyphs[' ']!!
             val x = cx + glyph.xOffset
@@ -162,18 +168,15 @@ class GlGlyphs(val font: GlFont, override val text: String) : GlShape(), TextSha
             val tx = glyph.x.toFloat()
             val ty = glyph.y.toFloat()
             addQuad(x, y, w, h, tx, ty)
-            addGlyphShape(char, x, y, w, h)
             cx += glyph.xAdvance
             if (char == 10.toChar()) {
+                addLine(cx)
                 cx = 0f
-                cy -= 40
+                cy -= templateSize
+                //TODO: add leading (YAGNI?)
             }
         }
+        addLine(cx)
     }
-
-    override val top = glyphShapes.map { it.top.toFloat () }.max() ?: 0f
-    override val right = glyphShapes.map { it.right.toFloat () }.max() ?: 0f
-    override val bottom = glyphShapes.map { it.bottom.toFloat () }.min() ?: 0f
-    override val left = glyphShapes.map { it.left.toFloat () }.min() ?: 0f
 
 }

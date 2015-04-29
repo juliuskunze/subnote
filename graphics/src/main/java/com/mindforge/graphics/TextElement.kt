@@ -7,26 +7,44 @@ import com.mindforge.graphics.interaction.PointersElement
 
 trait TextElement : ColoredElement<String> {
     val font: Font
-    val size: Number
-    override val shape: BoundedShape get() = font.shape(content).scaled(size)
+    val lineHeight: Number
+    override val shape: TextShape get() = font.shape(content, lineHeight)
 }
 
-fun textElement(content: String, font: Font, size: Number, fill: Fill) = object : TextElement {
+fun textElement(content: String, font: Font, lineHeight: Number, fill: Fill) = object : TextElement {
     override val content = content
     override val font = font
-    override val size = size
+    override val lineHeight = lineHeight
     override val fill = fill
 }
 
-trait GlyphShape : BoundedShape {
+/* YAGNI trait GlyphShape : Shape {
     val character: Char
+}*/
+
+trait LineShape : Shape {
+    // YAGNI val glyphs: List<GlyphShape>
+    val width: Number
 }
 
-trait TextShape : BoundedShape {
+trait TextShape : Shape {
     val text: String
-    fun get(index: Int): GlyphShape
+
+    val lineHeight: Number
+    val baseline: Number
+    val leading: Number
+
+    val lines: List<LineShape>
+
+    fun box(): Shape = rectangle(vector(
+            lines.map { it.width.toDouble () }.max() ?: 0.0,
+            lineHeight.toDouble() * text.lineCount() + leading.toDouble() * (text.lineCount() - 1)
+    )).topLeftAtOrigin() transformed Transforms2.translation(vector(0, lineHeight.toDouble() - baseline.toDouble()))
+
 }
 
 trait Font {
-    fun shape(text: String): BoundedShape
+    fun shape(text: String, lineHeight: Number): TextShape
 }
+
+fun String.lineCount() = count { it == '\n' } + 1
