@@ -17,10 +17,10 @@
     <output-test url="file://$MODULE_DIR$/build/classes/test" />
     <exclude-output />
     <content url="file://$MODULE_DIR$">
-      <sourceFolder url="file://$MODULE_DIR$/src/main/kotlin" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/java" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src/test/kotlin" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/kotlin" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/test/java" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/src/test/kotlin" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/resources" type="java-resource" />
       <sourceFolder url="file://$MODULE_DIR$/src/test/resources" type="java-test-resource" />
       <excludeFolder url="file://$MODULE_DIR$/.gradle" />
@@ -28,7 +28,10 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" exported="" name="kotlin-stdlib-0.11.91.2" level="project" />
-    <orderEntry type="library" exported="" name="kotlin-runtime-0.11.91.2" level="project" />
+    <orderEntry type="library" exported="" name="kotlin-stdlib-0.11.91.1" level="project" />
+    <orderEntry type="library" exported="" name="junit-4.11" level="project" />
+    <orderEntry type="library" exported="" name="kotlin-runtime-0.11.91.1" level="project" />
+    <orderEntry type="library" exported="" name="hamcrest-core-1.3" level="project" />
+    <orderEntry type="library" exported="" name="spek" level="project" />
   </component>
 </module>

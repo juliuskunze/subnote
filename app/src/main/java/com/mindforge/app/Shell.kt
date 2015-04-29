@@ -51,7 +51,7 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
             val size = vector(100, 100)
             fun b(x: Int, y: Int): TransformedElement<Any?> {
                 var color = randomColor()
-                return transformedElement(textButton(text = x.toString(), font = defaultFont, size = 100, fill = object : Fill {
+                return transformedElement(textRectangleButton(text = x.toString(), font = defaultFont, size = 100, fill = object : Fill {
                     override fun colorAt(location: Vector2) = color
                 }) {
                     color = randomColor()
@@ -93,7 +93,7 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
         fun topicElement(topic: ITopic): ElementWithHeight {
             val text = topic.getTitleText()
             val fontHeight = 60
-            val textElement = textButton(text, fill = Fills.solid(Colors.white), font = defaultFont, size = fontHeight) {
+            val textElement = textRectangleButton(text, fill = Fills.solid(Colors.white), font = defaultFont, size = fontHeight) {
                 topic.setFolded(!topic.isFolded())
                 render()
             }
@@ -117,20 +117,6 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
 
         fun render() {
             screen.content = mindMap() //composedWithButton()
-        }
-
-        private fun textButton(text: String, fill: Fill, font: Font, size: Number, onClick: () -> Unit): Button {
-            val textElement = textElement(text, font, size, fill)
-
-            val shape = textElement.shape.bounds()
-
-            return button(
-                    shape = shape,
-                    elements = observableIterable(listOf(transformedElement(coloredElement(shape, object : Fill {
-                        override fun colorAt(location: Vector2) = fill.colorAt(location) * 0.5
-                    })), transformedElement(textElement))),
-                    onClick = onClick
-            )
         }
     }
 
