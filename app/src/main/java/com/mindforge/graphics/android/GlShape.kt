@@ -2,7 +2,6 @@ package com.mindforge.graphics.android
 
 import android.opengl.GLES20
 import com.mindforge.graphics.Vector2
-import com.mindforge.graphics.math.BoundedShape
 import com.mindforge.graphics.math.Rectangle
 import com.mindforge.graphics.math.Shape
 import com.mindforge.graphics.math.TransformedShape
@@ -17,25 +16,11 @@ abstract class GlShape(open val original: Shape? = null) : Shape {
     abstract val glVertexMode: Int
 }
 
-fun glShape(original: Shape): GlShape {
-    val glShape: GlShape = when (original) {
-        is GlShape -> original
-        is TransformedShape -> GlTransformedShape(original)
-        is Rectangle -> GlRectangle(original)
-        else -> throw UnsupportedOperationException("No OpenGL implementation for shape '${original}'.")
-    }
-    return when (original) {
-        is BoundedShape -> GlBoundedShape(original, glShape)
-        else -> glShape
-    }
-}
-
-class GlBoundedShape(override val original: BoundedShape, val glShape: GlShape) : GlShape(original), BoundedShape by original {
-    override val vertexCoordinates: FloatArray get() = glShape.vertexCoordinates
-    override val textureCoordinates: FloatArray get() = glShape.textureCoordinates
-    override val textureName: Int? get() = glShape.textureName
-    override val drawOrder: ShortArray get() = glShape.drawOrder
-    override val glVertexMode: Int get() = glShape.glVertexMode
+fun glShape(original: Shape): GlShape = when (original) {
+    is GlShape -> original
+    is TransformedShape -> GlTransformedShape(original)
+    is Rectangle -> GlRectangle(original)
+    else -> throw UnsupportedOperationException("No OpenGL implementation for shape '${original}'.")
 }
 
 class GlTransformedShape(override val original: TransformedShape) : GlShape(original) {

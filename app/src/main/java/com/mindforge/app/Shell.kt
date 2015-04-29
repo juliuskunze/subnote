@@ -34,7 +34,7 @@ dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam
 et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea
 takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
             val t = transformedElement(
-                    textElement(text, defaultFont, size = 60, fill = Fills.solid(Colors.white)),
+                    textElement(text, defaultFont, lineHeight = 60, fill = Fills.solid(Colors.white)),
                     object : Transform2 {
                         override val matrix: Matrix3 get() = (Transforms2.translation(vector(-1000, 400)) before Transforms2.rotation(Date().getTime() * 0.0005) before Transforms2.scale(.2 + Math.pow(1 + Math.pow(Math.sin(Date().getTime() * 0.0002), 5.0), 5.0))).matrix
                     }
@@ -74,7 +74,7 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
         fun keyboardText(): Composed<*> {
             val textElement = object : TextElement {
                 override val font: Font = defaultFont
-                override val size: Number = 40
+                override val lineHeight: Number = 40
                 override var content: String = "Hallo"
                 override val fill: Fill = Fills.solid(Colors.white)
                 override val changed = trigger<Unit>()
@@ -122,13 +122,18 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
         private fun textButton(text: String, fill: Fill, font: Font, size: Number, onClick: () -> Unit): Button {
             val textElement = textElement(text, font, size, fill)
 
-            val shape = textElement.shape.bounds()
+            val shape = textElement.shape.box()
 
             return button(
                     shape = shape,
-                    elements = observableIterable(listOf(transformedElement(coloredElement(shape, object : Fill {
-                        override fun colorAt(location: Vector2) = fill.colorAt(location) * 0.5
-                    })), transformedElement(textElement))),
+                    elements = observableIterable(listOf(
+                            transformedElement(coloredElement(shape, object : Fill {
+                                override fun colorAt(location: Vector2) = fill.colorAt(location) * 0.5
+                            })),
+                            transformedElement(coloredElement(rectangle(vector(30, 2)), Fills.solid(Colors.red))),
+                            transformedElement(coloredElement(rectangle(vector(2, 30)), Fills.solid(Colors.red))),
+                            transformedElement(textElement)
+                    )),
                     onClick = onClick
             )
         }
