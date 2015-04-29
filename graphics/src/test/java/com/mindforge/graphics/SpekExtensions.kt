@@ -19,6 +19,6 @@ public fun It.shouldEqualWithError(expected: Double, actual: Double, epsilon: Do
     assertTrue(d <= epsilon, if (ulps < 100000) "Too many Ulps! ${ulps}" else "Expected <${expected}> actual <${actual}>")
 }
 
-public fun It.shouldEqualWithError(expected: Numbers, actual: Numbers) {
+public fun It.shouldEqualWithError(expected: Iterable<Number>, actual: Iterable<Number>) {
     expected zip actual forEach { shouldEqualWithError(it.component1().toDouble(), it.component2().toDouble()) }
 }
