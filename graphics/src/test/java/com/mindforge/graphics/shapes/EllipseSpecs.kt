@@ -1,4 +1,4 @@
-package com.mindforge.graphics.shapes
+package com.mindforge.test.graphics.shapes
 
 import com.mindforge.graphics.math.ellipse
 import com.mindforge.graphics.vector

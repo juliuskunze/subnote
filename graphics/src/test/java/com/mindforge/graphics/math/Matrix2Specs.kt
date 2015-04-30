@@ -1,4 +1,4 @@
-package com.mindforge.graphics.math
+package com.mindforge.test.graphics.math
 
 import com.mindforge.graphics.matrix
 import com.mindforge.graphics.vector

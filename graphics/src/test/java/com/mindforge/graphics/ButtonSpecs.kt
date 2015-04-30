@@ -1,7 +1,6 @@
-package com.mindforge.graphics
+package com.mindforge.test.graphics
 
 import org.jetbrains.spek.api.*
-import com.mindforge.graphics.*
 import com.mindforge.graphics.*
 import com.mindforge.graphics.interaction.*
 import com.mindforge.graphics.math.rectangle

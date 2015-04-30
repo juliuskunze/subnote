@@ -1,7 +1,7 @@
-package com.mindforge.graphics
+package com.mindforge.test.graphics
 
-import com.mindforge.graphics.math.circle
-import com.mindforge.graphics.math.rectangle
+import com.mindforge.graphics.math.*
+import com.mindforge.graphics.*
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.shouldBeFalse
 import org.jetbrains.spek.api.shouldBeTrue
