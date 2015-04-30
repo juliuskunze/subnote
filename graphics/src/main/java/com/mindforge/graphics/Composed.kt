@@ -16,12 +16,15 @@ fun transformedElement<T>(element: Element<T>, transform: Transform2 = Transform
 trait Composed<T> : Element<T> {
     fun elementsAt(location: Vector2): Iterable<TransformedElement<*>> = elements flatMap {
         val locationRelativeToElement = it.transform.inverse()(location)
-        val contains = it.element.shape.contains(locationRelativeToElement)
-
-        if (!contains) listOf<TransformedElement<*>>() else if (it is Composed<*>) it.elementsAt(locationRelativeToElement) map {x -> transformedElement(it, it.transform before x.transform)} else listOf(it)
+        val element = it.element
+        when {
+            !element.shape.contains(locationRelativeToElement) -> listOf<TransformedElement<*>>()
+            element is Composed<*> -> listOf(it) + element.elementsAt(locationRelativeToElement) map { x -> transformedElement(x.element, it.transform before x.transform) }
+            else -> listOf(it)
+        }
     }
 
-    val elements : ObservableIterable<TransformedElement<*>>
+    val elements: ObservableIterable<TransformedElement<*>>
 
     //fun elementsRecursively() : Iterable<Element<*>>  = elements flatMap { if(it is Composed<*>) it.elementsRecursively() + it else listOf(it) }
 }

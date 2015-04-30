@@ -98,7 +98,7 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
                 render()
             }
 
-            val unfoldedSubTopics = topic.getAllChildren().filter { !it.isFolded() }
+            val unfoldedSubTopics = if (topic.isFolded()) listOf() else topic.getAllChildren()
 
             if (unfoldedSubTopics.none()) return ElementWithHeight(textElement, fontHeight)
 
