@@ -53,9 +53,10 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
             val size = vector(100, 100)
             fun b(x: Int, y: Int): TransformedElement<Any?> {
                 var color = randomColor()
-                return transformedElement(textRectangleButton(text = x.toString(), font = defaultFont, size = 100, fill = object : Fill {
+                val textElement = textElement(content = x.toString(), font = defaultFont, lineHeight = 100, fill = object : Fill {
                     override fun colorAt(location: Vector2) = color
-                }) {
+                })
+                return transformedElement(textRectangleButton(textElement) {
                     color = randomColor()
                 }, object : Transform2 {
                     override val matrix: Matrix3 get() = (
@@ -90,31 +91,32 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
 
         fun mindMap(): Composed<*> = composed(listOf(transformedElement(topicElement(rootTopics.single()).element)))
 
-        class ElementWithHeight(val element: Element<*>, val height: Int)
+        class ElementWithHeight(val element: Element<*>, val height: Double)
 
         fun topicElement(topic: ITopic): ElementWithHeight {
             val text = topic.getTitleText()
             val fontHeight = 40
-            val textElement = textRectangleButton(text, fill = Fills.solid(Colors.black), font = defaultFont, size = fontHeight) {
+            val inner = textElement(text, fill = Fills.solid(Colors.black), font = defaultFont, lineHeight = fontHeight)
+            val button = textRectangleButton(inner) {
                 topic.setFolded(!topic.isFolded())
                 render()
             }
 
             val unfoldedSubTopics = if (topic.isFolded()) listOf() else topic.getAllChildren()
 
-            if (unfoldedSubTopics.none()) return ElementWithHeight(textElement, fontHeight)
+            if (unfoldedSubTopics.none()) return ElementWithHeight(button, inner.shape.size().y.toDouble())
 
             val subElements = unfoldedSubTopics.map { topicElement(it) }
             val transformedSubElements = arrayListOf<TransformedElement<*>>()
 
-            var height = fontHeight
+            var height: Double = fontHeight.toDouble()
             for (e in subElements.withIndex()) {
                 transformedSubElements.add(transformedElement(e.value.element, Transforms2.translation(vector(fontHeight, -height))))
 
                 height += e.value.height
             }
 
-            return ElementWithHeight(composed(topic, listOf(transformedElement(textElement)) + transformedSubElements), height)
+            return ElementWithHeight(composed(topic, listOf(transformedElement(button)) + transformedSubElements), height)
         }
 
         class Scrollable(val element: Element<*>) : Composed<Any?>, PointersElement<Any?> {
