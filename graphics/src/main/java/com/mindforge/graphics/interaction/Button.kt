@@ -32,12 +32,12 @@ fun textRectangleButton(text: String, fill: Fill, font: Font, size: Number, onCl
     return button(
             shape = shape,
             elements = observableIterable(listOf(
-                    transformedElement(coloredElement(shape, object : Fill {
-                        override fun colorAt(location: Vector2) = fill.colorAt(location) * 0.5
-                    })),
+                    transformedElement(textElement)/*,
                     transformedElement(coloredElement(rectangle(vector(30, 2)), Fills.solid(Colors.red))),
                     transformedElement(coloredElement(rectangle(vector(2, 30)), Fills.solid(Colors.red))),
-                    transformedElement(textElement)
+                    transformedElement(coloredElement(shape, object : Fill {
+                        override fun colorAt(location: Vector2) = fill.colorAt(location) * 0.5
+                    }))*/
             )),
             onClick = onClick
     )

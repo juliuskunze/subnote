@@ -20,10 +20,19 @@ fun glShape(original: Shape): GlShape = when (original) {
     is GlShape -> original
     is TransformedShape -> GlTransformedShape(original)
     is Rectangle -> GlRectangle(original)
-    else -> throw UnsupportedOperationException("No OpenGL implementation for shape '${original}'.")
+    else -> GlUnknownShape(original)
 }
 
-class GlTransformedShape(override val original: TransformedShape) : GlShape(original) {
+class GlUnknownShape(original: Shape) : GlShape(original), Shape by original {
+    val ex = UnsupportedOperationException("No OpenGL implementation for shape '${original}'.")
+    override val vertexCoordinates: FloatArray get() = throw ex
+    override val textureCoordinates: FloatArray get() = throw ex
+    override val textureName: Int? get() = throw ex
+    override val drawOrder: ShortArray get() = throw ex
+    override val glVertexMode: Int get() = throw ex
+}
+
+class GlTransformedShape(override val original: TransformedShape) : GlShape(original), TransformedShape {
     val glOriginal = glShape(original.original)
     override val vertexCoordinates: FloatArray get() {
         val originalCoordinates = glOriginal.vertexCoordinates
@@ -38,6 +47,8 @@ class GlTransformedShape(override val original: TransformedShape) : GlShape(orig
     override val textureName: Int? get() = glOriginal.textureName
     override val drawOrder: ShortArray get() = glOriginal.drawOrder
     override val glVertexMode: Int get() = glOriginal.glVertexMode
+    override val transform: GlTransform = glTransform(original.transform)
+    override fun contains(location: Vector2) = glOriginal.contains(transform.inverse()(location))
 }
 
 class GlRectangle(override val original: Rectangle) : GlShape(original) {

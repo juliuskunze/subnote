@@ -2,7 +2,9 @@ package com.mindforge.app
 
 import com.mindforge.graphics.*
 import com.mindforge.graphics.interaction.*
+import com.mindforge.graphics.math.Shape
 import com.mindforge.graphics.math.rectangle
+import com.mindforge.graphics.math.shape
 import org.xmind.core.ITopic
 import java.util.Date
 
@@ -92,8 +94,8 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
 
         fun topicElement(topic: ITopic): ElementWithHeight {
             val text = topic.getTitleText()
-            val fontHeight = 60
-            val textElement = textRectangleButton(text, fill = Fills.solid(Colors.white), font = defaultFont, size = fontHeight) {
+            val fontHeight = 40
+            val textElement = textRectangleButton(text, fill = Fills.solid(Colors.black), font = defaultFont, size = fontHeight) {
                 topic.setFolded(!topic.isFolded())
                 render()
             }
@@ -115,8 +117,44 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
             return ElementWithHeight(composed(topic, listOf(transformedElement(textElement)) + transformedSubElements), height)
         }
 
+        class Scrollable(val element: Element<*>) : Composed<Any?>, PointersElement<Any?> {
+            override val content: Any? get() = element.content
+            override val changed = trigger<Unit>()
+            var scrollPosition = zeroVector2
+            override val elements: ObservableIterable<TransformedElement<*>> = observableIterable(listOf(object : TransformedElement<Any?> {
+                override val element: Element<Any?> = this@Scrollable.element
+                override val transform: Transform2 get() = Transforms2.translation(scrollPosition)
+                override val transformChanged = this@Scrollable.changed
+            }, transformedElement(coloredElement(rectangle(vector(10000, 10000)), Fills.solid(Colors.white)))))
+            private var lastLocation: Vector2? = null
+            override fun onPointerKeyPressed(pointerKey: PointerKey) {
+                lastLocation = pointerKey.pointer.location
+            }
+
+            override fun onPointerKeyReleased(pointerKey: PointerKey) {
+                lastLocation = null
+            }
+
+            override fun onPointerMoved(pointer: Pointer) {
+                val last = lastLocation
+                val current = pointer.location
+                if (last != null) {
+                    scrollPosition += current - last
+                    lastLocation = current
+                    changed()
+                }
+            }
+
+        }
+
+        var scroll = Scrollable(mindMap())
         fun render() {
-            screen.content = mindMap() //composedWithButton()
+            //TODO: rebuild only the part that changed?
+            //screen.content = mindMap()
+            val oldScrollPos = scroll.scrollPosition
+            scroll = Scrollable(mindMap())
+            scroll.scrollPosition = oldScrollPos
+            screen.content = scroll
         }
     }
 
@@ -126,20 +164,39 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
     }
 
     fun registerInputs() {
-        pointers mapObservable { it.pressed } startKeepingAllObserved { p ->
-            screen.content.elementsAt(p.pointer.location) forEach {
+        pointers mapObservable { it.pressed } startKeepingAllObserved { pk ->
+            screen.elementsAt(pk.pointer.location) forEach {
                 val element = it.element
-                if (element is Clickable<*>) {
-                    element.onClick(pointerKey(p.pointer relativeTo it.transform, p.key))
+                val pointerKey = pointerKey(pk.pointer relativeTo it.transform, pk.key)
+                when (element) {
+                    is Clickable<*> -> element.onClick(pointerKey)
+                    is PointersElement<*> -> element.onPointerKeyPressed(pointerKey)
                 }
             }
         }
-
-        keys mapObservable { it.pressed } startKeepingAllObserved { p ->
+        pointers mapObservable { it.pointer.moved } startKeepingAllObserved { p ->
+            screen.elementsAt(p.location) forEach {
+                val element = it.element
+                val pointer = p relativeTo it.transform
+                when (element) {
+                    is PointersElement<*> -> element.onPointerMoved(pointer)
+                }
+            }
+        }
+        pointers mapObservable { it.released } startKeepingAllObserved { pk ->
+            screen.elementsAt(pk.pointer.location) forEach {
+                val element = it.element
+                val pointerKey = pointerKey(pk.pointer relativeTo it.transform, pk.key)
+                when (element) {
+                    is PointersElement<*> -> element.onPointerKeyReleased(pointerKey)
+                }
+            }
+        }
+        keys mapObservable { it.pressed } startKeepingAllObserved { k ->
             screen.content.elements forEach {
                 val element = it.element
                 if (element is KeysElement<*>) {
-                    element.onKeyPressed(p)
+                    element.onKeyPressed(k)
                 }
             }
         }

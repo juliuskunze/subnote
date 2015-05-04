@@ -6,6 +6,7 @@ import com.mindforge.graphics.*
 trait TransformedElement<T> {
     val element: Element<T>
     val transform: Transform2
+    val transformChanged: Observable<Unit> get() = observable()
 }
 
 fun transformedElement<T>(element: Element<T>, transform: Transform2 = Transforms2.identity): TransformedElement<T> = object : TransformedElement<T> {
@@ -14,18 +15,24 @@ fun transformedElement<T>(element: Element<T>, transform: Transform2 = Transform
 }
 
 trait Composed<T> : Element<T> {
-    fun elementsAt(location: Vector2): Iterable<TransformedElement<*>> = elements flatMap {
+    fun elementsAt(location: Vector2): Iterable<TransformedElement<*>> = elements.flatMap {
         val locationRelativeToElement = it.transform.inverse()(location)
         val element = it.element
-        when {
-            !element.shape.contains(locationRelativeToElement) -> listOf<TransformedElement<*>>()
-            element is Composed<*> -> listOf(it) + element.elementsAt(locationRelativeToElement) map { x -> transformedElement(x.element, it.transform before x.transform) }
-            else -> listOf(it)
+        val subElements: List<TransformedElement<*>> = when (element) {
+            is Composed -> element.elementsAt(locationRelativeToElement).map { subElement ->
+                transformedElement(subElement.element, it.transform before subElement.transform)
+            }
+            else -> listOf()
         }
+        subElements + if (when (element) {
+            is Composed -> subElements.any()
+            else -> element.shape.contains(locationRelativeToElement)
+        }) listOf(it) else listOf()
     }
 
     val elements: ObservableIterable<TransformedElement<*>>
 
+    override val shape: Shape get() = shape { elementsAt(it).any() }
     //fun elementsRecursively() : Iterable<Element<*>>  = elements flatMap { if(it is Composed<*>) it.elementsRecursively() + it else listOf(it) }
 }
 
@@ -35,7 +42,6 @@ fun composed<T>(
         changed: Observable<Unit> = observable<Unit>()) = object : Composed<T> {
     override val content = content
     override val elements = elements
-    override val shape = concatenatedShape(elements mapObservable { it.element.shape transformed it.transform })
     override val changed = changed
 }
 

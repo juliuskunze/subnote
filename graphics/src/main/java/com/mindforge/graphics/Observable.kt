@@ -9,7 +9,7 @@ trait Observable<T> {
         observers.remove(observer)
     }
     final protected fun notifyObservers(info: T) {
-        for (observer in observers) {
+        for (observer in observers.toList()) {
             observer(info)
         }
     }

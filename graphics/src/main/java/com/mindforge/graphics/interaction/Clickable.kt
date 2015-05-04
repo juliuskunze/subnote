@@ -5,7 +5,7 @@ import com.mindforge.graphics.math.*
 import com.mindforge.graphics.*
 
 trait Clickable<T> : PointersElement<T> {
-    private val pressedKeysThatCouldLeadToClick: MutableCollection<PointerKey>
+    /*private val pressedKeysThatCouldLeadToClick: MutableCollection<PointerKey>
 
     override fun onPointerKeyPressed(pointerKey: PointerKey) {
         pressedKeysThatCouldLeadToClick.add(pointerKey)
@@ -22,7 +22,7 @@ trait Clickable<T> : PointersElement<T> {
         if (pressedKeysThatCouldLeadToClick.contains(pointer)) {
             pressedKeysThatCouldLeadToClick.remove(pointer)
         }
-    }
+    }*/
 
     fun onClick(pointerKey: PointerKey) {}
 }

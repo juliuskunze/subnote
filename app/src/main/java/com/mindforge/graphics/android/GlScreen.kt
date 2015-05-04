@@ -20,6 +20,7 @@ class GlScreen (activity: Activity, onReady: (GlScreen) -> Unit) : GLSurfaceView
         setEGLContextClientVersion(2)
         setEGLConfigChooser(8, 8, 8, 8, 16, 0)
     }
+
     init {
         setRenderer(object : Renderer {
             override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
@@ -28,25 +29,39 @@ class GlScreen (activity: Activity, onReady: (GlScreen) -> Unit) : GLSurfaceView
                 GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
                 onReady(this@GlScreen)
             }
+
             override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
                 GLES20.glViewport(0, 0, width, height)
             }
+
             override fun onDrawFrame(gl: GL10?) {
                 GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
-                glContent.draw(Transforms2.scale(2f / this@GlScreen.getWidth().toFloat(), 2f / this@GlScreen.getHeight().toFloat()))
+                glContent.draw(glTransform(Transforms2.scale(2f / this@GlScreen.getWidth().toFloat(), 2f / this@GlScreen.getHeight().toFloat())))
             }
         })
-        //setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY)
+        setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY)
         this.setFocusable(true);
         this.setFocusableInTouchMode(true);
 
     }
+
     private var glContent: GlComposed = GlComposed(composed(observableIterable(listOf())), this)
     override var content: Composed<*>
-        get() = glContent.original
+        get() = glContent.originalComposed
         set(value) {
             glContent = value as? GlComposed ?: GlComposed(value, this)
+            requestRender()
         }
+
+    override fun elementsAt(location: Vector2) = glContent.elementsAt(location).map { t ->
+        t.element.let {
+            when (it) {
+                is GlElement -> transformedElement(it.original, t.transform)
+                else -> t
+            }
+        }
+    }.let { if (it.any()) it + listOf(transformedElement(content)) else listOf () }
+
 
     override val shape: Rectangle get() = rectangle(vector(this@GlScreen.getWidth(), this@GlScreen.getHeight()))
 
@@ -112,18 +127,22 @@ class GlScreen (activity: Activity, onReady: (GlScreen) -> Unit) : GLSurfaceView
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        val location = Transforms2.scale(1, -1)(vector(event.getX(), event.getY()) - shape.halfSize)
+        val locations = /*event.getHistorySize().indices
+                .map { vector(event.getHistoricalX(it), event.getHistoricalY(it)) }
+                .plus*/(listOf(vector(event.getX(), event.getY())))
+        locations.map { Transforms2.scale(1, -1)(it - shape.halfSize) }.forEach {
+            when (event.getAction()) {
+                MotionEvent.ACTION_DOWN -> {
+                    touchPointer.move(it)
+                    touchKey.press()
+                }
+                MotionEvent.ACTION_UP -> {
+                    touchPointer.move(it)
+                    touchKey.release()
+                }
+                MotionEvent.ACTION_MOVE -> touchPointer.move(it)
+            }
 
-        when (event.getAction()) {
-            MotionEvent.ACTION_DOWN -> {
-                touchPointer.move(location)
-                touchKey.press()
-            }
-            MotionEvent.ACTION_UP -> {
-                touchPointer.move(location)
-                touchKey.release()
-            }
-            MotionEvent.ACTION_MOVE -> touchPointer.move(location)
         }
 
         return true

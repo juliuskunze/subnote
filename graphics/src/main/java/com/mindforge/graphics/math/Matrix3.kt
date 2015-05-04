@@ -1,5 +1,7 @@
 package com.mindforge.graphics
 
+import java.util.concurrent.ConcurrentHashMap
+
 trait Matrix3 : Iterable<Number> {
     val a: Number
     val b: Number
@@ -46,6 +48,9 @@ trait Matrix3 : Iterable<Number> {
     override fun equals(other: Any?) = other is Matrix3 && (a.toDouble() == other.a.toDouble() && b.toDouble() == other.b.toDouble() && c.toDouble() == other.c.toDouble() && d.toDouble() == other.d.toDouble() && e.toDouble() == other.e.toDouble() && f.toDouble() == other.f.toDouble() && g.toDouble() == other.g.toDouble() && h.toDouble() == other.h.toDouble() && i.toDouble() == other.i.toDouble())
 
     override fun toString() = "matrix(${a.toDouble()}, ${b.toDouble()}, ${c.toDouble()}, ${d.toDouble()}, ${e.toDouble()}, ${f.toDouble()}, ${g.toDouble()}, ${h.toDouble()}, ${i.toDouble()})"
+
+    override fun hashCode() = sumBy { it.hashCode()}
+
 }
 
 fun matrix(a: Number, b: Number, c: Number, d: Number, e: Number, f: Number, g: Number, h: Number, i: Number) = object : Matrix3 {

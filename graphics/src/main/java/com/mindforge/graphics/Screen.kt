@@ -7,4 +7,5 @@ import com.mindforge.graphics.math.*
 trait Screen {
     var content: Composed<*>
     val shape: Shape
+    fun elementsAt(location: Vector2) = content.elementsAt(location)
 }

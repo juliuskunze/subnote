@@ -107,9 +107,6 @@ class GlGlyphs(val font: GlFont, override val text: String, override val lineHei
 
     override val lines = ArrayList<LineShape>()
 
-    // TODO: should technically test for the exact text shape, but YAGNI
-    override fun contains(location: Vector2) = box().contains(location)
-
     //TODO: read these from texture file
     val templateSize = 40
     val textureSize = 1024
@@ -178,5 +175,11 @@ class GlGlyphs(val font: GlFont, override val text: String, override val lineHei
         }
         addLine(cx)
     }
+
+    private val box = glShape(super<TextShape>.box())
+    override fun box() = box
+
+    // TODO: should technically test for the exact text shape, but YAGNI
+    override fun contains(location: Vector2) = box.contains(location)
 
 }
