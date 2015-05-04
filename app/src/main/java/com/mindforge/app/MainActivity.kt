@@ -2,6 +2,7 @@ package com.mindforge.app
 
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -141,7 +142,10 @@ public class MainActivity : Activity() {
 
     private fun setDemoScreen(rootTopics: List<ITopic>) {
         val screen = GlScreen(this) {
-            Shell(it, observableIterable(listOf(it.touchPointerKeys)), it.keyboard, GlFont(getResources()!!), rootTopics)
+            Shell(it, observableIterable(listOf(it.touchPointerKeys)), it.keyboard, GlFont(getResources()!!), rootTopics,
+                    onOpenHyperlink = {
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it)))
+                    })
         }
 
         setContentView(screen)
