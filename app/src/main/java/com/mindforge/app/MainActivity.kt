@@ -6,6 +6,9 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import com.evernote.*
+import com.evernote.auth.*
+import com.evernote.clients.*
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GooglePlayServicesUtil
 import com.google.android.gms.common.api.GoogleApiClient
@@ -58,11 +61,17 @@ public class MainActivity : Activity() {
                 startDriveAPIExampleActivity()
                 true
             }
+            R.id.import_from_evernote -> {
+                importFromEvernote()
+                true
+            }
             else -> {
                 super.onOptionsItemSelected(item)
             }
         }
     }
+
+
 
     private fun openFromDocuments() {
         open(File("/storage/emulated/0/documents/Projects.xmind"))
@@ -75,6 +84,12 @@ public class MainActivity : Activity() {
             return
         }
         chooseFileFromDrive()
+    }
+
+    private fun importFromEvernote() {
+        EvernoteAsyncDemo(onReady = {
+            mainTextView.setText(it.map {it.getTitle() + " " + it.plainContent()}.join("\n"))
+        }).execute()
     }
 
     private fun startDriveAPIExampleActivity() {
