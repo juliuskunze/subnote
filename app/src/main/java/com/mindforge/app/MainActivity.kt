@@ -23,6 +23,7 @@ import com.mindforge.graphics.observableIterable
 import kotlinx.android.synthetic.activity_main.mainTextView
 import org.xmind.core.ITopic
 import org.xmind.core.internal.Topic
+import org.xmind.core.internal.dom.WorkbookBuilderImpl
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -87,8 +88,8 @@ public class MainActivity : Activity() {
     }
 
     private fun importFromEvernote() {
-        EvernoteAsyncDemo(onReady = {
-            mainTextView.setText(it.map {it.getTitle() + " " + it.plainContent()}.join("\n"))
+        EvernoteAsyncImporter(workbookBuilder = workbookBuilder, onReady = {
+            setDemoScreen(it.getPrimarySheet().getRootTopic())
         }).execute()
     }
 
@@ -97,11 +98,10 @@ public class MainActivity : Activity() {
     }
 
     private fun open(file: File) {
-        val reader = XMindFileReader(cacheDirectory = getCacheDir())
-        // mainTextView.setText(reader(file))
-
-        setDemoScreen(reader.rootTopics(file))
+        setDemoScreen(workbookBuilder.loadFromFile(file).getPrimarySheet().getRootTopic())
     }
+
+    private val workbookBuilder : WorkbookBuilderImpl by Delegates.lazy { AndroidWorkbookBuilder(cacheDirectory = getCacheDir())() }
 
     private val driveFileOpenerApiClient: GoogleApiClient by Delegates.lazy {
         GoogleApiClient.Builder(this).addApi(Drive.API).addScope(Drive.SCOPE_FILE).addConnectionCallbacks(object : GoogleApiClient.ConnectionCallbacks {
@@ -155,9 +155,9 @@ public class MainActivity : Activity() {
         }
     }
 
-    private fun setDemoScreen(rootTopics: List<ITopic>) {
+    private fun setDemoScreen(rootTopic: ITopic) {
         val screen = GlScreen(this) {
-            Shell(it, observableIterable(listOf(it.touchPointerKeys)), it.keyboard, GlFont(getResources()!!), rootTopics,
+            Shell(it, observableIterable(listOf(it.touchPointerKeys)), it.keyboard, GlFont(getResources()!!), rootTopic,
                     onOpenHyperlink = {
                         startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it)))
                     })

@@ -6,7 +6,7 @@ import com.mindforge.graphics.math.rectangle
 import org.xmind.core.ITopic
 import java.util.Date
 
-class Shell(val screen: Screen, val pointers: ObservableIterable<PointerKeys>, val keys: ObservableIterable<Key>, defaultFont: Font, rootTopics: List<ITopic>, onOpenHyperlink: (String) -> Unit) {
+class Shell(val screen: Screen, val pointers: ObservableIterable<PointerKeys>, val keys: ObservableIterable<Key>, defaultFont: Font, rootTopic: ITopic, onOpenHyperlink: (String) -> Unit) {
     private val exampleContent = object {
         fun rotatedScaledRectangles(): Composed<*> {
             fun logoRect(angle: Number) = coloredButton(
@@ -87,7 +87,7 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
             return composed(observableIterable(listOf<TransformedElement<*>>(transformedElement(textElement))))
         }
 
-        fun mindMap(): Composed<*> = composed(listOf(transformedElement(topicElement(rootTopics.first()).element)))
+        fun mindMap(): Composed<*> = composed(listOf(transformedElement(topicElement(rootTopic).element)))
 
         class Stackable(val element: Element<*>, val size: Vector2)
 

@@ -7,7 +7,7 @@ import org.xmind.core.internal.dom.WorkbookBuilderImpl
 import org.xmind.core.util.ILogger
 import java.io.File
 
-class XMindFileReader(val cacheDirectory: File) {
+class AndroidWorkbookBuilder(val cacheDirectory: File) {
     init {
         System.setProperty("org.xmind.core.workspace", cacheDirectory.getAbsolutePath())
 
@@ -27,16 +27,7 @@ class XMindFileReader(val cacheDirectory: File) {
         })
     }
 
-    fun rootTopics(file: File) : List<ITopic> {
-        val builder = WorkbookBuilderImpl()
-        val workbook = builder.loadFromFile(file)
+    private val workbookBuilder = WorkbookBuilderImpl()
 
-        return workbook.getSheets().map { it.getRootTopic() }
-    }
-
-    fun getText(file: File) = rootTopics(file).map { it.toText() }.join("\n\n")
-
-    fun ITopic.toText(): String = getTitleText() + "\n" + getAllChildren().map { it.toText() + if(it.getHyperlink() != null) "[" + it.getHyperlink() + "]" else ""}.join("\n").indented()
+    fun invoke() = workbookBuilder
 }
-
-fun String.indented(indentation: String = "\t") = this.split("\n").map { indentation + it }.join("\n")

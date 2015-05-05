@@ -1,21 +1,6 @@
 package com.mindforge.app
 
-/*
-  Evernote API sample code, structured as a simple command line
-  application that demonstrates several API calls.
-  
-  To compile (Unix):
-    javac -classpath ../../target/evernote-api-*.jar EDAMDemo.java
- 
-  To run:
-    java -classpath ../../target/evernote-api-*.jar EDAMDemo
- 
-  Full documentation of the Evernote API can be found at 
-  http://dev.evernote.com/documentation/cloud/
- */
-
 import android.os.AsyncTask
-import android.util.Xml
 import com.evernote.auth.EvernoteAuth
 import com.evernote.auth.EvernoteService
 import com.evernote.clients.ClientFactory
@@ -25,23 +10,24 @@ import com.evernote.edam.error.EDAMUserException
 import com.evernote.edam.notestore.NoteFilter
 import com.evernote.edam.type.*
 import com.evernote.thrift.transport.TTransportException
+import org.w3c.dom.Document
+import org.w3c.dom.NodeList
+import org.xmind.core.IWorkbook
+import org.xmind.core.internal.dom.WorkbookBuilderImpl
+import org.xml.sax.InputSource
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
-import java.security.MessageDigest
-import org.w3c.dom.Document
-import org.w3c.dom.NodeList
-import org.xml.sax.InputSource
-import javax.xml.parsers.DocumentBuilder
-import javax.xml.parsers.DocumentBuilderFactory
 import java.io.StringReader
+import java.security.MessageDigest
+import javax.xml.parsers.DocumentBuilderFactory
 
 fun NodeList.toList() = this.getLength().indices.map { this.item(it) }
 
 fun Note.plainContent() : String {
     val document = xmlDocument(this.getContent())
 
-    return document.getLastChild().getChildNodes().toList().map {it.getTextContent()}.join("\n")
+    return getTitle() + " " + document.getLastChild().getChildNodes().toList().map {it.getTextContent()}.join("\n")
 }
 
 fun xmlDocument(xml: String): Document {
@@ -51,24 +37,24 @@ fun xmlDocument(xml: String): Document {
     return DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(xmlStream)
 }
 
-class EvernoteAsyncDemo(val onReady : (List<Note>) -> Unit) : AsyncTask<String, Unit, List<Note>?>() {
+class EvernoteAsyncImporter(val workbookBuilder: WorkbookBuilderImpl, val onReady: (IWorkbook) -> Unit) : AsyncTask<String, Unit, IWorkbook?>() {
     private var exception: Exception? = null
 
     protected override fun doInBackground(vararg urls: String) =
             try {
-                EvernoteDemo().allNotes()
+                EvernoteImporter(workbookBuilder).mindMap()
             } catch (e: Exception) {
                 exception = e
                 null
             }
 
-    protected override fun onPostExecute(feed: List<Note>?) {
+    protected override fun onPostExecute(feed: IWorkbook?) {
         if(exception != null) throw exception!!
         onReady(feed!!)
     }
 }
 
-public class EvernoteDemo() {
+public class EvernoteImporter(val workbookBuilder: WorkbookBuilderImpl) {
     private val token = "S=s1:U=90c9c:E=1547ab98900:C=14d23085c20:P=1cd:A=en-devtoken:V=2:H=d01340fe78ef6a5f5f74c1b2d56d30fd" //System.getenv("AUTH_TOKEN") ?:
 
     private var newNoteGuid: String? = null
@@ -85,22 +71,36 @@ public class EvernoteDemo() {
 
     private val noteStore = factory.createNoteStoreClient()
 
-    fun allNotes() = noteStore.listNotebooks().flatMap {
-        val filter = NoteFilter()
-        filter.setNotebookGuid(it.getGuid())
-        filter.setOrder(NoteSortOrder.CREATED.getValue())
-        filter.setAscending(true)
+    fun mindMap(): IWorkbook {
+        val workbook = workbookBuilder.createWorkbook()
+        val sheet = workbook.getPrimarySheet()
+        val rootTopic = sheet.getRootTopic()
+        rootTopic.setTitleText("From Evernote")
 
+        for (notebook in noteStore.listNotebooks()) {
+            val filter = NoteFilter()
+            filter.setNotebookGuid(notebook.getGuid())
+            filter.setOrder(NoteSortOrder.CREATED.getValue())
+            filter.setAscending(true)
 
+            val notes = noteStore.findNotes(filter, 0, 100).getNotes()
 
-        val notes = noteStore.findNotes(filter, 0, 100).getNotes()
+            val notebookNode = workbook.createTopic()
 
-        for(note in notes) {
-            //https://discussion.evernote.com/topic/8940-null-notegetcontent/
-            note.setContent(noteStore.getNoteContent(note.getGuid()))
+            rootTopic.add(notebookNode)
+            notebookNode.setTitleText(notebook.getName())
+
+            for (note in notes) {
+                //https://discussion.evernote.com/topic/8940-null-notegetcontent/
+                note.setContent(noteStore.getNoteContent(note.getGuid()))
+
+                val noteNode = workbook.createTopic()
+                notebookNode.add(noteNode)
+                noteNode.setTitleText(note.plainContent())
+            }
         }
 
-        notes
+        return workbook
     }
 
     /**
@@ -257,46 +257,12 @@ public class EvernoteDemo() {
     }
 
     companion object {
-        // Real applications authenticate with Evernote using OAuth, but for the
-        // purpose of exploring the API, you can get a developer token that allows
-        // you to access your own Evernote account. To get a developer token, visit
-        // https://sandbox.evernote.com/api/DeveloperToken.action
-
-        public fun main(args: Array<String>) {
-            try {
-                val demo = EvernoteDemo()
-                demo.allNotes()
-                demo.createNote()
-                demo.searchNotes()
-                demo.updateNoteTag()
-            } catch (e: EDAMUserException) {
-                // These are the most common error types that you'll need to
-                // handle
-                // EDAMUserException is thrown when an API call fails because a
-                // paramter was invalid.
-                if (e.getErrorCode() == EDAMErrorCode.AUTH_EXPIRED) {
-                    System.err.println("Your authentication token is expired!")
-                } else if (e.getErrorCode() == EDAMErrorCode.INVALID_AUTH) {
-                    System.err.println("Your authentication token is invalid!")
-                } else if (e.getErrorCode() == EDAMErrorCode.QUOTA_REACHED) {
-                    System.err.println("Your authentication token is invalid!")
-                } else {
-                    System.err.println("Error: " + e.getErrorCode().toString() + " parameter: " + e.getParameter())
-                }
-            } catch (e: EDAMSystemException) {
-                System.err.println("System error: " + e.getErrorCode().toString())
-            } catch (t: TTransportException) {
-                System.err.println("Networking error: " + t.getMessage())
-            }
-
-        }
-
         /**
          * Helper method to read the contents of a file on disk and create a new Data
          * object.
          */
         private fun readFileAsData(fileName: String): Data {
-            val filePath = File(javaClass<EvernoteDemo>().getResource(javaClass<EvernoteDemo>().getCanonicalName() + ".class").getPath()).getParent() + File.separator + fileName
+            val filePath = File(javaClass<EvernoteImporter>().getResource(javaClass<EvernoteImporter>().getCanonicalName() + ".class").getPath()).getParent() + File.separator + fileName
             // Read the full binary contents of the file
             val `in` = FileInputStream(filePath)
             val byteOut = ByteArrayOutputStream()
