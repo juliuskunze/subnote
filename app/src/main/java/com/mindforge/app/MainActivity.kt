@@ -4,11 +4,10 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.Menu
 import android.view.MenuItem
-import com.evernote.*
-import com.evernote.auth.*
-import com.evernote.clients.*
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GooglePlayServicesUtil
 import com.google.android.gms.common.api.GoogleApiClient
@@ -17,12 +16,13 @@ import com.google.android.gms.drive.Drive
 import com.google.android.gms.drive.DriveApi
 import com.google.android.gms.drive.DriveFile
 import com.google.android.gms.drive.DriveId
-import com.mindforge.graphics.Screen
-import com.mindforge.graphics.android.*
+import com.mindforge.graphics.android.GlFont
+import com.mindforge.graphics.android.GlScreen
 import com.mindforge.graphics.observableIterable
+import com.mindforge.graphics.trigger
 import kotlinx.android.synthetic.activity_main.mainTextView
+import kotlinx.android.synthetic.activity_main.textInput
 import org.xmind.core.ITopic
-import org.xmind.core.internal.Topic
 import org.xmind.core.internal.dom.WorkbookBuilderImpl
 import java.io.File
 import java.io.FileOutputStream
@@ -33,7 +33,21 @@ public class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        textInput.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                textChanged(textInput.getText().toString())
+            }
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+            }
+
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+            }
+        })
     }
+
+    private val textChanged = trigger<String>()
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         getMenuInflater().inflate(R.menu.menu_main, menu)
@@ -160,7 +174,10 @@ public class MainActivity : Activity() {
             Shell(it, observableIterable(listOf(it.touchPointerKeys)), it.keyboard, GlFont(getResources()!!), rootTopic,
                     onOpenHyperlink = {
                         startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it)))
-                    })
+                    },
+                    onActiveTopicChanged = { textInput.setText(it?.getTitleText() ?: "") },
+                    textChanged = textChanged
+            )
         }
 
         setContentView(screen)
