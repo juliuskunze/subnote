@@ -19,9 +19,10 @@ import com.google.android.gms.drive.DriveId
 import com.mindforge.graphics.android.GlFont
 import com.mindforge.graphics.android.GlScreen
 import com.mindforge.graphics.observableIterable
-import com.mindforge.graphics.trigger
+import com.mindforge.graphics.*
 import kotlinx.android.synthetic.activity_main.*
 import org.xmind.core.ITopic
+import org.xmind.core.IWorkbook
 import org.xmind.core.internal.dom.WorkbookBuilderImpl
 import java.io.File
 import java.io.FileOutputStream
@@ -44,9 +45,19 @@ public class MainActivity : Activity() {
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
             }
         })
+
+        newSubnoteButton.setOnClickListener {
+            addSubnode()
+        }
+
+        removeNoteButton.setOnClickListener {
+            removeNode()
+        }
     }
 
     private val textChanged = trigger<String>()
+    private val addSubnode = trigger<Unit>()
+    private val removeNode = trigger<Unit>()
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         getMenuInflater().inflate(R.menu.menu_main, menu)
@@ -102,7 +113,7 @@ public class MainActivity : Activity() {
 
     private fun importFromEvernote() {
         EvernoteAsyncImporter(workbookBuilder = workbookBuilder, onReady = {
-            setDemoScreen(it.getPrimarySheet().getRootTopic())
+            setDemoScreen(it)
         }).execute()
     }
 
@@ -111,7 +122,7 @@ public class MainActivity : Activity() {
     }
 
     private fun open(file: File) {
-        setDemoScreen(workbookBuilder.loadFromFile(file).getPrimarySheet().getRootTopic())
+        setDemoScreen(workbookBuilder.loadFromFile(file))
     }
 
     private val workbookBuilder : WorkbookBuilderImpl by Delegates.lazy { AndroidWorkbookBuilder(cacheDirectory = getCacheDir())() }
@@ -168,15 +179,14 @@ public class MainActivity : Activity() {
         }
     }
 
-    private fun setDemoScreen(rootTopic: ITopic) {
+    private fun setDemoScreen(workbook: IWorkbook) {
         val screen = GlScreen(this) {
-            Shell(it, observableIterable(listOf(it.touchPointerKeys)), it.keyboard, GlFont(getResources()!!), rootTopic,
-                    onOpenHyperlink = {
-                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it)))
-                    },
-                    onActiveTopicChanged = { textInput.setText(it?.getTitleText() ?: "") },
-                    textChanged = textChanged
-            )
+            Shell(it, observableIterable(listOf(it.touchPointerKeys)), it.keyboard, GlFont(getResources()!!), workbook, onOpenHyperlink = {
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it)))
+            },
+                    textChanged = textChanged, onActiveTopicChanged = { textInput.setText(it?.getTitleText() ?: "") },
+                    addSubnode = addSubnode,
+                    removeNode = removeNode)
         }
 
         mindMapLayout.addView(screen)

@@ -4,15 +4,18 @@ import com.mindforge.graphics.*
 import com.mindforge.graphics.interaction.*
 import com.mindforge.graphics.math.rectangle
 import org.xmind.core.ITopic
+import org.xmind.core.IWorkbook
 
 class Shell(val screen: Screen,
             val pointers: ObservableIterable<PointerKeys>,
             val keys: ObservableIterable<Key>,
             val defaultFont: Font,
-            val rootTopic: ITopic,
+            val workbook: IWorkbook,
             val onOpenHyperlink: (String) -> Unit,
             val textChanged: Observable<String>,
-            val onActiveTopicChanged: (ITopic?) -> Unit) {
+            val onActiveTopicChanged: (ITopic?) -> Unit,
+            val addSubnode: Trigger<Unit>,
+            val removeNode: Trigger<Unit>) {
     var scroll = Scrollable(mindMap())
 
     private var activeTopicLoc: ITopic? = null
@@ -28,7 +31,7 @@ class Shell(val screen: Screen,
             transformedElement(Draggable(coloredElement(rectangle(vector(200, 200)), Fills.solid(Colors.red)))),
             transformedElement(Draggable(coloredElement(rectangle(vector(300, 100)), Fills.solid(Colors.green)))),
             transformedElement(Draggable(coloredElement(rectangle(vector(100, 300)), Fills.solid(Colors.blue)))),
-            transformedElement(topicElement(rootTopic).element)
+            transformedElement(topicElement(workbook.getPrimarySheet().getRootTopic()).element)
     ))
 
     fun render() {
@@ -49,6 +52,29 @@ class Shell(val screen: Screen,
             render()
         }
 
+        addSubnode addObserver fun(it: Unit) {
+            val topic = activeTopic
+            if (topic == null) return
+
+            val newTopic = workbook.createTopic()
+            newTopic.setTitleText("new note")
+            topic.add(newTopic)
+
+            render()
+        }
+
+        removeNode addObserver fun(it: Unit) {
+            val topic = activeTopic
+            if (topic == null) return
+
+            val parent = topic.getParent()
+            parent.remove(topic)
+
+            activeTopic == parent
+
+            render()
+        }
+
         render()
         registerInputs()
     }
@@ -56,7 +82,7 @@ class Shell(val screen: Screen,
     fun topicElement(topic: ITopic): Stackable {
         val text = topic.getTitleText()
         val lineHeight = 40
-        val mainButtonContent = textElement(text, fill = Fills.solid(Colors.black), font = defaultFont, lineHeight = lineHeight)
+        val mainButtonContent = textElement(text, fill = Fills.solid(if(activeTopic == topic) Colors.red else Colors.black), font = defaultFont, lineHeight = lineHeight)
         val mainButton = textRectangleButton(mainButtonContent) {
             activeTopic = topic
         }
@@ -72,15 +98,15 @@ class Shell(val screen: Screen,
 
             Stackable(element, linkButtonTextElement.shape.size())
         }
-        val collapseButtonIfHas = if (subTopics.none() || !topic.isFolded()) null else {
-            val element = textElement("+", fill = Fills.solid(Colors.gray), font = defaultFont, lineHeight = 1.5 * lineHeight)
+        val collapseButtonIfHas = if (subTopics.any()) {
+            val element = textElement(if(topic.isFolded()) " + " else " - ", fill = Fills.solid(Colors.gray), font = defaultFont, lineHeight = lineHeight)
             val button = textRectangleButton(element) {
                 topic.setFolded(!topic.isFolded())
                 render()
             }
 
             Stackable(button, element.shape.size())
-        }
+        } else null
         val subElements = unfoldedSubTopics.map { topicElement(it) }
 
         val mainStack = horizontalStack(

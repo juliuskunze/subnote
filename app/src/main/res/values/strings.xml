@@ -7,4 +7,6 @@
     <string name="drive_title">From Drive</string>
     <string name="drive_example">Drive Example</string>
     <string name="import_from_evernote">Import from Evernote</string>
+    <string name="new_subnote">new</string>
+    <string name="remove_note">remove</string>
 </resources>
