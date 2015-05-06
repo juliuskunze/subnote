@@ -7,8 +7,8 @@ trait Pointer {
     val location: Vector2
 
     fun relativeTo(transform: Transform2): Pointer = object : Pointer {
-        override val moved: Observable<Pointer> = observable(this@Pointer.moved) { this@Pointer }
-        override val location: Vector2 = transform(this@Pointer.location)
+        override val moved: Observable<Pointer> = observable(this@Pointer.moved) { this }
+        override val location: Vector2 get() = transform.inverse()(this@Pointer.location)
     }
 }
 trait PointerKey {

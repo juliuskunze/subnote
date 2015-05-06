@@ -6,6 +6,7 @@ import com.mindforge.graphics.math.Shape
 import com.mindforge.graphics.math.rectangle
 import com.mindforge.graphics.math.shape
 import org.xmind.core.ITopic
+import java.util.ArrayList
 import java.util.Date
 
 class Shell(val screen: Screen, val pointers: ObservableIterable<PointerKeys>, val keys: ObservableIterable<Key>, defaultFont: Font, rootTopics: List<ITopic>) {
@@ -88,7 +89,45 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
             return composed(observableIterable(listOf<TransformedElement<*>>(transformedElement(textElement))))
         }
 
-        fun mindMap(): Composed<*> = composed(listOf(transformedElement(topicElement(rootTopics.single()).element)))
+        class Draggable(val element: Element<*>) : Composed<Any?>, PointersElement<Any?> {
+            override val content: Any? get() = element.content
+            override val changed = trigger<Unit>()
+            var dragPosition = zeroVector2
+            override val elements: ObservableIterable<TransformedElement<*>> = observableIterable(listOf(object : TransformedElement<Any?> {
+                override val element: Element<Any?> = this@Draggable.element
+                override val transform: Transform2 get() = Transforms2.translation(dragPosition)
+                override val transformChanged = this@Draggable.changed
+            }))
+
+            val onDrag = { pointer: Pointer ->
+                dragPosition = pointer.location
+                changed()
+            }
+
+            val pointers = ArrayList<Pointer>()
+
+            val onRelease: (Key) -> Unit = { key: Key ->
+                key.released removeObserver onRelease
+                pointers.forEach {
+                    it.moved removeObserver onDrag
+                }
+                pointers.clear()
+            }
+
+            override fun onPointerKeyPressed(pointerKey: PointerKey) {
+                pointers.add(pointerKey.pointer)
+                pointerKey.pointer.moved addObserver onDrag
+                pointerKey.key.released addObserver onRelease
+            }
+
+        }
+
+        fun mindMap(): Composed<*> = composed(listOf(
+                transformedElement(Draggable(coloredElement(rectangle(vector(200, 200)), Fills.solid(Colors.red)))),
+                transformedElement(Draggable(coloredElement(rectangle(vector(300, 100)), Fills.solid(Colors.green)))),
+                transformedElement(Draggable(coloredElement(rectangle(vector(100, 300)), Fills.solid(Colors.blue)))),
+                transformedElement(topicElement(rootTopics.single()).element)
+        ))
 
         class ElementWithHeight(val element: Element<*>, val height: Int)
 
@@ -127,6 +166,7 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
                 override val transformChanged = this@Scrollable.changed
             }, transformedElement(coloredElement(rectangle(vector(10000, 10000)), Fills.solid(Colors.white)))))
             private var lastLocation: Vector2? = null
+
             override fun onPointerKeyPressed(pointerKey: PointerKey) {
                 lastLocation = pointerKey.pointer.location
             }
@@ -165,30 +205,38 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
 
     fun registerInputs() {
         pointers mapObservable { it.pressed } startKeepingAllObserved { pk ->
-            screen.elementsAt(pk.pointer.location) forEach {
+            for (it in screen.elementsAt(pk.pointer.location)) {
                 val element = it.element
                 val pointerKey = pointerKey(pk.pointer relativeTo it.transform, pk.key)
                 when (element) {
-                    is Clickable<*> -> element.onClick(pointerKey)
-                    is PointersElement<*> -> element.onPointerKeyPressed(pointerKey)
+                    is PointersElement<*> -> {
+                        element.onPointerKeyPressed(pointerKey)
+                        break
+                    }
                 }
             }
         }
         pointers mapObservable { it.pointer.moved } startKeepingAllObserved { p ->
-            screen.elementsAt(p.location) forEach {
+            for (it in screen.elementsAt(p.location)) {
                 val element = it.element
                 val pointer = p relativeTo it.transform
                 when (element) {
-                    is PointersElement<*> -> element.onPointerMoved(pointer)
+                    is PointersElement<*> -> {
+                        element.onPointerMoved(pointer)
+                        break
+                    }
                 }
             }
         }
         pointers mapObservable { it.released } startKeepingAllObserved { pk ->
-            screen.elementsAt(pk.pointer.location) forEach {
+            for (it in screen.elementsAt(pk.pointer.location)) {
                 val element = it.element
                 val pointerKey = pointerKey(pk.pointer relativeTo it.transform, pk.key)
                 when (element) {
-                    is PointersElement<*> -> element.onPointerKeyReleased(pointerKey)
+                    is PointersElement<*> -> {
+                        element.onPointerKeyReleased(pointerKey)
+                        break
+                    }
                 }
             }
         }

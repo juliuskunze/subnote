@@ -4,8 +4,8 @@ import com.mindforge.graphics.*
 import com.mindforge.graphics.math.Shape
 import com.mindforge.graphics.math.rectangle
 
-trait Button : Clickable<Trigger<Unit>>, Composed<Trigger<Unit>> {
-    override fun onClick(pointerKey: PointerKey) = content()
+trait Button : PointersElement<Trigger<Unit>>, Composed<Trigger<Unit>> {
+    override fun onPointerKeyPressed (pointerKey: PointerKey) = content()
 }
 
 fun button(

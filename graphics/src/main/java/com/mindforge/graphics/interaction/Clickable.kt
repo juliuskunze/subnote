@@ -4,7 +4,7 @@ import com.mindforge.graphics.*
 import com.mindforge.graphics.math.*
 import com.mindforge.graphics.*
 
-trait Clickable<T> : PointersElement<T> {
+/*trait Clickable<T> : PointersElement<T> {
     /*private val pressedKeysThatCouldLeadToClick: MutableCollection<PointerKey>
 
     override fun onPointerKeyPressed(pointerKey: PointerKey) {
@@ -25,4 +25,4 @@ trait Clickable<T> : PointersElement<T> {
     }*/
 
     fun onClick(pointerKey: PointerKey) {}
-}
+}*/
