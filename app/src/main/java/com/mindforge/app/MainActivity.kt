@@ -20,8 +20,7 @@ import com.mindforge.graphics.android.GlFont
 import com.mindforge.graphics.android.GlScreen
 import com.mindforge.graphics.observableIterable
 import com.mindforge.graphics.trigger
-import kotlinx.android.synthetic.activity_main.mainTextView
-import kotlinx.android.synthetic.activity_main.textInput
+import kotlinx.android.synthetic.activity_main.*
 import org.xmind.core.ITopic
 import org.xmind.core.internal.dom.WorkbookBuilderImpl
 import java.io.File
@@ -152,7 +151,7 @@ public class MainActivity : Activity() {
 
                     driveFile.open(driveFileOpenerApiClient, DriveFile.MODE_READ_ONLY, object : DriveFile.DownloadProgressListener {
                         override fun onProgress(bytesDownloaded: Long, bytesExpected: Long) {
-                            mainTextView.setText("loading... " + if (bytesExpected > 0) "$bytesDownloaded / $bytesExpected bytes" else "")
+                            //TODO: mainTextView.setText("loading... " + if (bytesExpected > 0) "$bytesDownloaded / $bytesExpected bytes" else "")
                         }
                     }).setResultCallback (object : ResultCallback<DriveApi.DriveContentsResult> {
                         override fun onResult(result: DriveApi.DriveContentsResult) {
@@ -180,7 +179,7 @@ public class MainActivity : Activity() {
             )
         }
 
-        setContentView(screen)
+        mindMapLayout.addView(screen)
     }
 
     private fun InputStream.writeToFile(file: File) {

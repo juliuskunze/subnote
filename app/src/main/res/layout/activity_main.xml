@@ -15,17 +15,12 @@
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:id="@+id/textInput"
-            android:inputType="text"/>
-
-        <ScrollView
-            android:id="@+id/scroller"
+            android:inputType="text"
+            android:imeOptions="actionDone"/>
+        <RelativeLayout
+            android:id="@+id/mindMapLayout"
             android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
-            android:scrollbars="vertical">
-            <TextView
-                android:id="@+id/mainTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
-        </ScrollView>
+            android:layout_height="fill_parent">
+        </RelativeLayout>
     </LinearLayout>
 </RelativeLayout>
