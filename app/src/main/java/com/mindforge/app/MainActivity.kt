@@ -2,9 +2,13 @@ package com.mindforge.app
 
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import com.evernote.*
+import com.evernote.auth.*
+import com.evernote.clients.*
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GooglePlayServicesUtil
 import com.google.android.gms.common.api.GoogleApiClient
@@ -19,6 +23,7 @@ import com.mindforge.graphics.observableIterable
 import kotlinx.android.synthetic.activity_main.mainTextView
 import org.xmind.core.ITopic
 import org.xmind.core.internal.Topic
+import org.xmind.core.internal.dom.WorkbookBuilderImpl
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -57,11 +62,17 @@ public class MainActivity : Activity() {
                 startDriveAPIExampleActivity()
                 true
             }
+            R.id.import_from_evernote -> {
+                importFromEvernote()
+                true
+            }
             else -> {
                 super.onOptionsItemSelected(item)
             }
         }
     }
+
+
 
     private fun openFromDocuments() {
         open(File("/storage/emulated/0/documents/Projects.xmind"))
@@ -76,16 +87,21 @@ public class MainActivity : Activity() {
         chooseFileFromDrive()
     }
 
+    private fun importFromEvernote() {
+        EvernoteAsyncImporter(workbookBuilder = workbookBuilder, onReady = {
+            setDemoScreen(it.getPrimarySheet().getRootTopic())
+        }).execute()
+    }
+
     private fun startDriveAPIExampleActivity() {
         startActivity(Intent(this, javaClass<DriveSampleActivity>()))
     }
 
     private fun open(file: File) {
-        val reader = XMindFileReader(cacheDirectory = getCacheDir())
-        // mainTextView.setText(reader(file))
-
-        setDemoScreen(reader.rootTopics(file))
+        setDemoScreen(workbookBuilder.loadFromFile(file).getPrimarySheet().getRootTopic())
     }
+
+    private val workbookBuilder : WorkbookBuilderImpl by Delegates.lazy { AndroidWorkbookBuilder(cacheDirectory = getCacheDir())() }
 
     private val driveFileOpenerApiClient: GoogleApiClient by Delegates.lazy {
         GoogleApiClient.Builder(this).addApi(Drive.API).addScope(Drive.SCOPE_FILE).addConnectionCallbacks(object : GoogleApiClient.ConnectionCallbacks {
@@ -139,9 +155,12 @@ public class MainActivity : Activity() {
         }
     }
 
-    private fun setDemoScreen(rootTopics: List<ITopic>) {
+    private fun setDemoScreen(rootTopic: ITopic) {
         val screen = GlScreen(this) {
-            Shell(it, observableIterable(listOf(it.touchPointerKeys)), it.keyboard, GlFont(getResources()!!), rootTopics)
+            Shell(it, observableIterable(listOf(it.touchPointerKeys)), it.keyboard, GlFont(getResources()!!), rootTopic,
+                    onOpenHyperlink = {
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it)))
+                    })
         }
 
         setContentView(screen)

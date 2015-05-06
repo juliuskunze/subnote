@@ -37,6 +37,9 @@ trait Vector2 : Iterable<Number> {
     override fun equals(other: Any?) = other is Vector2 && (x.toDouble() == other.x.toDouble() && y.toDouble() == other.y.toDouble())
 
     override fun toString() = "vector(${x.toDouble()}, ${y.toDouble()})"
+
+    fun xComponent(): Vector2 = vector(x, 0)
+    fun yComponent(): Vector2 = vector(0, y)
 }
 
 fun vector(x: Number, y: Number) = object : Vector2 {

@@ -36,10 +36,12 @@ trait TextShape : Shape {
 
     val lines: List<LineShape>
 
-    fun box(): Shape = rectangle(vector(
-            lines.map { it.width.toDouble () }.max() ?: 0.0,
-            lineHeight.toDouble() * text.lineCount() + leading.toDouble() * (text.lineCount() - 1)
-    )).topLeftAtOrigin() transformed Transforms2.translation(vector(0, lineHeight.toDouble() - baseline.toDouble()))
+    fun size() = vector(
+                lines.map { it.width.toDouble () }.max() ?: 0.0,
+                lineHeight.toDouble() * text.lineCount() + leading.toDouble() * (text.lineCount() - 1)
+    )
+
+    fun box() : Shape = rectangle(size()).topLeftAtOrigin() transformed Transforms2.translation(vector(0, lineHeight.toDouble() - baseline.toDouble()))
 
 }
 

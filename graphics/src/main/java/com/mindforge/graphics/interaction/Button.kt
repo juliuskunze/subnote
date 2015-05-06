@@ -2,7 +2,6 @@ package com.mindforge.graphics.interaction
 
 import com.mindforge.graphics.*
 import com.mindforge.graphics.math.Shape
-import com.mindforge.graphics.math.rectangle
 
 trait Button : PointersElement<Trigger<Unit>>, Composed<Trigger<Unit>> {
     override fun onPointerKeyPressed (pointerKey: PointerKey) = content()
@@ -25,23 +24,11 @@ fun button(
     }
 }
 
-fun textRectangleButton(text: String, fill: Fill, font: Font, size: Number, onClick: () -> Unit): Button {
-    val textElement = textElement(text, font, size, fill)
-
-    val shape = textElement.shape.box()
-    return button(
-            shape = shape,
-            elements = observableIterable(listOf(
-                    transformedElement(textElement)/*,
-                    transformedElement(coloredElement(rectangle(vector(30, 2)), Fills.solid(Colors.red))),
-                    transformedElement(coloredElement(rectangle(vector(2, 30)), Fills.solid(Colors.red))),
-                    transformedElement(coloredElement(shape, object : Fill {
-                        override fun colorAt(location: Vector2) = fill.colorAt(location) * 0.5
-                    }))*/
-            )),
-            onClick = onClick
+fun textRectangleButton(inner: TextElement, onClick: () -> Unit) = button(
+        shape = inner.shape.box(),
+        elements = observableIterable(listOf(transformedElement(inner))),
+        onClick = onClick
     )
-}
 
 fun coloredButton(
         shape: Shape,

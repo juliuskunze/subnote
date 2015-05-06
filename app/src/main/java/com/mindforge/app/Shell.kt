@@ -2,14 +2,12 @@ package com.mindforge.app
 
 import com.mindforge.graphics.*
 import com.mindforge.graphics.interaction.*
-import com.mindforge.graphics.math.Shape
 import com.mindforge.graphics.math.rectangle
-import com.mindforge.graphics.math.shape
 import org.xmind.core.ITopic
 import java.util.ArrayList
 import java.util.Date
 
-class Shell(val screen: Screen, val pointers: ObservableIterable<PointerKeys>, val keys: ObservableIterable<Key>, defaultFont: Font, rootTopics: List<ITopic>) {
+class Shell(val screen: Screen, val pointers: ObservableIterable<PointerKeys>, val keys: ObservableIterable<Key>, defaultFont: Font, rootTopic: ITopic, onOpenHyperlink: (String) -> Unit) {
     private val exampleContent = object {
         fun rotatedScaledRectangles(): Composed<*> {
             fun logoRect(angle: Number) = coloredButton(
@@ -54,9 +52,10 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
             val size = vector(100, 100)
             fun b(x: Int, y: Int): TransformedElement<Any?> {
                 var color = randomColor()
-                return transformedElement(textRectangleButton(text = x.toString(), font = defaultFont, size = 100, fill = object : Fill {
+                val textElement = textElement(content = x.toString(), font = defaultFont, lineHeight = 100, fill = object : Fill {
                     override fun colorAt(location: Vector2) = color
-                }) {
+                })
+                return transformedElement(textRectangleButton(textElement) {
                     color = randomColor()
                 }, object : Transform2 {
                     override val matrix: Matrix3 get() = (
@@ -98,7 +97,7 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
                 override val transform: Transform2 get() = Transforms2.translation(dragPosition)
                 override val transformChanged = this@Draggable.changed
             }))
-
+ 
             val onDrag = { pointer: Pointer ->
                 dragPosition = pointer.location
                 changed()
@@ -126,34 +125,75 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
                 transformedElement(Draggable(coloredElement(rectangle(vector(200, 200)), Fills.solid(Colors.red)))),
                 transformedElement(Draggable(coloredElement(rectangle(vector(300, 100)), Fills.solid(Colors.green)))),
                 transformedElement(Draggable(coloredElement(rectangle(vector(100, 300)), Fills.solid(Colors.blue)))),
-                transformedElement(topicElement(rootTopics.single()).element)
+                transformedElement(topicElement(rootTopic).element)
         ))
 
         class ElementWithHeight(val element: Element<*>, val height: Int)
+        class Stackable(val element: Element<*>, val size: Vector2)
 
-        fun topicElement(topic: ITopic): ElementWithHeight {
+        fun topicElement(topic: ITopic): Stackable {
             val text = topic.getTitleText()
-            val fontHeight = 40
-            val textElement = textRectangleButton(text, fill = Fills.solid(Colors.black), font = defaultFont, size = fontHeight) {
+            val lineHeight = 40
+            val mainButtonContent = textElement(text, fill = Fills.solid(Colors.black), font = defaultFont, lineHeight = lineHeight)
+            val mainButton = textRectangleButton(mainButtonContent) {
                 topic.setFolded(!topic.isFolded())
                 render()
             }
 
-            val unfoldedSubTopics = if (topic.isFolded()) listOf() else topic.getAllChildren()
+            val subTopics = topic.getAllChildren()
+            val unfoldedSubTopics = if (topic.isFolded()) listOf() else subTopics
+            val linkButtonIfHas = if (topic.getHyperlink() == null) null else {
+                val linkButtonTextElement = textElement("Link", fill = Fills.solid(Colors.blue), font = defaultFont, lineHeight = lineHeight)
 
-            if (unfoldedSubTopics.none()) return ElementWithHeight(textElement, fontHeight)
+                val element = textRectangleButton(linkButtonTextElement) {
+                    onOpenHyperlink(topic.getHyperlink())
+                }
 
+                Stackable(element, linkButtonTextElement.shape.size())
+            }
+            val collapseButtonIfHas = if (subTopics.none() || !topic.isFolded()) null else {
+                val element = textElement("+", fill = Fills.solid(Colors.gray), font = defaultFont, lineHeight = lineHeight)
+                val button = textRectangleButton(element) {
+                    topic.setFolded(!topic.isFolded())
+                    render()
+                }
+
+                Stackable(button, element.shape.size())
+            }
             val subElements = unfoldedSubTopics.map { topicElement(it) }
-            val transformedSubElements = arrayListOf<TransformedElement<*>>()
 
-            var height = fontHeight
-            for (e in subElements.withIndex()) {
-                transformedSubElements.add(transformedElement(e.value.element, Transforms2.translation(vector(fontHeight, -height))))
+            val mainStack = horizontalStack(
+                    (if (collapseButtonIfHas == null) listOf() else listOf(collapseButtonIfHas)) +
+                            listOf(Stackable(mainButton, mainButtonContent.shape.size())) +
+                            (if (linkButtonIfHas == null) listOf() else listOf(linkButtonIfHas))
+            )
 
-                height += e.value.height
+            val transformedElements = mainStack.toArrayList()
+            var height: Double = mainButtonContent.shape.size().y.toDouble()
+
+            for (e in subElements) {
+                val indent = lineHeight
+                transformedElements.add(transformedElement(e.element, Transforms2.translation(vector(indent, -height))))
+                height += e.size.y.toDouble()
             }
 
-            return ElementWithHeight(composed(topic, listOf(transformedElement(textElement)) + transformedSubElements), height)
+            return Stackable(composed(transformedElements), vector(0, height))
+        }
+
+        fun horizontalStack(elements: List<Stackable>) = stack(elements, horizontal = true)
+        fun verticalStack(elements: List<Stackable>) = stack(elements, horizontal = false)
+
+        fun stack(elements: List<Stackable>, horizontal: Boolean): List<TransformedElement<*>> {
+            val transformedElements = arrayListOf<TransformedElement<*>>()
+
+            var totalTransformation = zeroVector2
+            for (e in elements) {
+                transformedElements.add(transformedElement(e.element, Transforms2.translation(totalTransformation)))
+
+                totalTransformation += (if (horizontal) e.size.xComponent() else e.size.yComponent())
+            }
+
+            return transformedElements
         }
 
         class Scrollable(val element: Element<*>) : Composed<Any?>, PointersElement<Any?> {
@@ -250,7 +290,6 @@ takimata sanctus est Lorem ipsum dolor sit amet. AYA �¶Ѽ†◊²³"""
         }
     }
 }
-
 
 
 
