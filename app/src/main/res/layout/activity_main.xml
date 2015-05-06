@@ -24,6 +24,11 @@
             android:inputType="text"
             android:imeOptions="actionDone"/>
             <Button
+                android:id="@+id/newNoteButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/new_note"/>
+            <Button
                 android:id="@+id/newSubnoteButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

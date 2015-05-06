@@ -46,8 +46,12 @@ public class MainActivity : Activity() {
             }
         })
 
+        newNoteButton.setOnClickListener {
+            newNote()
+        }
+
         newSubnoteButton.setOnClickListener {
-            addSubnode()
+            newSubnote()
         }
 
         removeNoteButton.setOnClickListener {
@@ -56,7 +60,8 @@ public class MainActivity : Activity() {
     }
 
     private val textChanged = trigger<String>()
-    private val addSubnode = trigger<Unit>()
+    private val newNote = trigger<Unit>()
+    private val newSubnote = trigger<Unit>()
     private val removeNode = trigger<Unit>()
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -183,10 +188,10 @@ public class MainActivity : Activity() {
         val screen = GlScreen(this) {
             Shell(it, observableIterable(listOf(it.touchPointerKeys)), it.keyboard, GlFont(getResources()!!), workbook, onOpenHyperlink = {
                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it)))
-            },
-                    textChanged = textChanged, onActiveTopicChanged = { textInput.setText(it?.getTitleText() ?: "") },
-                    addSubnode = addSubnode,
-                    removeNode = removeNode)
+            }, textChanged = textChanged, onActiveTopicChanged = {
+                textInput.setText(it?.getTitleText() ?: "")
+                textInput.selectAll()
+            },newNote = newNote, newSubnote = newSubnote, removeNode = removeNode)
         }
 
         mindMapLayout.addView(screen)

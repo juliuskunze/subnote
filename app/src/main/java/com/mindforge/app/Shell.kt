@@ -14,13 +14,15 @@ class Shell(val screen: Screen,
             val onOpenHyperlink: (String) -> Unit,
             val textChanged: Observable<String>,
             val onActiveTopicChanged: (ITopic?) -> Unit,
-            val addSubnode: Trigger<Unit>,
-            val removeNode: Trigger<Unit>) {
+            val newNote: Trigger<Unit>,
+            val newSubnote: Trigger<Unit>,
+            val removeNode: Trigger<Unit>
+) {
     var scroll = Scrollable(mindMap())
 
     private var activeTopicLoc: ITopic? = null
 
-    private var activeTopic: ITopic?
+    private var activeNote: ITopic?
         get() = activeTopicLoc
         set(it: ITopic?) {
             activeTopicLoc = it
@@ -42,37 +44,53 @@ class Shell(val screen: Screen,
         screen.content = scroll
     }
 
+    fun manipulatingActiveNote(body: (ITopic) -> Unit) {
+        val topic = activeNote
+        if (topic == null) return
+
+        body(topic)
+
+        render()
+    }
+
+    fun initializeNewNote(newNote: ITopic) {
+        newNote.setTitleText("new note")
+        newNote.getParent().setFolded(false)
+
+        activeNote = newNote
+    }
+
     init {
-        textChanged addObserver fun(it: String) {
-            val topic = activeTopic
-            if (topic == null) return
-
-            topic.setTitleText(it)
-
-            render()
+        textChanged addObserver { text ->
+            manipulatingActiveNote { it.setTitleText(text) }
         }
 
-        addSubnode addObserver fun(it: Unit) {
-            val topic = activeTopic
-            if (topic == null) return
+        newNote addObserver {
+            manipulatingActiveNote {
+                val newNote = workbook.createTopic()
 
-            val newTopic = workbook.createTopic()
-            newTopic.setTitleText("new note")
-            topic.add(newTopic)
-
-            render()
+                val parent = it.getParent()
+                parent.add(newNote, it.getIndex() + 1, ITopic.ATTACHED)
+                initializeNewNote(newNote)
+            }
         }
 
-        removeNode addObserver fun(it: Unit) {
-            val topic = activeTopic
-            if (topic == null) return
+        newSubnote addObserver {
+            manipulatingActiveNote {
+                val newNote = workbook.createTopic()
+                it.add(newNote)
 
-            val parent = topic.getParent()
-            parent.remove(topic)
+                initializeNewNote(newNote)
+            }
+        }
 
-            activeTopic == parent
+        removeNode addObserver {
+            manipulatingActiveNote {
+                val parent = it.getParent()
+                parent.remove(it)
 
-            render()
+                activeNote = parent
+            }
         }
 
         render()
@@ -82,9 +100,9 @@ class Shell(val screen: Screen,
     fun topicElement(topic: ITopic): Stackable {
         val text = topic.getTitleText()
         val lineHeight = 40
-        val mainButtonContent = textElement(text, fill = Fills.solid(if(activeTopic == topic) Colors.red else Colors.black), font = defaultFont, lineHeight = lineHeight)
+        val mainButtonContent = textElement(text, fill = Fills.solid(if(activeNote == topic) Colors.red else Colors.black), font = defaultFont, lineHeight = lineHeight)
         val mainButton = textRectangleButton(mainButtonContent) {
-            activeTopic = topic
+            activeNote = topic
         }
 
         val subTopics = topic.getAllChildren()
