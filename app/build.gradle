@@ -57,5 +57,6 @@ dependencies {
     compile 'com.google.android.gms:play-services:7.0.0'
     compile 'com.evernote:evernote-api:1.25.1'
     compile 'commons-io:commons-io:2.4'
+    compile 'org.jetbrains.anko:anko:0.6-15'
     compile project(":graphics")
 }

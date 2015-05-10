@@ -2,12 +2,12 @@ package com.mindforge.app
 
 import android.app.Activity
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.TextView
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GooglePlayServicesUtil
 import com.google.android.gms.common.api.GoogleApiClient
@@ -18,10 +18,11 @@ import com.google.android.gms.drive.DriveFile
 import com.google.android.gms.drive.DriveId
 import com.mindforge.graphics.android.GlFont
 import com.mindforge.graphics.android.GlScreen
+import com.mindforge.graphics.invoke
 import com.mindforge.graphics.observableIterable
-import com.mindforge.graphics.*
+import com.mindforge.graphics.trigger
 import kotlinx.android.synthetic.activity_main.*
-import org.xmind.core.ITopic
+import org.jetbrains.anko.*
 import org.xmind.core.IWorkbook
 import org.xmind.core.internal.dom.WorkbookBuilderImpl
 import java.io.File
@@ -88,7 +89,7 @@ public class MainActivity : Activity() {
                 true
             }
             R.id.drive_example -> {
-                startDriveAPIExampleActivity()
+                startActivity<DriveSampleActivity>()
                 true
             }
             R.id.import_from_evernote -> {
@@ -117,13 +118,7 @@ public class MainActivity : Activity() {
     }
 
     private fun importFromEvernote() {
-        EvernoteAsyncImporter(workbookBuilder = workbookBuilder, onReady = {
-            setDemoScreen(it)
-        }).execute()
-    }
-
-    private fun startDriveAPIExampleActivity() {
-        startActivity(Intent(this, javaClass<DriveSampleActivity>()))
+        EvernoteAsyncImporter(workbookBuilder = workbookBuilder, onReady = { setDemoScreen(it) }).execute()
     }
 
     private fun open(file: File) {
@@ -186,15 +181,15 @@ public class MainActivity : Activity() {
 
     private fun setDemoScreen(workbook: IWorkbook) {
         val screen = GlScreen(this) {
-            Shell(it, observableIterable(listOf(it.touchPointerKeys)), it.keyboard, GlFont(getResources()!!), workbook, onOpenHyperlink = {
-                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it)))
-            }, textChanged = textChanged, onActiveTopicChanged = {
+            Shell(it, observableIterable(listOf(it.touchPointerKeys)), it.keyboard, GlFont(getResources()!!), workbook, onOpenHyperlink = { browse(it) }, textChanged = textChanged, onActiveTopicChanged = {
                 textInput.setText(it?.getTitleText() ?: "")
                 textInput.selectAll()
             },newNote = newNote, newSubnote = newSubnote, removeNode = removeNode)
         }
 
         mindMapLayout.addView(screen)
+
+        screen.requestRender()
     }
 
     private fun InputStream.writeToFile(file: File) {

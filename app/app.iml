@@ -105,6 +105,7 @@
     <orderEntry type="library" exported="" name="play-services-location-7.0.0" level="project" />
     <orderEntry type="library" exported="" name="play-services-gcm-7.0.0" level="project" />
     <orderEntry type="library" exported="" name="play-services-safetynet-7.0.0" level="project" />
+    <orderEntry type="library" exported="" name="anko-0.6-15" level="project" />
     <orderEntry type="library" exported="" name="play-services-nearby-7.0.0" level="project" />
     <orderEntry type="library" exported="" name="kotlin-stdlib-0.11.91.1" level="project" />
     <orderEntry type="library" exported="" name="play-services-fitness-7.0.0" level="project" />
