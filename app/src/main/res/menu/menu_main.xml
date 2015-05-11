@@ -18,4 +18,7 @@
     <item
         android:id="@+id/import_from_evernote"
         android:title="@string/import_from_evernote"/>
+    <item
+        android:id="@+id/create_new"
+        android:title="@string/create_new"/>
 </menu>

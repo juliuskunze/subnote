@@ -96,13 +96,22 @@ public class MainActivity : Activity() {
                 importFromEvernote()
                 true
             }
+            R.id.create_new -> {
+                createNew()
+                true
+            }
             else -> {
                 super.onOptionsItemSelected(item)
             }
         }
     }
 
+    fun createNew() {
+        val workbook = workbookBuilder.createWorkbook()
+        workbook.getPrimarySheet().getRootTopic().setTitleText("Title")
 
+        open(workbook)
+    }
 
     private fun openFromDocuments() {
         open(File("/storage/emulated/0/documents/Projects.xmind"))
@@ -117,12 +126,12 @@ public class MainActivity : Activity() {
         chooseFileFromDrive()
     }
 
-    private fun importFromEvernote() {
-        EvernoteAsyncImporter(workbookBuilder = workbookBuilder, onReady = { setDemoScreen(it) }).execute()
+    fun importFromEvernote() {
+        EvernoteAsyncImporter(workbookBuilder = workbookBuilder, onReady = { open(it) }).execute()
     }
 
     private fun open(file: File) {
-        setDemoScreen(workbookBuilder.loadFromFile(file))
+        open(workbookBuilder.loadFromFile(file))
     }
 
     private val workbookBuilder : WorkbookBuilderImpl by Delegates.lazy { AndroidWorkbookBuilder(cacheDirectory = getCacheDir())() }
@@ -179,7 +188,11 @@ public class MainActivity : Activity() {
         }
     }
 
-    private fun setDemoScreen(workbook: IWorkbook) {
+    var workbook : IWorkbook by Delegates.notNull()
+
+    private fun open(workbook: IWorkbook) {
+        this.workbook = workbook
+
         val screen = GlScreen(this) {
             Shell(it, observableIterable(listOf(it.touchPointerKeys)), it.keyboard, GlFont(getResources()!!), workbook, onOpenHyperlink = { browse(it) }, textChanged = textChanged, onActiveTopicChanged = {
                 textInput.setText(it?.getTitleText() ?: "")
@@ -188,8 +201,6 @@ public class MainActivity : Activity() {
         }
 
         mindMapLayout.addView(screen)
-
-        screen.requestRender()
     }
 
     private fun InputStream.writeToFile(file: File) {

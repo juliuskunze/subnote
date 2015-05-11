@@ -20,9 +20,6 @@ class GlScreen (context: Context, onReady: (GlScreen) -> Unit) : GLSurfaceView(c
     init {
         setEGLContextClientVersion(2)
         setEGLConfigChooser(8, 8, 8, 8, 16, 0)
-    }
-
-    init {
         setRenderer(object : Renderer {
             override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
                 GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
@@ -43,7 +40,6 @@ class GlScreen (context: Context, onReady: (GlScreen) -> Unit) : GLSurfaceView(c
         setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY)
         this.setFocusable(true);
         this.setFocusableInTouchMode(true);
-
     }
 
     private var glContent: GlComposed = GlComposed(composed(observableIterable(listOf())), this)

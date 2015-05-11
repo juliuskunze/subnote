@@ -10,4 +10,5 @@
     <string name="new_subnote">new sub</string>
     <string name="remove_note">remove</string>
     <string name="new_note">new</string>
+    <string name="create_new">Create new map</string>
 </resources>
