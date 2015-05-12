@@ -18,8 +18,12 @@ abstract class GlElement(val original: Element<*>, val screen: GlScreen) : Eleme
     override val content: Any? get() = original.content;
     abstract fun draw(parentTransform: GlTransform)
 
+    protected fun onChanged() {
+        screen.requestRender()
+    }
+
     init {
-        changed.addObserver { screen.requestRender() }
+        changed.addObserver { onChanged() }
     }
 }
 
@@ -57,6 +61,8 @@ class GlComposed(val originalComposed: Composed<*>, screen: GlScreen) : GlElemen
                 val glElement = GlTransformedElement(addedElement, screen)
                 e.add(glElement)
                 added(glElement)
+
+                onChanged()
             }
             originalComposed.elements.removed addObserver { removedElement ->
                 val glElement = (e.singleOrNull { element -> element.element.original === removedElement })
@@ -64,9 +70,12 @@ class GlComposed(val originalComposed: Composed<*>, screen: GlScreen) : GlElemen
                     e.remove(glElement)
                     removed(glElement)
                 }
+
+                onChanged()
             }
         }
     }
+
     override val shape = glShape(super<Composed>.shape)
 
     override fun draw(parentTransform: GlTransform) = e.reverse() forEach { it.element.draw(it.transform before parentTransform) }
