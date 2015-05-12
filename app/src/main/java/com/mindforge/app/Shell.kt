@@ -101,9 +101,9 @@ class Shell(val screen: Screen,
         val text = topic.getTitleText()
         val lineHeight = 40
         val mainButtonContent = textElement(text, fill = Fills.solid(if(activeNote == topic) Colors.red else Colors.black), font = defaultFont, lineHeight = lineHeight)
-        val mainButton = textRectangleButton(mainButtonContent) {
+        val mainButton = Stackable(textRectangleButton(mainButtonContent) {
             activeNote = topic
-        }
+        }, mainButtonContent.shape.size())
 
         val subTopics = topic.getAllChildren()
         val unfoldedSubTopics = if (topic.isFolded()) listOf() else subTopics
@@ -127,11 +127,7 @@ class Shell(val screen: Screen,
         } else null
         val subElements = unfoldedSubTopics.map { topicElement(it) }
 
-        val mainStack = horizontalStack(
-                listOf(Stackable(mainButton, mainButtonContent.shape.size())) +
-                        (if (linkButtonIfHas == null) listOf() else listOf(linkButtonIfHas)) +
-                        (if (collapseButtonIfHas == null) listOf() else listOf(collapseButtonIfHas))
-        )
+        val mainStack = horizontalStack(listOf(mainButton, linkButtonIfHas, collapseButtonIfHas).filterNotNull())
 
         val transformedElements = mainStack.toArrayList()
         var height: Double = mainButtonContent.shape.size().y.toDouble()
