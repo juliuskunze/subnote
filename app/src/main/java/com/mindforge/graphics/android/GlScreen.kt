@@ -6,6 +6,7 @@ import javax.microedition.khronos.opengles.GL10
 import javax.microedition.khronos.egl.EGLConfig
 import android.opengl.GLES20
 import android.app.Activity
+import android.content.Context
 import android.view.MotionEvent
 import android.view.KeyEvent
 import com.mindforge.graphics.*
@@ -15,13 +16,10 @@ import com.mindforge.graphics.math.Rectangle
 import com.mindforge.graphics.math.rectangle
 import java.util.HashMap
 
-class GlScreen (activity: Activity, onReady: (GlScreen) -> Unit) : GLSurfaceView(activity), Screen {
+class GlScreen (context: Context, onReady: (GlScreen) -> Unit) : GLSurfaceView(context), Screen {
     init {
         setEGLContextClientVersion(2)
         setEGLConfigChooser(8, 8, 8, 8, 16, 0)
-    }
-
-    init {
         setRenderer(object : Renderer {
             override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
                 GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
@@ -42,7 +40,6 @@ class GlScreen (activity: Activity, onReady: (GlScreen) -> Unit) : GLSurfaceView
         setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY)
         this.setFocusable(true);
         this.setFocusableInTouchMode(true);
-
     }
 
     private var glContent: GlComposed = GlComposed(composed(observableIterable(listOf())), this)

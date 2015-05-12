@@ -2,13 +2,12 @@ package com.mindforge.app
 
 import android.app.Activity
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.Menu
 import android.view.MenuItem
-import com.evernote.*
-import com.evernote.auth.*
-import com.evernote.clients.*
+import android.widget.TextView
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GooglePlayServicesUtil
 import com.google.android.gms.common.api.GoogleApiClient
@@ -17,12 +16,14 @@ import com.google.android.gms.drive.Drive
 import com.google.android.gms.drive.DriveApi
 import com.google.android.gms.drive.DriveFile
 import com.google.android.gms.drive.DriveId
-import com.mindforge.graphics.Screen
-import com.mindforge.graphics.android.*
+import com.mindforge.graphics.android.GlFont
+import com.mindforge.graphics.android.GlScreen
+import com.mindforge.graphics.invoke
 import com.mindforge.graphics.observableIterable
-import kotlinx.android.synthetic.activity_main.mainTextView
-import org.xmind.core.ITopic
-import org.xmind.core.internal.Topic
+import com.mindforge.graphics.trigger
+import kotlinx.android.synthetic.activity_main.*
+import org.jetbrains.anko.*
+import org.xmind.core.IWorkbook
 import org.xmind.core.internal.dom.WorkbookBuilderImpl
 import java.io.File
 import java.io.FileOutputStream
@@ -33,7 +34,36 @@ public class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        textInput.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                textChanged(textInput.getText().toString())
+            }
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+            }
+
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+            }
+        })
+
+        newNoteButton.setOnClickListener {
+            newNote()
+        }
+
+        newSubnoteButton.setOnClickListener {
+            newSubnote()
+        }
+
+        removeNoteButton.setOnClickListener {
+            removeNode()
+        }
     }
+
+    private val textChanged = trigger<String>()
+    private val newNote = trigger<Unit>()
+    private val newSubnote = trigger<Unit>()
+    private val removeNode = trigger<Unit>()
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         getMenuInflater().inflate(R.menu.menu_main, menu)
@@ -59,11 +89,15 @@ public class MainActivity : Activity() {
                 true
             }
             R.id.drive_example -> {
-                startDriveAPIExampleActivity()
+                startActivity<DriveSampleActivity>()
                 true
             }
             R.id.import_from_evernote -> {
                 importFromEvernote()
+                true
+            }
+            R.id.create_new -> {
+                createNew()
                 true
             }
             else -> {
@@ -72,7 +106,12 @@ public class MainActivity : Activity() {
         }
     }
 
+    fun createNew() {
+        val workbook = workbookBuilder.createWorkbook()
+        workbook.getPrimarySheet().getRootTopic().setTitleText("Title")
 
+        open(workbook)
+    }
 
     private fun openFromDocuments() {
         open(File("/storage/emulated/0/documents/Projects.xmind"))
@@ -87,18 +126,12 @@ public class MainActivity : Activity() {
         chooseFileFromDrive()
     }
 
-    private fun importFromEvernote() {
-        EvernoteAsyncImporter(workbookBuilder = workbookBuilder, onReady = {
-            setDemoScreen(it.getPrimarySheet().getRootTopic())
-        }).execute()
-    }
-
-    private fun startDriveAPIExampleActivity() {
-        startActivity(Intent(this, javaClass<DriveSampleActivity>()))
+    fun importFromEvernote() {
+        EvernoteAsyncImporter(workbookBuilder = workbookBuilder, onReady = { open(it) }).execute()
     }
 
     private fun open(file: File) {
-        setDemoScreen(workbookBuilder.loadFromFile(file).getPrimarySheet().getRootTopic())
+        open(workbookBuilder.loadFromFile(file))
     }
 
     private val workbookBuilder : WorkbookBuilderImpl by Delegates.lazy { AndroidWorkbookBuilder(cacheDirectory = getCacheDir())() }
@@ -138,7 +171,7 @@ public class MainActivity : Activity() {
 
                     driveFile.open(driveFileOpenerApiClient, DriveFile.MODE_READ_ONLY, object : DriveFile.DownloadProgressListener {
                         override fun onProgress(bytesDownloaded: Long, bytesExpected: Long) {
-                            mainTextView.setText("loading... " + if (bytesExpected > 0) "$bytesDownloaded / $bytesExpected bytes" else "")
+                            //TODO: mainTextView.setText("loading... " + if (bytesExpected > 0) "$bytesDownloaded / $bytesExpected bytes" else "")
                         }
                     }).setResultCallback (object : ResultCallback<DriveApi.DriveContentsResult> {
                         override fun onResult(result: DriveApi.DriveContentsResult) {
@@ -155,15 +188,19 @@ public class MainActivity : Activity() {
         }
     }
 
-    private fun setDemoScreen(rootTopic: ITopic) {
+    var workbook : IWorkbook by Delegates.notNull()
+
+    private fun open(workbook: IWorkbook) {
+        this.workbook = workbook
+
         val screen = GlScreen(this) {
-            Shell(it, observableIterable(listOf(it.touchPointerKeys)), it.keyboard, GlFont(getResources()!!), rootTopic,
-                    onOpenHyperlink = {
-                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it)))
-                    })
+            Shell(it, observableIterable(listOf(it.touchPointerKeys)), it.keyboard, GlFont(getResources()!!), workbook, onOpenHyperlink = { browse(it) }, textChanged = textChanged, onActiveTopicChanged = {
+                textInput.setText(it?.getTitleText() ?: "")
+                textInput.selectAll()
+            },newNote = newNote, newSubnote = newSubnote, removeNode = removeNode)
         }
 
-        setContentView(screen)
+        mindMapLayout.addView(screen)
     }
 
     private fun InputStream.writeToFile(file: File) {

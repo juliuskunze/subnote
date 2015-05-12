@@ -7,15 +7,42 @@
                 android:paddingTop="@dimen/activity_vertical_margin"
                 android:paddingBottom="@dimen/activity_vertical_margin"
                 tools:context=".MainActivity">
-
-    <ScrollView
-        android:id="@+id/scroller"
+    <LinearLayout
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:scrollbars="vertical">
-    <TextView
-        android:id="@+id/mainTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
-    </ScrollView>
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">>
+        <EditText
+            android:id="@+id/textInput"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            android:imeOptions="actionDone"/>
+            <Button
+                android:id="@+id/newNoteButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/new_note"/>
+            <Button
+                android:id="@+id/newSubnoteButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/new_subnote"/>
+            <Button
+                android:id="@+id/removeNoteButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/remove_note"/>
+        </LinearLayout>
+        <RelativeLayout
+            android:id="@+id/mindMapLayout"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent">
+        </RelativeLayout>
+    </LinearLayout>
 </RelativeLayout>
