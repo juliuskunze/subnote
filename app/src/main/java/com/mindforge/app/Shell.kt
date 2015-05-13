@@ -33,7 +33,7 @@ class Shell(val screen: Screen,
             transformedElement(Draggable(coloredElement(rectangle(vector(200, 200)), Fills.solid(Colors.red)))),
             transformedElement(Draggable(coloredElement(rectangle(vector(300, 100)), Fills.solid(Colors.green)))),
             transformedElement(Draggable(coloredElement(rectangle(vector(100, 300)), Fills.solid(Colors.blue)))),
-            transformedElement(topicElement(workbook.getPrimarySheet().getRootTopic()).element)
+            transformedElement(TopicElement(workbook.getPrimarySheet().getRootTopic()))
     ))
 
     fun render() {
@@ -97,7 +97,9 @@ class Shell(val screen: Screen,
         registerInputs()
     }
 
-    fun topicElement(topic: ITopic): Stackable {
+    inner class TopicElement(topic: ITopic) : Composed<ITopic> {
+        override val content = topic
+
         val text = topic.getTitleText()
         val lineHeight = 40
         val mainButtonContent = textElement(text, fill = Fills.solid(if(activeNote == topic) Colors.red else Colors.black), font = defaultFont, lineHeight = lineHeight)
@@ -125,20 +127,18 @@ class Shell(val screen: Screen,
 
             Stackable(button, element.shape.size())
         } else null
-        val subElements = unfoldedSubTopics.map { topicElement(it) }
+        val subElements = unfoldedSubTopics.map { TopicElement(it) }
 
         val mainStack = horizontalStack(listOf(mainButton, linkButtonIfHas, collapseButtonIfHas).filterNotNull())
 
         val transformedElements = mainStack.toArrayList()
         var height: Double = mainButtonContent.shape.size().y.toDouble()
 
-        for (e in subElements) {
-            val indent = lineHeight
-            transformedElements.add(transformedElement(e.element, Transforms2.translation(vector(indent, -height))))
-            height += e.size.y.toDouble()
-        }
 
-        return Stackable(composed(transformedElements), vector(0, height))
+        fun stackable() = Stackable(this, vector(0, height))
+
+        override val elements = observableIterable(transformedElements)
+
     }
 
     fun registerInputs() {
