@@ -33,7 +33,6 @@ trait Composed<T> : Element<T> {
     val elements: ObservableIterable<TransformedElement<*>>
 
     override val shape: Shape get() = shape { elementsAt(it).any() }
-    //fun elementsRecursively() : Iterable<Element<*>>  = elements flatMap { if(it is Composed<*>) it.elementsRecursively() + it else listOf(it) }
 }
 
 fun composed<T>(
