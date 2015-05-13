@@ -2,6 +2,7 @@ package com.mindforge.graphics
 
 import com.mindforge.graphics.math.*
 import com.mindforge.graphics.*
+import java.util.ArrayList
 
 trait TransformedElement<T> {
     val element: Element<T>

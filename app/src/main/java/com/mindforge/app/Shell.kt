@@ -100,45 +100,56 @@ class Shell(val screen: Screen,
     inner class TopicElement(topic: ITopic) : Composed<ITopic> {
         override val content = topic
 
-        val text = topic.getTitleText()
-        val lineHeight = 40
-        val mainButtonContent = textElement(text, fill = Fills.solid(if(activeNote == topic) Colors.red else Colors.black), font = defaultFont, lineHeight = lineHeight)
-        val mainButton = Stackable(textRectangleButton(mainButtonContent) {
-            activeNote = topic
-        }, mainButtonContent.shape.size())
+        var height: Double = 0.0
 
-        val subTopics = topic.getAllChildren()
-        val unfoldedSubTopics = if (topic.isFolded()) listOf() else subTopics
-        val linkButtonIfHas = if (topic.getHyperlink() == null) null else {
-            val linkButtonTextElement = textElement("Link", fill = Fills.solid(Colors.blue), font = defaultFont, lineHeight = lineHeight)
+        fun getTransformedElementsAndSetHeight(): List<TransformedElement<*>> {
+            val topic = content
+            val text = topic.getTitleText()
+            val lineHeight = 40
+            val mainButtonContent = textElement(text, fill = Fills.solid(if (activeNote == topic) Colors.red else Colors.black), font = defaultFont, lineHeight = lineHeight)
+            val mainButton = Stackable(textRectangleButton(mainButtonContent) {
+                activeNote = topic
+            }, mainButtonContent.shape.size())
 
-            val element = textRectangleButton(linkButtonTextElement) {
-                onOpenHyperlink(topic.getHyperlink())
+            val subTopics = topic.getAllChildren()
+            val unfoldedSubTopics = if (topic.isFolded()) listOf() else subTopics
+            val linkButtonIfHas = if (topic.getHyperlink() == null) null else {
+                val linkButtonTextElement = textElement("Link", fill = Fills.solid(Colors.blue), font = defaultFont, lineHeight = lineHeight)
+
+                val element = textRectangleButton(linkButtonTextElement) {
+                    onOpenHyperlink(topic.getHyperlink())
+                }
+
+                Stackable(element, linkButtonTextElement.shape.size())
+            }
+            val collapseButtonIfHas = if (subTopics.any()) {
+                val element = textElement(if (topic.isFolded()) " + " else " - ", fill = Fills.solid(Colors.gray), font = defaultFont, lineHeight = lineHeight)
+                val button = textRectangleButton(element) {
+                    topic.setFolded(!topic.isFolded())
+                    render()
+                }
+
+                Stackable(button, element.shape.size())
+            } else null
+            val subElements = unfoldedSubTopics.map { TopicElement(it) }
+
+            val mainStack = horizontalStack(listOf(mainButton, linkButtonIfHas, collapseButtonIfHas).filterNotNull())
+
+            val transformedElements = mainStack.toArrayList()
+            mainButtonContent.shape.size().y.toDouble()
+
+            for (e in subElements) {
+                val indent = lineHeight
+                transformedElements.add(transformedElement(e, Transforms2.translation(vector(indent, -height))))
+                height += e.stackable().size.y.toDouble()
             }
 
-            Stackable(element, linkButtonTextElement.shape.size())
+            return transformedElements
         }
-        val collapseButtonIfHas = if (subTopics.any()) {
-            val element = textElement(if(topic.isFolded()) " + " else " - ", fill = Fills.solid(Colors.gray), font = defaultFont, lineHeight = lineHeight)
-            val button = textRectangleButton(element) {
-                topic.setFolded(!topic.isFolded())
-                render()
-            }
 
-            Stackable(button, element.shape.size())
-        } else null
-        val subElements = unfoldedSubTopics.map { TopicElement(it) }
-
-        val mainStack = horizontalStack(listOf(mainButton, linkButtonIfHas, collapseButtonIfHas).filterNotNull())
-
-        val transformedElements = mainStack.toArrayList()
-        var height: Double = mainButtonContent.shape.size().y.toDouble()
-
+        override val elements = ObservableArrayList(getTransformedElementsAndSetHeight())
 
         fun stackable() = Stackable(this, vector(0, height))
-
-        override val elements = observableIterable(transformedElements)
-
     }
 
     fun registerInputs() {
