@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>com.evernote</groupId>
+  <artifactId>android-sdk-parent</artifactId>
+  <versioning>
+    <release>1.1.2-LOCAL</release>
+    <versions>
+      <version>1.1.2-LOCAL</version>
+    </versions>
+    <lastUpdated>20150513175824</lastUpdated>
+  </versioning>
+</metadata>

@@ -30,10 +30,17 @@ class Shell(val screen: Screen,
         }
 
     fun mindMap(): Composed<*> = composed(listOf(
+<<<<<<< Updated upstream
             transformedElement(Draggable(coloredElement(rectangle(vector(200, 200)), Fills.solid(Colors.red)))),
             transformedElement(Draggable(coloredElement(rectangle(vector(300, 100)), Fills.solid(Colors.green)))),
             transformedElement(Draggable(coloredElement(rectangle(vector(100, 300)), Fills.solid(Colors.blue)))),
             transformedElement(TopicElement(workbook.getPrimarySheet().getRootTopic()))
+=======
+            //transformedElement(Draggable(coloredElement(rectangle(vector(200, 200)), Fills.solid(Colors.red)))),
+            //transformedElement(Draggable(coloredElement(rectangle(vector(300, 100)), Fills.solid(Colors.green)))),
+            //transformedElement(Draggable(coloredElement(rectangle(vector(100, 300)), Fills.solid(Colors.blue)))),
+            transformedElement(topicElement(workbook.getPrimarySheet().getRootTopic()).element)
+>>>>>>> Stashed changes
     ))
 
     fun render() {

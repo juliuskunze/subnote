@@ -1,4 +1,0 @@
-[submodule "pureal"]
-	path = pureal
-	url = https://github.com/pureal-code/pureal-os
-	branch = master

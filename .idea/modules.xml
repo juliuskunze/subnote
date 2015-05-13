@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/evernote-sdk-android/library/android-sdk.iml" filepath="$PROJECT_DIR$/evernote-sdk-android/library/android-sdk.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/graphics/graphics.iml" filepath="$PROJECT_DIR$/graphics/graphics.iml" />
       <module fileurl="file://$PROJECT_DIR$/xmind-android.iml" filepath="$PROJECT_DIR$/xmind-android.iml" />

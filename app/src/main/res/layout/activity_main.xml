@@ -38,6 +38,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/remove_note"/>
+            <Spinner
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/linkTypeSpinner" android:spinnerMode="dialog"/>
         </LinearLayout>
         <RelativeLayout
             android:id="@+id/mindMapLayout"
