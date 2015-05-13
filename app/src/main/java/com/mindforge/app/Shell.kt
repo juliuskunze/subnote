@@ -3,8 +3,11 @@ package com.mindforge.app
 import com.mindforge.graphics.*
 import com.mindforge.graphics.interaction.*
 import com.mindforge.graphics.math.rectangle
+import org.xmind.core.Core
 import org.xmind.core.ITopic
 import org.xmind.core.IWorkbook
+import org.xmind.core.internal.dom.TopicImpl
+import kotlin.properties.Delegates
 
 class Shell(val screen: Screen,
             val pointers: ObservableIterable<PointerKeys>,
@@ -18,8 +21,6 @@ class Shell(val screen: Screen,
             val newSubnote: Trigger<Unit>,
             val removeNode: Trigger<Unit>
 ) {
-    var scroll = Scrollable(mindMap())
-
     private var activeTopicLoc: ITopic? = null
 
     private var activeNote: ITopic?
@@ -29,28 +30,18 @@ class Shell(val screen: Screen,
             onActiveTopicChanged(it)
         }
 
-    fun mindMap(): Composed<*> = composed(listOf(
+    fun content(): Composed<*> = Scrollable(composed(listOf(
             transformedElement(Draggable(coloredElement(rectangle(vector(200, 200)), Fills.solid(Colors.red)))),
             transformedElement(Draggable(coloredElement(rectangle(vector(300, 100)), Fills.solid(Colors.green)))),
             transformedElement(Draggable(coloredElement(rectangle(vector(100, 300)), Fills.solid(Colors.blue)))),
-            transformedElement(TopicElement(workbook.getPrimarySheet().getRootTopic()))
-    ))
+            transformedElement(TopicElement(workbook.getPrimarySheet().getRootTopic() as TopicImpl))
+    )))
 
-    fun render() {
-        //TODO: rebuild only the part that changed?
-        val oldScrollPos = scroll.scrollPosition
-        scroll = Scrollable(mindMap())
-        scroll.scrollPosition = oldScrollPos
-        screen.content = scroll
-    }
-
-    fun manipulatingActiveNote(body: (ITopic) -> Unit) {
+    fun withActiveNoteIfHas(action: ITopic.() -> Unit) {
         val topic = activeNote
         if (topic == null) return
 
-        body(topic)
-
-        render()
+        topic.action()
     }
 
     fun initializeNewNote(newNote: ITopic) {
@@ -61,48 +52,59 @@ class Shell(val screen: Screen,
     }
 
     init {
-        textChanged addObserver { text ->
-            manipulatingActiveNote { it.setTitleText(text) }
+        textChanged addObserver {
+            withActiveNoteIfHas {
+                setTitleText(it)
+            }
         }
 
         newNote addObserver {
-            manipulatingActiveNote {
+            withActiveNoteIfHas {
                 val newNote = workbook.createTopic()
 
-                val parent = it.getParent()
-                parent.add(newNote, it.getIndex() + 1, ITopic.ATTACHED)
+                val parent = getParent()
+                parent.add(newNote, getIndex() + 1, ITopic.ATTACHED)
                 initializeNewNote(newNote)
             }
         }
 
         newSubnote addObserver {
-            manipulatingActiveNote {
+            withActiveNoteIfHas {
                 val newNote = workbook.createTopic()
-                it.add(newNote)
+                add(newNote)
 
                 initializeNewNote(newNote)
             }
         }
 
         removeNode addObserver {
-            manipulatingActiveNote {
-                val parent = it.getParent()
-                parent.remove(it)
+            withActiveNoteIfHas {
+                val parent = getParent()
+                parent.remove(this)
 
                 activeNote = parent
             }
         }
 
-        render()
+        screen.content = content()
+
         registerInputs()
     }
 
-    inner class TopicElement(topic: ITopic) : Composed<ITopic> {
+    inner class TopicElement(topic: TopicImpl) : Composed<ITopic> {
         override val content = topic
+        override val changed = trigger<Unit>()
+        override val elements = ObservableArrayList<TransformedElement<*>>()
+        var subElements : List<TopicElement> by Delegates.notNull()
+        var height: Double by Delegates.notNull()
 
-        var height: Double = 0.0
+        init {
+            initElementsAndHeight()
 
-        fun getTransformedElementsAndSetHeight(): List<TransformedElement<*>> {
+            topic.getCoreEventSupport().registerCoreEventListener(content, Core.TitleText, { initElementsAndHeight() })
+        }
+
+        private fun initElementsAndHeight() {
             val topic = content
             val text = topic.getTitleText()
             val lineHeight = 40
@@ -126,30 +128,29 @@ class Shell(val screen: Screen,
                 val element = textElement(if (topic.isFolded()) " + " else " - ", fill = Fills.solid(Colors.gray), font = defaultFont, lineHeight = lineHeight)
                 val button = textRectangleButton(element) {
                     topic.setFolded(!topic.isFolded())
-                    render()
+                    changed()
                 }
 
                 Stackable(button, element.shape.size())
             } else null
-            val subElements = unfoldedSubTopics.map { TopicElement(it) }
+            subElements = unfoldedSubTopics.map { TopicElement(it as TopicImpl) }
 
             val mainStack = horizontalStack(listOf(mainButton, linkButtonIfHas, collapseButtonIfHas).filterNotNull())
 
-            val transformedElements = mainStack.toArrayList()
-            mainButtonContent.shape.size().y.toDouble()
+            elements.clearAndAddAll(mainStack)
+            var partialHeight = mainButtonContent.shape.size().y.toDouble()
 
             for (e in subElements) {
                 val indent = lineHeight
-                transformedElements.add(transformedElement(e, Transforms2.translation(vector(indent, -height))))
-                height += e.stackable().size.y.toDouble()
+                elements.add(transformedElement(e, Transforms2.translation(vector(indent, -partialHeight))))
+                partialHeight += e.stackable().size.y.toDouble()
             }
 
-            return transformedElements
+            this.height = partialHeight
         }
 
-        override val elements = ObservableArrayList(getTransformedElementsAndSetHeight())
-
-        fun stackable() = Stackable(this, vector(0, height))
+        // TODO: remove height schlemian
+        fun stackable() = Stackable(this, vector(0, subElements.map {it.height}.sum()))
     }
 
     fun registerInputs() {

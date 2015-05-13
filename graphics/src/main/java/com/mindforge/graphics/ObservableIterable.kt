@@ -1,9 +1,6 @@
 package com.mindforge.graphics
 
-import com.mindforge.graphics.Observable
-import com.mindforge.graphics.observable
 import java.util.ArrayList
-import com.mindforge.graphics.trigger
 
 trait ObservableIterable<T> : Iterable<T> {
     val added: Observable<T>
@@ -32,7 +29,7 @@ trait ObservableList<T> : ObservableIterable<T>, MutableList<T>
 
 fun observableList<T>(vararg elements: T) : ObservableList<T> = ObservableArrayList<T>(elements map {it})
 
-class ObservableArrayList<T>(val elements : Iterable<T>) : ArrayList<T>(elements map {it}), ObservableList<T> {
+class ObservableArrayList<T>(elements: Iterable<T> = listOf()) : ArrayList<T>(elements map { it }), ObservableList<T> {
     override val removed = trigger<T>()
     override val added = trigger<T>()
     override fun add(e: T) : Boolean {
@@ -42,23 +39,37 @@ class ObservableArrayList<T>(val elements : Iterable<T>) : ArrayList<T>(elements
         return true
     }
 
+    override fun addAll(c: Collection<T>): Boolean {
+        c.forEach { add(it) }
+        return c.any()
+    }
+
     override fun remove(o: Any?) : Boolean {
-        if(!super<ArrayList>.remove(o)) return false
+        if(!super<ArrayList>.remove(o)) {
+            return false
+        }
 
         removed(o as T)
 
         return true
     }
 
-    override fun removeAll(c : Collection<Any?>) = c.fold(initial=false) { removedAny, it -> remove(it) or removedAny}
+    override fun removeAll(c : Collection<Any?>): Boolean {
+        var result = false
+
+        for(index in c.indices.reversed()) {
+            result = remove(c.elementAt(index)) || result
+        }
+
+        return result
+    }
 
     override fun clear() {
         removeAll(this)
     }
 
-    fun setTo(newElements : Iterable<T>) {
+    fun clearAndAddAll(newElements : Iterable<T>) {
         clear()
-
-        newElements forEach { add(it) }
+        addAll(newElements)
     }
 }

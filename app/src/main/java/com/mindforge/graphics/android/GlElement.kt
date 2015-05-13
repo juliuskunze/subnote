@@ -65,7 +65,7 @@ class GlComposed(val originalComposed: Composed<*>, screen: GlScreen) : GlElemen
                 onChanged()
             }
             originalComposed.elements.removed addObserver { removedElement ->
-                val glElement = (e.singleOrNull { element -> element.element.original === removedElement })
+                val glElement = (e.singleOrNull { element -> element.element.original === removedElement.element })
                 if (glElement != null) {
                     e.remove(glElement)
                     removed(glElement)
@@ -80,7 +80,6 @@ class GlComposed(val originalComposed: Composed<*>, screen: GlScreen) : GlElemen
 
     override fun draw(parentTransform: GlTransform) = e.reverse() forEach { it.element.draw(it.transform before parentTransform) }
 }
-
 
 open class GlColoredElement(val originalColoredElement: ColoredElement<*>, screen: GlScreen) : GlElement(originalColoredElement, screen), ColoredElement<Any?> {
     override val shape: GlShape  get() = glShape
