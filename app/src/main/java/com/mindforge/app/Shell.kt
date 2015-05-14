@@ -111,7 +111,7 @@ class Shell(val screen: Screen,
         init {
             initElementsAndStackable()
 
-            val eventTypes = listOf(Core.TitleText, Core.TopicAdd, Core.TopicRemove, Core.TopicFolded, Core.TopicHyperlink, Core.TopicNotes)
+            val eventTypes = listOf(Core.TitleText, Core.TopicAdd, Core.TopicRemove, Core.TopicFolded, Core.TopicHyperlink, Core.TopicNotes, IsActiveChangedCoreEventType)
             eventTypes.forEach { content.registerCoreEventListener(it) { initElementsAndStackable() } }
         }
 
