@@ -66,10 +66,10 @@ class Shell(val screen: Screen,
             }
         }
 
-        nodeLinkChanged addObserver { nodeLink ->
-            manipulatingActiveNote {
-                it.setHyperlink(nodeLink.url)
-                when (nodeLink.linkType) {
+        nodeLinkChanged addObserver {
+            withActiveNoteIfHas {
+                setHyperlink(it.url)
+                when (it.linkType) {
                     LinkType.Evernote -> { /*TODO*/ }
                 }
             }

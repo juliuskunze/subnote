@@ -11,6 +11,8 @@ import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import com.evernote.client.android.EvernoteSession
+import com.evernote.client.android.OnClientCallback
+import com.evernote.edam.type.Notebook
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GooglePlayServicesUtil
 import com.google.android.gms.common.api.GoogleApiClient
@@ -27,12 +29,8 @@ import com.mindforge.graphics.trigger
 import kotlinx.android.synthetic.activity_main.*
 import org.jetbrains.anko.browse
 import org.jetbrains.anko.startActivity
-import org.xmind.core.Core
 import org.xmind.core.IWorkbook
-import org.xmind.core.event.CoreEvent
-import org.xmind.core.event.ICoreEventListener
 import org.xmind.core.internal.dom.WorkbookBuilderImpl
-import org.xmind.core.internal.event.CoreEventSupport
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -78,7 +76,21 @@ public class MainActivity : Activity() {
                         else nodeLinkChanged(NodeLink(linkType, it))
                     }
                     LinkType.Evernote -> {
-                        getEvernoteSession().authenticate(this@MainActivity)
+                        withAuthenticatedEvernoteSession {
+                            getClientFactory().createNoteStoreClient().listNotebooks(object : OnClientCallback<List<Notebook>>() {
+                                override fun onSuccess(notebooks: List<Notebook>) {
+                                    showSelectDialog("Select notebook", notebooks) {
+                                        if (it != null) {
+
+                                        }
+                                    }
+                                }
+                                override fun onException(ex: Exception) {
+                                    //logOut(this@MainActivity)
+                                }
+
+                            })
+                        }
                     }
                 }
             }
@@ -192,16 +204,28 @@ public class MainActivity : Activity() {
         startIntentSenderForResult(intentSender, IntentCode.openFileFromDrive, null, 0, 0, 0);
     }
 
-    fun withEvernoteSession(action: (EvernoteSession) -> Unit) = EvernoteSession.getInstance(
-            this, Evernote.consumerKey, Evernote.consumerSecret, Evernote.evernoteService, true
-    ).let {
-        if (!it.isLoggedIn()) {
-            it.authenticate(this)
-        }
-    }
+    fun withAuthenticatedEvernoteSession(action: EvernoteSession.() -> Unit) =
+            EvernoteSession.getInstance(this, Evernote.consumerKey, Evernote.consumerSecret, Evernote.evernoteService, true)
+                    .let { session ->
+                        if (!session.isLoggedIn()) {
+                            onEvernoteAuthenticated.addObserver {
+                                session.action()
+                                stop()
+                            }
+                            session.authenticate(this)
+                        } else {
+                            session.action()
+                        }
+                    }
+
+    val onEvernoteAuthenticated = trigger<Unit>()
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         when (requestCode) {
+            EvernoteSession.REQUEST_CODE_OAUTH ->
+                if (resultCode == Activity.RESULT_OK) {
+                    onEvernoteAuthenticated()
+                }
             IntentCode.openFileFromDrive ->
                 if (resultCode == Activity.RESULT_OK) {
                     val driveFile = Drive.DriveApi.getFile(driveFileOpenerApiClient, data!!.getExtras().get("response_drive_id") as DriveId)

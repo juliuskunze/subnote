@@ -7,7 +7,7 @@ trait Observable<T> {
             override fun invoke(value: T) = this.action(value)
 
             override fun stop() {
-                if(!observers.remove(this)) throw UnsupportedOperationException("stop can only be called once.")
+                if(!observers.remove(this)) throw IllegalStateException("stop can only be called once.")
             }
         }
 
