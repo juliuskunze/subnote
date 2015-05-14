@@ -209,8 +209,11 @@ public class MainActivity : Activity() {
                     .let { session ->
                         if (!session.isLoggedIn()) {
                             onEvernoteAuthenticated.addObserver {
-                                session.action()
-                                stop()
+                                try {
+                                    session.action()
+                                } finally {
+                                    stop()
+                                }
                             }
                             session.authenticate(this)
                         } else {
