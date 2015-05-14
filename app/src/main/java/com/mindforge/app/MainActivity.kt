@@ -7,7 +7,9 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.view.Menu
 import android.view.MenuItem
-import android.widget.TextView
+import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GooglePlayServicesUtil
 import com.google.android.gms.common.api.GoogleApiClient
@@ -22,7 +24,8 @@ import com.mindforge.graphics.invoke
 import com.mindforge.graphics.observableIterable
 import com.mindforge.graphics.trigger
 import kotlinx.android.synthetic.activity_main.*
-import org.jetbrains.anko.*
+import org.jetbrains.anko.browse
+import org.jetbrains.anko.startActivity
 import org.xmind.core.IWorkbook
 import org.xmind.core.internal.dom.WorkbookBuilderImpl
 import java.io.File
@@ -58,9 +61,30 @@ public class MainActivity : Activity() {
         removeNoteButton.setOnClickListener {
             removeNode()
         }
+
+        linkTypeSpinner.setAdapter(ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, LinkType.values()))
+        linkTypeSpinner.setOnItemSelectedListener(object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View?, pos: Int, id: Long) {
+                val linkType = (parent.getItemAtPosition(pos) as LinkType)
+                when (linkType) {
+                    LinkType.None -> nodeLinkChanged(NodeLink(linkType, null))
+                    LinkType.WebUrl -> showInputDialog("Web URL link", "Enter the URL") {
+                        if (it == null) parent.setSelection(LinkType.None.ordinal())
+                        else nodeLinkChanged(NodeLink(linkType, it))
+                    }
+                    LinkType.Evernote -> {
+                        /*TODO*/
+                    }
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+            }
+        })
     }
 
     private val textChanged = trigger<String>()
+    private val nodeLinkChanged = trigger<NodeLink>()
     private val newNote = trigger<Unit>()
     private val newSubnote = trigger<Unit>()
     private val removeNode = trigger<Unit>()
@@ -134,7 +158,7 @@ public class MainActivity : Activity() {
         open(workbookBuilder.loadFromFile(file))
     }
 
-    private val workbookBuilder : WorkbookBuilderImpl by Delegates.lazy { AndroidWorkbookBuilder(cacheDirectory = getCacheDir())() }
+    private val workbookBuilder: WorkbookBuilderImpl by Delegates.lazy { AndroidWorkbookBuilder(cacheDirectory = getCacheDir())() }
 
     private val driveFileOpenerApiClient: GoogleApiClient by Delegates.lazy {
         GoogleApiClient.Builder(this).addApi(Drive.API).addScope(Drive.SCOPE_FILE).addConnectionCallbacks(object : GoogleApiClient.ConnectionCallbacks {
@@ -188,16 +212,24 @@ public class MainActivity : Activity() {
         }
     }
 
-    var workbook : IWorkbook by Delegates.notNull()
+    var workbook: IWorkbook by Delegates.notNull()
 
     private fun open(workbook: IWorkbook) {
         this.workbook = workbook
 
         val screen = GlScreen(this) {
-            Shell(it, observableIterable(listOf(it.touchPointerKeys)), it.keyboard, GlFont(getResources()!!), workbook, onOpenHyperlink = { browse(it) }, textChanged = textChanged, onActiveTopicChanged = {
-                textInput.setText(it?.getTitleText() ?: "")
-                textInput.selectAll()
-            },newNote = newNote, newSubnote = newSubnote, removeNode = removeNode)
+            Shell(it, observableIterable(listOf(it.touchPointerKeys)), it.keyboard, GlFont(getResources()!!), workbook,
+                    onOpenHyperlink = { browse(it) },
+                    onActiveTopicChanged = {
+                        textInput.setText(it?.getTitleText() ?: "")
+                        textInput.selectAll()
+                        linkTypeSpinner.setSelection((it?.getLinkType() ?: LinkType.None).ordinal())
+                    },
+                    textChanged = textChanged,
+                    nodeLinkChanged = nodeLinkChanged,
+                    newNote = newNote,
+                    newSubnote = newSubnote,
+                    removeNode = removeNode)
         }
 
         mindMapLayout.addView(screen)

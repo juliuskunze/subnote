@@ -13,6 +13,7 @@ class Shell(val screen: Screen,
             val workbook: IWorkbook,
             val onOpenHyperlink: (String) -> Unit,
             val textChanged: Observable<String>,
+            val nodeLinkChanged: Observable<NodeLink>,
             val onActiveTopicChanged: (ITopic?) -> Unit,
             val newNote: Trigger<Unit>,
             val newSubnote: Trigger<Unit>,
@@ -30,17 +31,10 @@ class Shell(val screen: Screen,
         }
 
     fun mindMap(): Composed<*> = composed(listOf(
-<<<<<<< Updated upstream
-            transformedElement(Draggable(coloredElement(rectangle(vector(200, 200)), Fills.solid(Colors.red)))),
-            transformedElement(Draggable(coloredElement(rectangle(vector(300, 100)), Fills.solid(Colors.green)))),
-            transformedElement(Draggable(coloredElement(rectangle(vector(100, 300)), Fills.solid(Colors.blue)))),
-            transformedElement(TopicElement(workbook.getPrimarySheet().getRootTopic()))
-=======
             //transformedElement(Draggable(coloredElement(rectangle(vector(200, 200)), Fills.solid(Colors.red)))),
             //transformedElement(Draggable(coloredElement(rectangle(vector(300, 100)), Fills.solid(Colors.green)))),
             //transformedElement(Draggable(coloredElement(rectangle(vector(100, 300)), Fills.solid(Colors.blue)))),
-            transformedElement(topicElement(workbook.getPrimarySheet().getRootTopic()).element)
->>>>>>> Stashed changes
+            transformedElement(TopicElement(workbook.getPrimarySheet().getRootTopic()))
     ))
 
     fun render() {
@@ -70,6 +64,15 @@ class Shell(val screen: Screen,
     init {
         textChanged addObserver { text ->
             manipulatingActiveNote { it.setTitleText(text) }
+        }
+
+        nodeLinkChanged addObserver { nodeLink ->
+            manipulatingActiveNote {
+                it.setHyperlink(nodeLink.url)
+                when (nodeLink.linkType) {
+                    LinkType.Evernote -> { /*TODO*/ }
+                }
+            }
         }
 
         newNote addObserver {

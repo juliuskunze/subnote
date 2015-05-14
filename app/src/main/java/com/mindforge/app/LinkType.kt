@@ -1,9 +1,11 @@
 package com.mindforge.app
 
+import org.xmind.core.ITopic
+
 /**
  * Specifies the type of a linked node, i.e. how the hyperlink property is handled.
- * The idea behind this is to use an url format that allows compatibility with XMind,
- * i.e clicking the link there allows the user to navigate to the content that we represent as subnodes.
+ * The idea behind this is to use an url format that allows compatibility with XMind:
+ * Clicking the link there allows the user to navigate to the content that we represent as subnodes.
  */
 enum class LinkType {
     /** Nothing happens... */
@@ -12,6 +14,15 @@ enum class LinkType {
     WebUrl
     /** The hyperlink references an Evernote notebook */
     Evernote
+
+    //Later...
     /** The hyperlink references a Gmail inbox */
-    Gmail
+    //Gmail
 }
+
+fun ITopic.getLinkType() : LinkType = when {
+    this.getHyperlink().isNotEmpty() -> LinkType.WebUrl
+    else -> LinkType.None
+}
+
+class NodeLink (val linkType: LinkType, val url: String?)
