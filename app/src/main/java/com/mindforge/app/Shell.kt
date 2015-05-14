@@ -104,18 +104,19 @@ class Shell(val screen: Screen,
         override val elements = ObservableArrayList<TransformedElement<*>>()
         private val subElements = ObservableArrayList<TopicElement>()
         var stackable = Stackable(this, zeroVector2)
-        val stacks = ArrayList<Stack>()
+        var toStop = {}
 
         private var mainButtonContentHeight: Double by Delegates.notNull()
 
         init {
-            initElementsAndStackableSize()
+            initElementsAndStackable()
 
             val eventTypes = listOf(Core.TitleText, Core.TopicAdd, Core.TopicRemove, Core.TopicFolded, Core.TopicHyperlink, Core.TopicNotes)
-            eventTypes.forEach { content.registerCoreEventListener(it) { initElementsAndStackableSize() } }
+            eventTypes.forEach { content.registerCoreEventListener(it) { initElementsAndStackable() } }
         }
 
-        private fun initElementsAndStackableSize() {
+
+        private fun initElementsAndStackable() {
             val topic = content
             val text = topic.getTitleText()
             val lineHeight = 40
@@ -142,25 +143,29 @@ class Shell(val screen: Screen,
 
                 Stackable(button, element.shape.size())
             } else null
+
+            toStop()
             subElements.clearAndAddAll(unfoldedSubTopics.map { TopicElement(it as TopicImpl) })
 
             val indent = lineHeight
 
-            stacks.forEach { it.removeObservers()}
-            stacks.clear()
-
             val mainStack = horizontalStack(observableIterable(listOf(mainButton, linkButtonIfHas, collapseButtonIfHas).filterNotNull()))
             val childStack = verticalStack(observableIterable(subElements.map { it.stackable }))
-            stacks.addAll(listOf(mainStack, childStack))
+            val stacks = listOf(mainStack, childStack)
 
+            mainButtonContentHeight = mainButtonContent.shape.size().y.toDouble()
 
             elements.clearAndAddAll(listOf(
                     transformedElement(mainStack),
-                    transformedElement(childStack, Transforms2.translation(vector(indent, -mainButtonContent.shape.size().y.toDouble()))))
+                    transformedElement(childStack, Transforms2.translation(vector(indent, -mainButtonContentHeight))))
             )
-            mainButtonContentHeight = mainButtonContent.shape.size().y.toDouble()
 
-            subElements.mapObservable { it.stackable.sizeChanged }.startKeepingAllObserved { updateStackableSize() }
+            val observer = subElements.mapObservable { it.stackable.sizeChanged }.startKeepingAllObserved { updateStackableSize() }
+
+            toStop = {
+                stacks.forEach { it.removeObservers()}
+                observer.stop()
+            }
 
             updateStackableSize()
         }
