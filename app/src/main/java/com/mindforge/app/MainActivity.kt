@@ -10,6 +10,7 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import com.evernote.client.android.EvernoteSession
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GooglePlayServicesUtil
 import com.google.android.gms.common.api.GoogleApiClient
@@ -73,7 +74,7 @@ public class MainActivity : Activity() {
                         else nodeLinkChanged(NodeLink(linkType, it))
                     }
                     LinkType.Evernote -> {
-                        /*TODO*/
+                        getEvernoteSession().authenticate(this@MainActivity)
                     }
                 }
             }
@@ -185,6 +186,14 @@ public class MainActivity : Activity() {
         val intentSender = Drive.DriveApi.newOpenFileActivityBuilder().build(driveFileOpenerApiClient)
 
         startIntentSenderForResult(intentSender, IntentCode.openFileFromDrive, null, 0, 0, 0);
+    }
+
+    fun withEvernoteSession(action: (EvernoteSession) -> Unit) = EvernoteSession.getInstance(
+            this, Evernote.consumerKey, Evernote.consumerSecret, Evernote.evernoteService, true
+    ).let {
+        if (!it.isLoggedIn()) {
+            it.authenticate(this)
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
