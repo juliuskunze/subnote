@@ -6,6 +6,7 @@ import com.mindforge.graphics.math.rectangle
 import org.xmind.core.Core
 import org.xmind.core.ITopic
 import org.xmind.core.IWorkbook
+import org.xmind.core.event.CoreEvent
 import org.xmind.core.internal.dom.TopicImpl
 import kotlin.properties.Delegates
 
@@ -21,12 +22,17 @@ class Shell(val screen: Screen,
             val newSubnote: Trigger<Unit>,
             val removeNode: Trigger<Unit>
 ) {
-    private var activeTopicLoc: ITopic? = null
+    private var activeTopicLoc: TopicImpl? = null
 
-    private var activeNote: ITopic?
+    private var activeNote: TopicImpl?
         get() = activeTopicLoc
-        set(it: ITopic?) {
+        set(it: TopicImpl?) {
+            val old = activeTopicLoc
             activeTopicLoc = it
+
+            old?.dispatchIsActiveChanged()
+            it?.dispatchIsActiveChanged()
+
             onActiveTopicChanged(it)
         }
 
@@ -37,18 +43,18 @@ class Shell(val screen: Screen,
             transformedElement(TopicElement(workbook.getPrimarySheet().getRootTopic() as TopicImpl))
     )))
 
-    fun withActiveNoteIfHas(action: ITopic.() -> Unit) {
+    private fun withActiveNoteIfHas(action: ITopic.() -> Unit) {
         val topic = activeNote
         if (topic == null) return
 
         topic.action()
     }
 
-    fun initializeNewNote(newNote: ITopic) {
+    private fun initializeNewNote(newNote: ITopic) {
         newNote.setTitleText("new note")
         newNote.getParent().setFolded(false)
 
-        activeNote = newNote
+        activeNote = newNote as TopicImpl
     }
 
     init {
@@ -82,7 +88,7 @@ class Shell(val screen: Screen,
                 val parent = getParent()
                 parent.remove(this)
 
-                activeNote = parent
+                activeNote = parent as TopicImpl
             }
         }
 
@@ -95,16 +101,19 @@ class Shell(val screen: Screen,
         override val content = topic
         override val changed = trigger<Unit>()
         override val elements = ObservableArrayList<TransformedElement<*>>()
-        var subElements : List<TopicElement> by Delegates.notNull()
-        var height: Double by Delegates.notNull()
+        private val subElements = ObservableArrayList<TopicElement>()
+        var stackable = Stackable(this, zeroVector2)
+
+        private var mainButtonContentHeight: Double by Delegates.notNull()
 
         init {
-            initElementsAndHeight()
+            initElementsAndStackableSize()
 
-            topic.getCoreEventSupport().registerCoreEventListener(content, Core.TitleText, { initElementsAndHeight() })
+            val eventTypes = listOf(Core.TitleText, Core.TopicAdd, Core.TopicRemove, Core.TopicFolded, Core.TopicHyperlink, Core.TopicNotes)
+            eventTypes.forEach { content.registerCoreEventListener(it) { initElementsAndStackableSize() } }
         }
 
-        private fun initElementsAndHeight() {
+        private fun initElementsAndStackableSize() {
             val topic = content
             val text = topic.getTitleText()
             val lineHeight = 40
@@ -113,8 +122,7 @@ class Shell(val screen: Screen,
                 activeNote = topic
             }, mainButtonContent.shape.size())
 
-            val subTopics = topic.getAllChildren()
-            val unfoldedSubTopics = if (topic.isFolded()) listOf() else subTopics
+            val unfoldedSubTopics = if (topic.isFolded()) listOf() else topic.getAllChildren()
             val linkButtonIfHas = if (topic.getHyperlink() == null) null else {
                 val linkButtonTextElement = textElement("Link", fill = Fills.solid(Colors.blue), font = defaultFont, lineHeight = lineHeight)
 
@@ -124,33 +132,33 @@ class Shell(val screen: Screen,
 
                 Stackable(element, linkButtonTextElement.shape.size())
             }
-            val collapseButtonIfHas = if (subTopics.any()) {
+            val collapseButtonIfHas = if (topic.getAllChildren().any()) {
                 val element = textElement(if (topic.isFolded()) " + " else " - ", fill = Fills.solid(Colors.gray), font = defaultFont, lineHeight = lineHeight)
                 val button = textRectangleButton(element) {
                     topic.setFolded(!topic.isFolded())
-                    changed()
                 }
 
                 Stackable(button, element.shape.size())
             } else null
-            subElements = unfoldedSubTopics.map { TopicElement(it as TopicImpl) }
+            subElements.clearAndAddAll(unfoldedSubTopics.map { TopicElement(it as TopicImpl) })
 
-            val mainStack = horizontalStack(listOf(mainButton, linkButtonIfHas, collapseButtonIfHas).filterNotNull())
+            val indent = lineHeight
 
-            elements.clearAndAddAll(mainStack)
-            var partialHeight = mainButtonContent.shape.size().y.toDouble()
+            val mainStack = horizontalStack(observableIterable(listOf(mainButton, linkButtonIfHas, collapseButtonIfHas).filterNotNull()))
+            val transformedChildStack = transformedElement(verticalStack(observableIterable(subElements.map { it.stackable })), Transforms2.translation(vector(indent, -mainButtonContent.shape.size().y.toDouble())))
 
-            for (e in subElements) {
-                val indent = lineHeight
-                elements.add(transformedElement(e, Transforms2.translation(vector(indent, -partialHeight))))
-                partialHeight += e.stackable().size.y.toDouble()
-            }
+            elements.clearAndAddAll(listOf(transformedElement(mainStack), transformedChildStack))
+            mainButtonContentHeight = mainButtonContent.shape.size().y.toDouble()
 
-            this.height = partialHeight
+            subElements.mapObservable {it.stackable.sizeChanged}.startKeepingAllObserved { updateStackableSize() }
+
+            updateStackableSize()
         }
 
-        // TODO: remove height schlemian
-        fun stackable() = Stackable(this, vector(0, subElements.map {it.height}.sum()))
+        private fun updateStackableSize() {
+            // TODO: remove height Schlemian
+            stackable.size = vector(0, mainButtonContentHeight + subElements.map { it.stackable.size.y.toDouble() }.sum())
+        }
     }
 
     fun registerInputs() {
@@ -201,3 +209,8 @@ class Shell(val screen: Screen,
     }
 }
 
+fun TopicImpl.dispatchIsActiveChanged() {
+    getCoreEventSupport().dispatch(this, CoreEvent(this, IsActiveChangedCoreEventType, null))
+}
+
+private val IsActiveChangedCoreEventType = "isActive"

@@ -40,6 +40,7 @@ fun glElement(original: Element<*>, screen: GlScreen): GlElement {
 class GlTransformedElement(val originalTransformedElement: TransformedElement<*>, screen: GlScreen) : TransformedElement<Any?> {
     override val element = glElement(originalTransformedElement.element, screen)
     override var transform: GlTransform = glTransform(originalTransformedElement.transform)
+    override val transformChanged = originalTransformedElement.transformChanged
 
     //TODO: introduce delegate for this pattern
     init {
