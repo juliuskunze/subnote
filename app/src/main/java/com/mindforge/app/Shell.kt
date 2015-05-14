@@ -8,6 +8,7 @@ import org.xmind.core.ITopic
 import org.xmind.core.IWorkbook
 import org.xmind.core.event.CoreEvent
 import org.xmind.core.internal.dom.TopicImpl
+import java.util.ArrayList
 import kotlin.properties.Delegates
 
 class Shell(val screen: Screen,
@@ -103,6 +104,7 @@ class Shell(val screen: Screen,
         override val elements = ObservableArrayList<TransformedElement<*>>()
         private val subElements = ObservableArrayList<TopicElement>()
         var stackable = Stackable(this, zeroVector2)
+        val stacks = ArrayList<Stack>()
 
         private var mainButtonContentHeight: Double by Delegates.notNull()
 
@@ -144,13 +146,21 @@ class Shell(val screen: Screen,
 
             val indent = lineHeight
 
-            val mainStack = horizontalStack(observableIterable(listOf(mainButton, linkButtonIfHas, collapseButtonIfHas).filterNotNull()))
-            val transformedChildStack = transformedElement(verticalStack(observableIterable(subElements.map { it.stackable })), Transforms2.translation(vector(indent, -mainButtonContent.shape.size().y.toDouble())))
+            stacks.forEach { it.removeObservers()}
+            stacks.clear()
 
-            elements.clearAndAddAll(listOf(transformedElement(mainStack), transformedChildStack))
+            val mainStack = horizontalStack(observableIterable(listOf(mainButton, linkButtonIfHas, collapseButtonIfHas).filterNotNull()))
+            val childStack = verticalStack(observableIterable(subElements.map { it.stackable }))
+            stacks.addAll(listOf(mainStack, childStack))
+
+
+            elements.clearAndAddAll(listOf(
+                    transformedElement(mainStack),
+                    transformedElement(childStack, Transforms2.translation(vector(indent, -mainButtonContent.shape.size().y.toDouble()))))
+            )
             mainButtonContentHeight = mainButtonContent.shape.size().y.toDouble()
 
-            subElements.mapObservable {it.stackable.sizeChanged}.startKeepingAllObserved { updateStackableSize() }
+            subElements.mapObservable { it.stackable.sizeChanged }.startKeepingAllObserved { updateStackableSize() }
 
             updateStackableSize()
         }

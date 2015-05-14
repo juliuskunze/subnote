@@ -1,7 +1,5 @@
 package com.mindforge.graphics
 
-import java.util.ArrayList
-
 trait ObservableIterable<T> : Iterable<T> {
     val added: Observable<T>
     val removed: Observable<T>
@@ -13,16 +11,19 @@ trait ObservableIterable<T> : Iterable<T> {
     }
 }
 
-fun <T> ObservableIterable<Observable<T>>.startKeepingAllObserved(observer: (T) -> Unit) {
-    forEach { it addObserver observer }
-    added addObserver { it addObserver observer }
-    removed addObserver { it removeObserver observer }
-}
+fun <T> ObservableIterable<Observable<T>>.startKeepingAllObserved(observer: (T) -> Unit): Observer {
+    val observersByElement = hashMapOf(*(this.map { it to (it addObserver { observer(it) } ) }.copyToArray()))
 
-fun <T> ObservableIterable<Observable<T>>.stopKeepingAllObserved(observer: (T)->Unit) {
-    forEach {it removeObserver observer}
-    added removeObserver {it removeObserver observer}
-    removed removeObserver {it removeObserver observer}
+    val o1 = added addObserver { observersByElement.put(it, it addObserver { observer(it) }) }
+    val o2 = removed addObserver { observersByElement.remove(it).stop() }
+
+    return object : Observer {
+        override fun stop() {
+            observersByElement.values().forEach { it.stop() }
+            o1.stop()
+            o2.stop()
+        }
+    }
 }
 
 fun observableIterable<T>(

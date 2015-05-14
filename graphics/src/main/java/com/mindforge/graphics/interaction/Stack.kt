@@ -19,24 +19,30 @@ class Stack(val stackElements: ObservableIterable<Stackable>, val horizontal: Bo
     override val elements = ObservableArrayList<TransformedElement<*>> ()
 
     override val content = Unit
-    private val changedTrigger = trigger<Unit>()
-    override val changed = changedTrigger
+    override val changed = trigger<Unit>()
 
     init {
         initTransforms()
+    }
 
-        stackElements.added addObserver {
-            elements.add(MutableTransformedElement(it.element))
-            initTransforms()
-        }
-        stackElements.removed addObserver {
-            elements.remove(MutableTransformedElement(it.element))
-            initTransforms()
-        }
+    val observer1 = stackElements.mapObservable { it.sizeChanged }.startKeepingAllObserved {
+        initTransforms()
+    }
 
-        stackElements.mapObservable { it.sizeChanged }.startKeepingAllObserved {
-            initTransforms()
-        }
+    val observer2 = stackElements.added addObserver {
+        elements.add(MutableTransformedElement(it.element))
+        initTransforms()
+    }
+
+    val observer3 = stackElements.removed addObserver  {
+        elements.remove(MutableTransformedElement(it.element))
+        initTransforms()
+    }
+
+    fun removeObservers() {
+        observer1.stop()
+        observer2.stop()
+        observer3.stop()
     }
 
     fun initTransforms() {
@@ -49,5 +55,7 @@ class Stack(val stackElements: ObservableIterable<Stackable>, val horizontal: Bo
 
             partialTransformation += e.partialTranslation()
         }
+
+        changed()
     }
 }

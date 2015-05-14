@@ -1,11 +1,12 @@
 package com.mindforge.graphics
 
+import sun.reflect.generics.reflectiveObjects.NotImplementedException
 import java.util.ArrayList
 
 
 trait ObservableList<T> : ObservableIterable<T>, MutableList<T>
 
-fun observableList<T>(vararg elements: T) : ObservableList<T> = ObservableArrayList<T>(elements map {it})
+fun observableArrayList<T>(vararg elements: T) = ObservableArrayList<T>(elements map { it })
 
 class ObservableArrayList<T>(elements: Iterable<T> = listOf()) : ArrayList<T>(elements map { it }), ObservableList<T> {
     override val removed = trigger<T>()
@@ -23,7 +24,7 @@ class ObservableArrayList<T>(elements: Iterable<T> = listOf()) : ArrayList<T>(el
     }
 
     override fun remove(o: Any?) : Boolean {
-        if(!super<ArrayList>.remove(o)) {
+        if (!super<ArrayList>.remove(o)) {
             return false
         }
 
@@ -49,5 +50,41 @@ class ObservableArrayList<T>(elements: Iterable<T> = listOf()) : ArrayList<T>(el
     fun clearAndAddAll(newElements : Iterable<T>) {
         clear()
         addAll(newElements)
+    }
+
+    override fun addAll(index: Int, c: Collection<T>): Boolean {
+        super<ArrayList>.addAll(index, c)
+
+        for (e in c) {
+            //TODO call indexed version
+            added(e)
+        }
+
+        return c.any()
+    }
+
+    override fun add(index: Int, element: T): Unit {
+        super<ArrayList>.add(index, element)
+
+        //TODO call indexed version
+        added(element)
+    }
+
+
+    override fun remove(index: Int): T {
+        val o = super<ArrayList>.remove(index)
+
+        //TODO: call indexed version:
+        removed(o)
+
+        return o
+    }
+
+    override fun retainAll(c: Collection<Any?>): Boolean {
+        throw NotImplementedException()
+    }
+
+    override fun set(index: Int, element: T): T {
+        throw NotImplementedException()
     }
 }

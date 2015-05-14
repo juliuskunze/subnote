@@ -2,6 +2,7 @@ package com.mindforge.graphics.interaction
 
 import com.mindforge.graphics.*
 import java.util.ArrayList
+import java.util.HashMap
 
 class Draggable(val element: Element<*>, var dragPosition: Vector2 = zeroVector2) : Composed<Any?>, PointersElement<Any?> {
     override val content: Any? get() = element.content
@@ -18,20 +19,15 @@ class Draggable(val element: Element<*>, var dragPosition: Vector2 = zeroVector2
         changed()
     }
 
-    val pointers = ArrayList<Pointer>()
-
-    val onRelease: (Key) -> Unit = { key: Key ->
-        key.released removeObserver onRelease
-        pointers.forEach {
-            it.moved removeObserver onDrag
-        }
-        pointers.clear()
-    }
+    val pointerObservers = ArrayList<Observer>()
 
     override fun onPointerKeyPressed(pointerKey: PointerKey) {
-        pointers.add(pointerKey.pointer)
-        pointerKey.pointer.moved addObserver onDrag
-        pointerKey.key.released addObserver onRelease
-    }
+        pointerObservers.add(pointerKey.pointer.moved addObserver { onDrag(it) })
 
+        pointerKey.key.released addObserver {
+            stop()
+            pointerObservers.forEach { it.stop() }
+            pointerObservers.clear()
+        }
+    }
 }

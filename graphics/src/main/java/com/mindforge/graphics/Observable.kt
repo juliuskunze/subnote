@@ -1,13 +1,21 @@
 package com.mindforge.graphics
 
 trait Observable<T> {
-    protected val observers: MutableSet<(T) -> Unit>
-    final fun addObserver(observer: (T) -> Unit) {
+    protected val observers: MutableSet<ObserverAction<T>>
+    final fun addObserver(action: Observer.(T) -> Unit) : Observer {
+        val observer = object: ObserverAction<T> {
+            override fun invoke(value: T) = this.action(value)
+
+            override fun stop() {
+                if(!observers.remove(this)) throw UnsupportedOperationException("stop can only be called once.")
+            }
+        }
+
         observers.add(observer)
+
+        return observer
     }
-    final fun removeObserver(observer: (T) -> Unit) {
-        observers.remove(observer)
-    }
+
     final protected fun notifyObservers(info: T) {
         for (observer in observers.toList()) {
             observer(info)
@@ -15,8 +23,16 @@ trait Observable<T> {
     }
 }
 
+trait ObserverAction<T> : Observer {
+    fun invoke(value: T)
+}
+
+trait Observer {
+    fun stop()
+}
+
 fun observable<T, I>(observables: Iterable<Observable<I>>, transform: (I) -> T) = object : Observable<T> {
-    override val observers = hashSetOf<(T) -> Unit>()
+    override val observers = hashSetOf<ObserverAction<T>>()
 
     init {
         for (observable in observables) {
