@@ -27,8 +27,12 @@ import com.mindforge.graphics.trigger
 import kotlinx.android.synthetic.activity_main.*
 import org.jetbrains.anko.browse
 import org.jetbrains.anko.startActivity
+import org.xmind.core.Core
 import org.xmind.core.IWorkbook
+import org.xmind.core.event.CoreEvent
+import org.xmind.core.event.ICoreEventListener
 import org.xmind.core.internal.dom.WorkbookBuilderImpl
+import org.xmind.core.internal.event.CoreEventSupport
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream

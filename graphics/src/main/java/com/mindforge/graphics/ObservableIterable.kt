@@ -1,10 +1,5 @@
 package com.mindforge.graphics
 
-import com.mindforge.graphics.Observable
-import com.mindforge.graphics.observable
-import java.util.ArrayList
-import com.mindforge.graphics.trigger
-
 trait ObservableIterable<T> : Iterable<T> {
     val added: Observable<T>
     val removed: Observable<T>
@@ -16,49 +11,26 @@ trait ObservableIterable<T> : Iterable<T> {
     }
 }
 
-fun <T> ObservableIterable<Observable<T>>.startKeepingAllObserved(observer: (T) -> Unit) {
-    forEach { it addObserver observer }
-    added addObserver { it addObserver observer }
-    removed addObserver { it removeObserver observer }
+fun <T> ObservableIterable<Observable<T>>.startKeepingAllObserved(observer: (T) -> Unit): Observer {
+    val observersByElement = hashMapOf(*(this.map { it to (it addObserver { observer(it) } ) }.copyToArray()))
+
+    val o1 = added addObserver { observersByElement.put(it, it addObserver { observer(it) }) }
+    val o2 = removed addObserver { observersByElement.remove(it).stop() }
+
+    return object : Observer {
+        override fun stop() {
+            observersByElement.values().forEach { it.stop() }
+            o1.stop()
+            o2.stop()
+        }
+    }
 }
 
-fun <T> ObservableIterable<Observable<T>>.stopKeepingAllObserved(observer: (T)->Unit) {
-    forEach {it removeObserver observer}
-    added removeObserver {it removeObserver observer}
-    removed removeObserver {it removeObserver observer}
-}
-
-trait ObservableList<T> : ObservableIterable<T>, MutableList<T>
-
-fun observableList<T>(vararg elements: T) : ObservableList<T> = ObservableArrayList<T>(elements map {it})
-
-class ObservableArrayList<T>(val elements : Iterable<T>) : ArrayList<T>(elements map {it}), ObservableList<T> {
-    override val removed = trigger<T>()
-    override val added = trigger<T>()
-    override fun add(e: T) : Boolean {
-        super<ArrayList>.add(e)
-        added(e)
-
-        return true
-    }
-
-    override fun remove(o: Any?) : Boolean {
-        if(!super<ArrayList>.remove(o)) return false
-
-        removed(o as T)
-
-        return true
-    }
-
-    override fun removeAll(c : Collection<Any?>) = c.fold(initial=false) { removedAny, it -> remove(it) or removedAny}
-
-    override fun clear() {
-        removeAll(this)
-    }
-
-    fun setTo(newElements : Iterable<T>) {
-        clear()
-
-        newElements forEach { add(it) }
-    }
+fun observableIterable<T>(
+        elements: Iterable<T>,
+        added: Observable<T> = observable<T>(),
+        removed: Observable<T> = observable<T>()) = object : ObservableIterable<T> {
+    override val added = added
+    override val removed = removed
+    override fun iterator() = elements.iterator()
 }

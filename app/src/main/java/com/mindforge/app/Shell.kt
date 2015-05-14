@@ -3,8 +3,13 @@ package com.mindforge.app
 import com.mindforge.graphics.*
 import com.mindforge.graphics.interaction.*
 import com.mindforge.graphics.math.rectangle
+import org.xmind.core.Core
 import org.xmind.core.ITopic
 import org.xmind.core.IWorkbook
+import org.xmind.core.event.CoreEvent
+import org.xmind.core.internal.dom.TopicImpl
+import java.util.ArrayList
+import kotlin.properties.Delegates
 
 class Shell(val screen: Screen,
             val pointers: ObservableIterable<PointerKeys>,
@@ -19,51 +24,46 @@ class Shell(val screen: Screen,
             val newSubnote: Trigger<Unit>,
             val removeNode: Trigger<Unit>
 ) {
-    var scroll = Scrollable(mindMap())
+    private var activeTopicLoc: TopicImpl? = null
 
-    private var activeTopicLoc: ITopic? = null
-
-    private var activeNote: ITopic?
+    private var activeNote: TopicImpl?
         get() = activeTopicLoc
-        set(it: ITopic?) {
+        set(it: TopicImpl?) {
+            val old = activeTopicLoc
             activeTopicLoc = it
+
+            old?.dispatchIsActiveChanged()
+            it?.dispatchIsActiveChanged()
+
             onActiveTopicChanged(it)
         }
 
-    fun mindMap(): Composed<*> = composed(listOf(
+    fun content(): Composed<*> = Scrollable(composed(listOf(
             //transformedElement(Draggable(coloredElement(rectangle(vector(200, 200)), Fills.solid(Colors.red)))),
             //transformedElement(Draggable(coloredElement(rectangle(vector(300, 100)), Fills.solid(Colors.green)))),
             //transformedElement(Draggable(coloredElement(rectangle(vector(100, 300)), Fills.solid(Colors.blue)))),
-            transformedElement(TopicElement(workbook.getPrimarySheet().getRootTopic()))
-    ))
+            transformedElement(TopicElement(workbook.getPrimarySheet().getRootTopic() as TopicImpl))
+    )))
 
-    fun render() {
-        //TODO: rebuild only the part that changed?
-        val oldScrollPos = scroll.scrollPosition
-        scroll = Scrollable(mindMap())
-        scroll.scrollPosition = oldScrollPos
-        screen.content = scroll
-    }
-
-    fun manipulatingActiveNote(body: (ITopic) -> Unit) {
+    private fun withActiveNoteIfHas(action: ITopic.() -> Unit) {
         val topic = activeNote
         if (topic == null) return
 
-        body(topic)
-
-        render()
+        topic.action()
     }
 
-    fun initializeNewNote(newNote: ITopic) {
+    private fun initializeNewNote(newNote: ITopic) {
         newNote.setTitleText("new note")
         newNote.getParent().setFolded(false)
 
-        activeNote = newNote
+        activeNote = newNote as TopicImpl
     }
 
     init {
-        textChanged addObserver { text ->
-            manipulatingActiveNote { it.setTitleText(text) }
+        textChanged addObserver {
+            withActiveNoteIfHas {
+                setTitleText(it)
+            }
         }
 
         nodeLinkChanged addObserver { nodeLink ->
@@ -76,79 +76,109 @@ class Shell(val screen: Screen,
         }
 
         newNote addObserver {
-            manipulatingActiveNote {
+            withActiveNoteIfHas {
                 val newNote = workbook.createTopic()
 
-                val parent = it.getParent()
-                parent.add(newNote, it.getIndex() + 1, ITopic.ATTACHED)
+                val parent = getParent()
+                parent.add(newNote, getIndex() + 1, ITopic.ATTACHED)
                 initializeNewNote(newNote)
             }
         }
 
         newSubnote addObserver {
-            manipulatingActiveNote {
+            withActiveNoteIfHas {
                 val newNote = workbook.createTopic()
-                it.add(newNote)
+                add(newNote)
 
                 initializeNewNote(newNote)
             }
         }
 
         removeNode addObserver {
-            manipulatingActiveNote {
-                val parent = it.getParent()
-                parent.remove(it)
+            withActiveNoteIfHas {
+                val parent = getParent()
+                parent.remove(this)
 
-                activeNote = parent
+                activeNote = parent as TopicImpl
             }
         }
 
-        render()
+        screen.content = content()
+
         registerInputs()
     }
 
-    inner class TopicElement(topic: ITopic) : Composed<ITopic> {
+    inner class TopicElement(topic: TopicImpl) : Composed<ITopic> {
         override val content = topic
+        override val changed = trigger<Unit>()
+        override val elements = ObservableArrayList<TransformedElement<*>>()
+        private val subElements = ObservableArrayList<TopicElement>()
+        var stackable = Stackable(this, zeroVector2)
+        val stacks = ArrayList<Stack>()
 
-        val text = topic.getTitleText()
-        val lineHeight = 40
-        val mainButtonContent = textElement(text, fill = Fills.solid(if(activeNote == topic) Colors.red else Colors.black), font = defaultFont, lineHeight = lineHeight)
-        val mainButton = Stackable(textRectangleButton(mainButtonContent) {
-            activeNote = topic
-        }, mainButtonContent.shape.size())
+        private var mainButtonContentHeight: Double by Delegates.notNull()
 
-        val subTopics = topic.getAllChildren()
-        val unfoldedSubTopics = if (topic.isFolded()) listOf() else subTopics
-        val linkButtonIfHas = if (topic.getHyperlink() == null) null else {
-            val linkButtonTextElement = textElement("Link", fill = Fills.solid(Colors.blue), font = defaultFont, lineHeight = lineHeight)
+        init {
+            initElementsAndStackableSize()
 
-            val element = textRectangleButton(linkButtonTextElement) {
-                onOpenHyperlink(topic.getHyperlink())
-            }
-
-            Stackable(element, linkButtonTextElement.shape.size())
+            val eventTypes = listOf(Core.TitleText, Core.TopicAdd, Core.TopicRemove, Core.TopicFolded, Core.TopicHyperlink, Core.TopicNotes)
+            eventTypes.forEach { content.registerCoreEventListener(it) { initElementsAndStackableSize() } }
         }
-        val collapseButtonIfHas = if (subTopics.any()) {
-            val element = textElement(if(topic.isFolded()) " + " else " - ", fill = Fills.solid(Colors.gray), font = defaultFont, lineHeight = lineHeight)
-            val button = textRectangleButton(element) {
-                topic.setFolded(!topic.isFolded())
-                render()
+
+        private fun initElementsAndStackableSize() {
+            val topic = content
+            val text = topic.getTitleText()
+            val lineHeight = 40
+            val mainButtonContent = textElement(text, fill = Fills.solid(if (activeNote == topic) Colors.red else Colors.black), font = defaultFont, lineHeight = lineHeight)
+            val mainButton = Stackable(textRectangleButton(mainButtonContent) {
+                activeNote = topic
+            }, mainButtonContent.shape.size())
+
+            val unfoldedSubTopics = if (topic.isFolded()) listOf() else topic.getAllChildren()
+            val linkButtonIfHas = if (topic.getHyperlink() == null) null else {
+                val linkButtonTextElement = textElement("Link", fill = Fills.solid(Colors.blue), font = defaultFont, lineHeight = lineHeight)
+
+                val element = textRectangleButton(linkButtonTextElement) {
+                    onOpenHyperlink(topic.getHyperlink())
+                }
+
+                Stackable(element, linkButtonTextElement.shape.size())
             }
+            val collapseButtonIfHas = if (topic.getAllChildren().any()) {
+                val element = textElement(if (topic.isFolded()) " + " else " - ", fill = Fills.solid(Colors.gray), font = defaultFont, lineHeight = lineHeight)
+                val button = textRectangleButton(element) {
+                    topic.setFolded(!topic.isFolded())
+                }
 
-            Stackable(button, element.shape.size())
-        } else null
-        val subElements = unfoldedSubTopics.map { TopicElement(it) }
+                Stackable(button, element.shape.size())
+            } else null
+            subElements.clearAndAddAll(unfoldedSubTopics.map { TopicElement(it as TopicImpl) })
 
-        val mainStack = horizontalStack(listOf(mainButton, linkButtonIfHas, collapseButtonIfHas).filterNotNull())
+            val indent = lineHeight
 
-        val transformedElements = mainStack.toArrayList()
-        var height: Double = mainButtonContent.shape.size().y.toDouble()
+            stacks.forEach { it.removeObservers()}
+            stacks.clear()
+
+            val mainStack = horizontalStack(observableIterable(listOf(mainButton, linkButtonIfHas, collapseButtonIfHas).filterNotNull()))
+            val childStack = verticalStack(observableIterable(subElements.map { it.stackable }))
+            stacks.addAll(listOf(mainStack, childStack))
 
 
-        fun stackable() = Stackable(this, vector(0, height))
+            elements.clearAndAddAll(listOf(
+                    transformedElement(mainStack),
+                    transformedElement(childStack, Transforms2.translation(vector(indent, -mainButtonContent.shape.size().y.toDouble()))))
+            )
+            mainButtonContentHeight = mainButtonContent.shape.size().y.toDouble()
 
-        override val elements = observableIterable(transformedElements)
+            subElements.mapObservable { it.stackable.sizeChanged }.startKeepingAllObserved { updateStackableSize() }
 
+            updateStackableSize()
+        }
+
+        private fun updateStackableSize() {
+            // TODO: remove height Schlemian
+            stackable.size = vector(0, mainButtonContentHeight + subElements.map { it.stackable.size.y.toDouble() }.sum())
+        }
     }
 
     fun registerInputs() {
@@ -199,3 +229,8 @@ class Shell(val screen: Screen,
     }
 }
 
+fun TopicImpl.dispatchIsActiveChanged() {
+    getCoreEventSupport().dispatch(this, CoreEvent(this, IsActiveChangedCoreEventType, null))
+}
+
+private val IsActiveChangedCoreEventType = "isActive"
