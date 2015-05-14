@@ -5,8 +5,8 @@ import kotlin.properties.Delegates
 
 class Stackable(element: Element<*>, size: Vector2) {
     val element = element
-    var size by Delegates.observable(initial = size) { meta, old, new -> sizeChangedTrigger() }
     private val sizeChangedTrigger = trigger<Unit>()
+    var size by Delegates.withChangedObserver(size, sizeChangedTrigger)
     val sizeChanged: Observable<Unit> = sizeChangedTrigger
 }
 

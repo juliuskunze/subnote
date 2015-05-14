@@ -272,6 +272,7 @@ public class MainActivity : Activity() {
                     removeNode = removeNode)
         }
 
+        mindMapLayout.removeAllViews()
         mindMapLayout.addView(screen)
     }
 
