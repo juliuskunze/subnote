@@ -172,8 +172,11 @@ class Shell(val screen: Screen,
 
         private fun updateStackableSize() {
             // TODO: remove height Schlemian
-            stackable.size = vector(0, mainButtonContentHeight + subElements.map { it.stackable.size.y.toDouble() }.sum())
+            val newSize = stackableSize()
+            stackable.size = newSize
         }
+
+        private fun stackableSize() = vector(0, mainButtonContentHeight + subElements.map { it.stackable.size.y.toDouble() }.sum())
     }
 
     fun registerInputs() {

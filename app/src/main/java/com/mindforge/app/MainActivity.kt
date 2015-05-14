@@ -204,6 +204,7 @@ public class MainActivity : Activity() {
             },newNote = newNote, newSubnote = newSubnote, removeNode = removeNode)
         }
 
+        mindMapLayout.removeAllViews()
         mindMapLayout.addView(screen)
     }
 
