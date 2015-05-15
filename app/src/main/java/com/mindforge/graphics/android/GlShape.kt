@@ -24,7 +24,7 @@ fun glShape(original: Shape): GlShape = when (original) {
 }
 
 class GlUnknownShape(original: Shape) : GlShape(original), Shape by original {
-    val ex = UnsupportedOperationException("No OpenGL implementation for shape '${original}'.")
+    val ex : Throwable get() = UnsupportedOperationException("No OpenGL implementation for shape '${original}'.")
     override val vertexCoordinates: FloatArray get() = throw ex
     override val textureCoordinates: FloatArray get() = throw ex
     override val textureName: Int? get() = throw ex

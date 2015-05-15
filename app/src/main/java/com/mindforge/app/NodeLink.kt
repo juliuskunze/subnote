@@ -30,12 +30,6 @@ fun ITopic.getLinkType(): LinkType = this.getHyperlink()?.let {
 
 open class NodeLink (val linkType: LinkType, val url: String?) {
 
-    open val canAdd = false
-    open val canRemove = false
-
-    open fun add(topic: ITopic) = throw UnsupportedOperationException()
-    open fun remove(topic: ITopic) = throw UnsupportedOperationException()
-
     open fun updateTopic(topic: ITopic) = Unit
 
 }
