@@ -20,9 +20,22 @@ enum class LinkType {
     //Gmail
 }
 
-fun ITopic.getLinkType() : LinkType = when {
-    this.getHyperlink().isNotEmpty() -> LinkType.WebUrl
-    else -> LinkType.None
-}
+fun ITopic.getLinkType(): LinkType = this.getHyperlink()?.let {
+    when {
+        it.isEmpty() -> LinkType.None
+        Evernote.isEvernoteLink(it) -> LinkType.Evernote
+        else -> LinkType.WebUrl
+    }
+} ?: LinkType.None
 
-class NodeLink (val linkType: LinkType, val url: String?)
+open class NodeLink (val linkType: LinkType, val url: String?) {
+
+    open val canAdd = false
+    open val canRemove = false
+
+    open fun add(topic: ITopic) = throw UnsupportedOperationException()
+    open fun remove(topic: ITopic) = throw UnsupportedOperationException()
+
+    open fun updateTopic(topic: ITopic) = Unit
+
+}

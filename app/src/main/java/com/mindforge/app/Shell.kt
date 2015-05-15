@@ -2,13 +2,11 @@ package com.mindforge.app
 
 import com.mindforge.graphics.*
 import com.mindforge.graphics.interaction.*
-import com.mindforge.graphics.math.rectangle
 import org.xmind.core.Core
 import org.xmind.core.ITopic
 import org.xmind.core.IWorkbook
 import org.xmind.core.event.CoreEvent
 import org.xmind.core.internal.dom.TopicImpl
-import java.util.ArrayList
 import kotlin.properties.Delegates
 
 class Shell(val screen: Screen,
@@ -69,9 +67,7 @@ class Shell(val screen: Screen,
         nodeLinkChanged addObserver {
             withActiveNoteIfHas {
                 setHyperlink(it.url)
-                when (it.linkType) {
-                    LinkType.Evernote -> { /*TODO*/ }
-                }
+                it.updateTopic(this)
             }
         }
 
@@ -173,7 +169,7 @@ class Shell(val screen: Screen,
             val observer = subElements.mapObservable { it.stackable.sizeChanged }.startKeepingAllObserved { updateStackableSize() }
 
             toStop = {
-                stacks.forEach { it.removeObservers()}
+                stacks.forEach { it.removeObservers() }
                 observer.stop()
             }
 

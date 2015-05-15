@@ -12,6 +12,9 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import com.evernote.client.android.EvernoteSession
 import com.evernote.client.android.OnClientCallback
+import com.evernote.edam.notestore.NoteFilter
+import com.evernote.edam.notestore.NoteList
+import com.evernote.edam.type.NoteSortOrder
 import com.evernote.edam.type.Notebook
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GooglePlayServicesUtil
@@ -29,6 +32,7 @@ import com.mindforge.graphics.trigger
 import kotlinx.android.synthetic.activity_main.*
 import org.jetbrains.anko.browse
 import org.jetbrains.anko.startActivity
+import org.xmind.core.ITopic
 import org.xmind.core.IWorkbook
 import org.xmind.core.internal.dom.WorkbookBuilderImpl
 import java.io.File
@@ -79,14 +83,53 @@ public class MainActivity : Activity() {
                         withAuthenticatedEvernoteSession {
                             getClientFactory().createNoteStoreClient().listNotebooks(object : OnClientCallback<List<Notebook>>() {
                                 override fun onSuccess(notebooks: List<Notebook>) {
-                                    showSelectDialog("Select notebook", notebooks) {
+                                    showSelectDialog("Select notebook", notebooks map {
+                                        object {
+                                            val notebook = it
+                                            override fun toString() = it.getName()
+                                        }
+                                    }) {
                                         if (it != null) {
+                                            nodeLinkChanged(object : NodeLink(linkType, it.notebook.getWebUrl()) {
+                                                override fun updateTopic(topic: ITopic) {
+                                                    topic.setTitleText(it.notebook.getName())
+                                                    topic.getAllChildren().forEach { topic.remove(it) }
+                                                    val noteStore = this@withAuthenticatedEvernoteSession.getClientFactory().createNoteStoreClient()
+                                                    val filter = NoteFilter()
+                                                    filter.setNotebookGuid(it.notebook.getGuid())
+                                                    filter.setOrder(NoteSortOrder.CREATED.getValue())
+                                                    filter.setAscending(true)
+                                                    noteStore.findNotes(filter, 0, 1024, object : OnClientCallback<NoteList>() {
+                                                        override fun onSuccess(noteList: NoteList) {
+                                                            noteList.getNotes().forEach { note ->
+                                                                topic.getOwnedWorkbook().createTopic().let { child ->
+                                                                    topic.add(child)
+                                                                    noteStore.getNoteContent(note.getGuid(), object : OnClientCallback<String>() {
+                                                                        override fun onSuccess(content: String) {
+                                                                            note.setContent(content)
+                                                                            child.setTitleText(note.plainContent())
+                                                                        }
 
+                                                                        override fun onException(ex: Exception) {
+                                                                            ex.printStackTrace()
+                                                                        }
+                                                                    })
+                                                                }
+                                                            }
+                                                        }
+
+                                                        override fun onException(ex: Exception) {
+                                                            ex.printStackTrace()
+                                                        }
+                                                    })
+                                                }
+                                            })
                                         }
                                     }
                                 }
+
                                 override fun onException(ex: Exception) {
-                                    //logOut(this@MainActivity)
+                                    ex.printStackTrace()
                                 }
 
                             })
