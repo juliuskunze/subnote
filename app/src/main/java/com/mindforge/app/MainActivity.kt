@@ -103,13 +103,13 @@ public class MainActivity : Activity() {
                                                         override fun onSuccess(noteList: NoteList) {
                                                             noteList.getNotes().forEach { note ->
                                                                 topic.getOwnedWorkbook().createTopic().let { child ->
+                                                                    child.setTitleText("loading...")
                                                                     topic.add(child)
                                                                     noteStore.getNoteContent(note.getGuid(), object : OnClientCallback<String>() {
                                                                         override fun onSuccess(content: String) {
                                                                             note.setContent(content)
                                                                             child.setTitleText(note.plainContent())
                                                                         }
-
                                                                         override fun onException(ex: Exception) {
                                                                             ex.printStackTrace()
                                                                         }
