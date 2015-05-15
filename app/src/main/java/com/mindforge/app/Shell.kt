@@ -2,13 +2,11 @@ package com.mindforge.app
 
 import com.mindforge.graphics.*
 import com.mindforge.graphics.interaction.*
-import com.mindforge.graphics.math.rectangle
 import org.xmind.core.Core
 import org.xmind.core.ITopic
 import org.xmind.core.IWorkbook
 import org.xmind.core.event.CoreEvent
 import org.xmind.core.internal.dom.TopicImpl
-import java.util.ArrayList
 import kotlin.properties.Delegates
 
 class Shell(val screen: Screen,
@@ -18,6 +16,7 @@ class Shell(val screen: Screen,
             val workbook: IWorkbook,
             val onOpenHyperlink: (String) -> Unit,
             val textChanged: Observable<String>,
+            val nodeLinkChanged: Observable<NodeLink>,
             val onActiveTopicChanged: (ITopic?) -> Unit,
             val newNote: Trigger<Unit>,
             val newSubnote: Trigger<Unit>,
@@ -38,9 +37,9 @@ class Shell(val screen: Screen,
         }
 
     fun content(): Composed<*> = Scrollable(composed(listOf(
-            transformedElement(Draggable(coloredElement(rectangle(vector(200, 200)), Fills.solid(Colors.red)))),
-            transformedElement(Draggable(coloredElement(rectangle(vector(300, 100)), Fills.solid(Colors.green)))),
-            transformedElement(Draggable(coloredElement(rectangle(vector(100, 300)), Fills.solid(Colors.blue)))),
+            //transformedElement(Draggable(coloredElement(rectangle(vector(200, 200)), Fills.solid(Colors.red)))),
+            //transformedElement(Draggable(coloredElement(rectangle(vector(300, 100)), Fills.solid(Colors.green)))),
+            //transformedElement(Draggable(coloredElement(rectangle(vector(100, 300)), Fills.solid(Colors.blue)))),
             transformedElement(TopicElement(workbook.getPrimarySheet().getRootTopic() as TopicImpl))
     )))
 
@@ -62,6 +61,13 @@ class Shell(val screen: Screen,
         textChanged addObserver {
             withActiveNoteIfHas {
                 setTitleText(it)
+            }
+        }
+
+        nodeLinkChanged addObserver {
+            withActiveNoteIfHas {
+                setHyperlink(it.url)
+                it.updateTopic(this)
             }
         }
 
@@ -163,7 +169,7 @@ class Shell(val screen: Screen,
             val observer = subElements.mapObservable { it.stackable.sizeChanged }.startKeepingAllObserved { updateStackableSize() }
 
             toStop = {
-                stacks.forEach { it.removeObservers()}
+                stacks.forEach { it.removeObservers() }
                 observer.stop()
             }
 

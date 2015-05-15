@@ -1,15 +1,12 @@
 package com.mindforge.graphics.android
 
 import android.opengl.GLES20
-import java.nio.FloatBuffer
+import com.mindforge.graphics.*
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.nio.FloatBuffer
 import java.nio.ShortBuffer
-import java.util.ArrayList
-import android.opengl.GLES10
-import com.mindforge.graphics.*
-import java.nio.IntBuffer
-import kotlin.properties.Delegates
+import java.util.Collections
 
 
 abstract class GlElement(val original: Element<*>, val screen: GlScreen) : Element<Any?> {
@@ -22,23 +19,19 @@ abstract class GlElement(val original: Element<*>, val screen: GlScreen) : Eleme
         screen.requestRender()
     }
 
-    init {
-        changed.addObserver { onChanged() }
-    }
-}
+    private val changedObserver = changed.addObserver { onChanged() }
 
-fun glElement(original: Element<*>, screen: GlScreen): GlElement {
-    return when (original) {
-        is GlElement -> original
-        is Composed<*> -> GlComposed(original, screen)
-        is TextElement -> GlTextElement(original, screen)
-        is ColoredElement<*> -> GlColoredElement(original, screen)
-        else -> throw UnsupportedOperationException("No OpenGL implementation for element '${original}'.")
+    open fun detach() {
+        changedObserver.stop()
+        isDetached = true
     }
+
+    var isDetached = false
+        private set
 }
 
 class GlTransformedElement(val originalTransformedElement: TransformedElement<*>, screen: GlScreen) : TransformedElement<Any?> {
-    override val element = glElement(originalTransformedElement.element, screen)
+    override val element = screen.glElement(originalTransformedElement.element)
     override var transform: GlTransform = glTransform(originalTransformedElement.transform)
     override val transformChanged = originalTransformedElement.transformChanged
 
@@ -51,35 +44,44 @@ class GlTransformedElement(val originalTransformedElement: TransformedElement<*>
 }
 
 class GlComposed(val originalComposed: Composed<*>, screen: GlScreen) : GlElement(originalComposed, screen), Composed<Any?> {
-    val e = (originalComposed.elements mapObservable { GlTransformedElement(it, screen) }).toArrayList()
-    override val elements = object : ObservableIterable<TransformedElement<*>> {
-        override fun iterator() = e.iterator()
+    val glElementList = Collections.synchronizedList(originalComposed.elements.mapObservable { GlTransformedElement(it, screen) }.toArrayList())
+    private trait DetachableObservableIterable<T> : ObservableIterable<T> {
+        fun detach()
+    }
+    override val elements = object : DetachableObservableIterable<TransformedElement<*>> {
+        override fun iterator() = glElementList.iterator()
         override val added = trigger<TransformedElement<*>>()
         override val removed = trigger<TransformedElement<*>>()
 
-        init {
-            originalComposed.elements.added addObserver { addedElement ->
-                val glElement = GlTransformedElement(addedElement, screen)
-                e.add(glElement)
-                added(glElement)
-
-                onChanged()
-            }
-            originalComposed.elements.removed addObserver { removedElement ->
-                val glElement = (e.singleOrNull { element -> element.element.original === removedElement.element })
-                if (glElement != null) {
-                    e.remove(glElement)
-                    removed(glElement)
-                }
-
-                onChanged()
-            }
+        val addedObserver = originalComposed.elements.added addObserver { addedElement ->
+            val glElement = GlTransformedElement(addedElement, screen)
+            glElementList.add(glElement)
+            added(glElement)
+            onChanged()
         }
+        val removedObserver = originalComposed.elements.removed addObserver { removedElement ->
+            val glElement = (glElementList.singleOrNull { element -> element.element.original === removedElement.element })
+            if (glElement != null) {
+                glElementList.remove(glElement)
+                removed(glElement)
+            } else {
+                throw IllegalStateException("Failed to remove OpenGL element for $removedElement")
+            }
+            onChanged()
+        }
+        override fun detach() {
+            addedObserver.stop()
+            removedObserver.stop()
+        }
+    }
+    override fun detach() {
+        elements.detach()
+        super<GlElement>.detach()
     }
 
     override val shape = glShape(super<Composed>.shape)
 
-    override fun draw(parentTransform: GlTransform) = e.reverse() forEach { it.element.draw(it.transform before parentTransform) }
+    override fun draw(parentTransform: GlTransform) = glElementList.reverse() forEach { it.element.draw(it.transform before parentTransform) }
 }
 
 open class GlColoredElement(val originalColoredElement: ColoredElement<*>, screen: GlScreen) : GlElement(originalColoredElement, screen), ColoredElement<Any?> {

@@ -7,7 +7,15 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.view.Menu
 import android.view.MenuItem
-import android.widget.TextView
+import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import com.evernote.client.android.EvernoteSession
+import com.evernote.client.android.OnClientCallback
+import com.evernote.edam.notestore.NoteFilter
+import com.evernote.edam.notestore.NoteList
+import com.evernote.edam.type.NoteSortOrder
+import com.evernote.edam.type.Notebook
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GooglePlayServicesUtil
 import com.google.android.gms.common.api.GoogleApiClient
@@ -22,13 +30,11 @@ import com.mindforge.graphics.invoke
 import com.mindforge.graphics.observableIterable
 import com.mindforge.graphics.trigger
 import kotlinx.android.synthetic.activity_main.*
-import org.jetbrains.anko.*
-import org.xmind.core.Core
+import org.jetbrains.anko.browse
+import org.jetbrains.anko.startActivity
+import org.xmind.core.ITopic
 import org.xmind.core.IWorkbook
-import org.xmind.core.event.CoreEvent
-import org.xmind.core.event.ICoreEventListener
 import org.xmind.core.internal.dom.WorkbookBuilderImpl
-import org.xmind.core.internal.event.CoreEventSupport
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -62,9 +68,83 @@ public class MainActivity : Activity() {
         removeNoteButton.setOnClickListener {
             removeNode()
         }
+
+        linkTypeSpinner.setAdapter(ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, LinkType.values()))
+        linkTypeSpinner.setOnItemSelectedListener(object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View?, pos: Int, id: Long) {
+                val linkType = (parent.getItemAtPosition(pos) as LinkType)
+                when (linkType) {
+                    LinkType.None -> nodeLinkChanged(NodeLink(linkType, null))
+                    LinkType.WebUrl -> showInputDialog("Web URL link", "Enter the URL") {
+                        if (it == null) parent.setSelection(LinkType.None.ordinal())
+                        else nodeLinkChanged(NodeLink(linkType, it))
+                    }
+                    LinkType.Evernote -> {
+                        withAuthenticatedEvernoteSession {
+                            getClientFactory().createNoteStoreClient().listNotebooks(object : OnClientCallback<List<Notebook>>() {
+                                override fun onSuccess(notebooks: List<Notebook>) {
+                                    showSelectDialog("Select notebook", notebooks map {
+                                        object {
+                                            val notebook = it
+                                            override fun toString() = it.getName()
+                                        }
+                                    }) {
+                                        if (it != null) {
+                                            nodeLinkChanged(object : NodeLink(linkType, it.notebook.getWebUrl()) {
+                                                override fun updateTopic(topic: ITopic) {
+                                                    topic.setTitleText(it.notebook.getName())
+                                                    topic.getAllChildren().forEach { topic.remove(it) }
+                                                    val noteStore = this@withAuthenticatedEvernoteSession.getClientFactory().createNoteStoreClient()
+                                                    val filter = NoteFilter()
+                                                    filter.setNotebookGuid(it.notebook.getGuid())
+                                                    filter.setOrder(NoteSortOrder.CREATED.getValue())
+                                                    filter.setAscending(true)
+                                                    noteStore.findNotes(filter, 0, 1024, object : OnClientCallback<NoteList>() {
+                                                        override fun onSuccess(noteList: NoteList) {
+                                                            noteList.getNotes().forEach { note ->
+                                                                topic.getOwnedWorkbook().createTopic().let { child ->
+                                                                    topic.add(child)
+                                                                    noteStore.getNoteContent(note.getGuid(), object : OnClientCallback<String>() {
+                                                                        override fun onSuccess(content: String) {
+                                                                            note.setContent(content)
+                                                                            child.setTitleText(note.plainContent())
+                                                                        }
+
+                                                                        override fun onException(ex: Exception) {
+                                                                            ex.printStackTrace()
+                                                                        }
+                                                                    })
+                                                                }
+                                                            }
+                                                        }
+
+                                                        override fun onException(ex: Exception) {
+                                                            ex.printStackTrace()
+                                                        }
+                                                    })
+                                                }
+                                            })
+                                        }
+                                    }
+                                }
+
+                                override fun onException(ex: Exception) {
+                                    ex.printStackTrace()
+                                }
+
+                            })
+                        }
+                    }
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+            }
+        })
     }
 
     private val textChanged = trigger<String>()
+    private val nodeLinkChanged = trigger<NodeLink>()
     private val newNote = trigger<Unit>()
     private val newSubnote = trigger<Unit>()
     private val removeNode = trigger<Unit>()
@@ -138,7 +218,7 @@ public class MainActivity : Activity() {
         open(workbookBuilder.loadFromFile(file))
     }
 
-    private val workbookBuilder : WorkbookBuilderImpl by Delegates.lazy { AndroidWorkbookBuilder(cacheDirectory = getCacheDir())() }
+    private val workbookBuilder: WorkbookBuilderImpl by Delegates.lazy { AndroidWorkbookBuilder(cacheDirectory = getCacheDir())() }
 
     private val driveFileOpenerApiClient: GoogleApiClient by Delegates.lazy {
         GoogleApiClient.Builder(this).addApi(Drive.API).addScope(Drive.SCOPE_FILE).addConnectionCallbacks(object : GoogleApiClient.ConnectionCallbacks {
@@ -167,8 +247,31 @@ public class MainActivity : Activity() {
         startIntentSenderForResult(intentSender, IntentCode.openFileFromDrive, null, 0, 0, 0);
     }
 
+    fun withAuthenticatedEvernoteSession(action: EvernoteSession.() -> Unit) =
+            EvernoteSession.getInstance(this, Evernote.consumerKey, Evernote.consumerSecret, Evernote.evernoteService, true)
+                    .let { session ->
+                        if (!session.isLoggedIn()) {
+                            onEvernoteAuthenticated.addObserver {
+                                try {
+                                    session.action()
+                                } finally {
+                                    stop()
+                                }
+                            }
+                            session.authenticate(this)
+                        } else {
+                            session.action()
+                        }
+                    }
+
+    val onEvernoteAuthenticated = trigger<Unit>()
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         when (requestCode) {
+            EvernoteSession.REQUEST_CODE_OAUTH ->
+                if (resultCode == Activity.RESULT_OK) {
+                    onEvernoteAuthenticated()
+                }
             IntentCode.openFileFromDrive ->
                 if (resultCode == Activity.RESULT_OK) {
                     val driveFile = Drive.DriveApi.getFile(driveFileOpenerApiClient, data!!.getExtras().get("response_drive_id") as DriveId)
@@ -192,16 +295,24 @@ public class MainActivity : Activity() {
         }
     }
 
-    var workbook : IWorkbook by Delegates.notNull()
+    var workbook: IWorkbook by Delegates.notNull()
 
     private fun open(workbook: IWorkbook) {
         this.workbook = workbook
 
         val screen = GlScreen(this) {
-            Shell(it, observableIterable(listOf(it.touchPointerKeys)), it.keyboard, GlFont(getResources()!!), workbook, onOpenHyperlink = { browse(it) }, textChanged = textChanged, onActiveTopicChanged = {
-                textInput.setText(it?.getTitleText() ?: "")
-                textInput.selectAll()
-            },newNote = newNote, newSubnote = newSubnote, removeNode = removeNode)
+            Shell(it, observableIterable(listOf(it.touchPointerKeys)), it.keyboard, GlFont(getResources()!!), workbook,
+                    onOpenHyperlink = { browse(it) },
+                    onActiveTopicChanged = {
+                        textInput.setText(it?.getTitleText() ?: "")
+                        textInput.selectAll()
+                        linkTypeSpinner.setSelection((it?.getLinkType() ?: LinkType.None).ordinal())
+                    },
+                    textChanged = textChanged,
+                    nodeLinkChanged = nodeLinkChanged,
+                    newNote = newNote,
+                    newSubnote = newSubnote,
+                    removeNode = removeNode)
         }
 
         mindMapLayout.removeAllViews()

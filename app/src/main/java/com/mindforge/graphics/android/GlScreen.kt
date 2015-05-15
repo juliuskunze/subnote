@@ -1,20 +1,19 @@
 package com.mindforge.graphics.android
 
+import android.content.Context
+import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.GLSurfaceView.Renderer
-import javax.microedition.khronos.opengles.GL10
-import javax.microedition.khronos.egl.EGLConfig
-import android.opengl.GLES20
-import android.app.Activity
-import android.content.Context
-import android.view.MotionEvent
 import android.view.KeyEvent
+import android.view.MotionEvent
 import com.mindforge.graphics.*
 import com.mindforge.graphics.interaction.Commands
 import com.mindforge.graphics.interaction.pointerKeys
 import com.mindforge.graphics.math.Rectangle
 import com.mindforge.graphics.math.rectangle
-import java.util.HashMap
+import java.util.concurrent.ConcurrentHashMap
+import javax.microedition.khronos.egl.EGLConfig
+import javax.microedition.khronos.opengles.GL10
 
 class GlScreen (context: Context, onReady: (GlScreen) -> Unit) : GLSurfaceView(context), Screen {
     init {
@@ -40,6 +39,49 @@ class GlScreen (context: Context, onReady: (GlScreen) -> Unit) : GLSurfaceView(c
         setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY)
         this.setFocusable(true);
         this.setFocusableInTouchMode(true);
+    }
+
+    override fun requestRender() {
+        cleanupElementCache()
+        super<GLSurfaceView>.requestRender()
+    }
+
+    private fun Composed<*>.allElements(): Set<Element<*>> = setOf(this) union elements.flatMap {
+        it.element.let {
+            when (it) {
+                is Composed<*> -> it.allElements()
+                else -> setOf(it)
+            }
+        }
+    }
+
+    private val elementCache: MutableMap<Element<Any?>, GlElement> = ConcurrentHashMap()
+    private var cleanupThreshold = 1
+    private fun cleanupElementCache() {
+        if (elementCache.count() > cleanupThreshold) {
+            elementCache.keySet().subtract(content.allElements()).forEach {
+                val glElement = elementCache.get(it)
+                elementCache.remove(it)
+                glElement?.detach()
+            }
+            cleanupThreshold = Math.max(cleanupThreshold, elementCache.count() * 2)
+        }
+    }
+
+    fun glElement(original: Element<*>): GlElement {
+        val result : GlElement = when (original) {
+            is GlElement -> original
+            else -> elementCache.getOrPut(original) {
+                when (original) {
+                    is Composed<*> -> GlComposed(original, this)
+                    is TextElement -> GlTextElement(original, this)
+                    is ColoredElement<*> -> GlColoredElement(original, this)
+                    else -> throw UnsupportedOperationException("No OpenGL implementation for element '$original'.")
+                }
+            }
+        }
+        if (result.isDetached) throw IllegalStateException("GlElement '$result' is detached.")
+        return result
     }
 
     private var glContent: GlComposed = GlComposed(composed(observableIterable(listOf())), this)

@@ -7,7 +7,7 @@ trait Trigger<T> : Observable<T> {
 }
 
 fun trigger<T>() = object : Trigger<T> {
-    override val observers = hashSetOf<ObserverAction<T>>()
+    override protected final val observers = hashSetOf<ObserverAction<T>>()
 }
 
 fun Trigger<Unit>.invoke() {

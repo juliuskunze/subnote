@@ -1,22 +1,20 @@
 package com.mindforge.graphics
 
 trait Observable<T> {
-    protected val observers: MutableSet<ObserverAction<T>>
-    final fun addObserver(action: Observer.(T) -> Unit) : Observer {
-        val observer = object: ObserverAction<T> {
+    fun addObserver(action: Observer.(T) -> Unit): Observer {
+        val observer = object : ObserverAction<T> {
             override fun invoke(value: T) = this.action(value)
 
             override fun stop() {
-                if(!observers.remove(this)) throw UnsupportedOperationException("stop can only be called once.")
+                if (!observers.remove(this)) throw IllegalStateException("stop can only be called once.")
             }
         }
-
         observers.add(observer)
-
         return observer
     }
 
-    final protected fun notifyObservers(info: T) {
+    protected val observers: MutableSet<ObserverAction<T>>
+    protected fun notifyObservers(info: T) {
         for (observer in observers.toList()) {
             observer(info)
         }
@@ -32,13 +30,16 @@ trait Observer {
 }
 
 fun observable<T, I>(observables: Iterable<Observable<I>>, transform: (I) -> T) = object : Observable<T> {
-    override val observers = hashSetOf<ObserverAction<T>>()
 
-    init {
-        for (observable in observables) {
-            observable addObserver { notifyObservers(transform(it)) }
+    override fun addObserver(action: Observer.(T) -> Unit) = object : ObserverAction<T> {
+        val innerObservers = observables.map { it addObserver { invoke(transform(it)) } }
+        override fun invoke(value: T) = this.action(value)
+        override fun stop() {
+            innerObservers.forEach { it.stop() }
         }
     }
+
+    override protected final val observers = hashSetOf<ObserverAction<T>>()
 }
 
 fun observable<T, I>(observable: Observable<I>, transform: (I) -> T): Observable<T> = observable(listOf(observable), transform)

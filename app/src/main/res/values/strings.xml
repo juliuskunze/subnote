@@ -10,5 +10,10 @@
     <string name="new_subnote">new sub</string>
     <string name="remove_note">remove</string>
     <string name="new_note">new</string>
+    <string name="link_note">link</string>
+    <string name="none">none</string>
+    <string name="url">Web</string>
+    <string name="evernote">Evernote</string>
+    <string name="gmail">Gmail</string>
     <string name="create_new">Create new map</string>
 </resources>
