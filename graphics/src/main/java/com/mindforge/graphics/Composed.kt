@@ -60,7 +60,9 @@ trait Composed<T> : Element<T> {
 
     protected final fun pathTo(recursiveElement: Element<*>): List<TransformedElement<*>> = elements.flatMap {
         val element = it.element
-        if (recursiveElement === element) listOf(it) else if (element is Composed<*>) element.pathTo(recursiveElement) else listOf()
+        if (recursiveElement === element) listOf(it)
+        else if (element is Composed<*> && element.containsRecursive(recursiveElement)) (listOf(it) + element.pathTo(recursiveElement))
+        else listOf()
     }
 
     final fun totalTransform(recursiveElement: Composed<*>): Transform2 {

@@ -14,6 +14,8 @@ trait Pointer {
 trait PointerKey {
     val pointer: Pointer
     val key: Key
+
+    fun relativeTo(transform: Transform2) = pointerKey(pointer.relativeTo(transform), key)
 }
 
 fun pointerKey(pointer: Pointer, key: Key): PointerKey = object : PointerKey {

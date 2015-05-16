@@ -15,7 +15,7 @@ fun button(
         elements: ObservableIterable<TransformedElement<*>>,
         changed: Observable<Unit> = observable(),
         trigger: Trigger<Unit> = trigger<Unit>(),
-        onLongPressed: () -> Unit = {},
+        onLongPressed: (PointerKey) -> Unit = {},
         onClick: () -> Unit
 ) = object : Button {
 
@@ -52,11 +52,11 @@ fun button(
     }
 
     fun onPointerKeyLongPressed(pointerKey: PointerKey) {
-        onLongPressed()
+        onLongPressed(pointerKey)
     }
 }
 
-fun textRectangleButton(inner: TextElement, onLongPressed: () -> Unit = {}, onClick: () -> Unit) = button(
+fun textRectangleButton(inner: TextElement, onLongPressed: (PointerKey) -> Unit = {}, onClick: () -> Unit) = button(
         shape = inner.shape.box(),
         elements = observableIterable(listOf(transformedElement(inner))),
         onClick = onClick,

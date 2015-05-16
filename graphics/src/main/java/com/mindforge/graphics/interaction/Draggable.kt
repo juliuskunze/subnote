@@ -5,7 +5,7 @@ import java.util.ArrayList
 import java.util.HashMap
 import kotlin.properties.Delegates
 
-class Draggable(val element: Element<*>, dragLocation: Vector2 = zeroVector2) : Composed<Any?>, PointersElement<Any?> {
+open class Draggable(val element: Element<*>, dragLocation: Vector2 = zeroVector2) : Composed<Any?>, PointersElement<Any?> {
     override val changed = trigger<Unit>()
 
     var dragLocation by Delegates.observing(dragLocation, changed)
@@ -25,16 +25,23 @@ class Draggable(val element: Element<*>, dragLocation: Vector2 = zeroVector2) : 
     val dropped = trigger<PointerKey>()
     val moved = trigger<PointerKey>()
 
-    val pointerObservers = ArrayList<Observer>()
+    val observers = ArrayList<Observer>()
 
     override fun onPointerKeyPressed(pointerKey: PointerKey) {
-        pointerObservers.add(pointerKey.pointer.moved addObserver { onMoved(pointerKey) })
+        observers.add(pointerKey.pointer.moved addObserver { onMoved(pointerKey) })
 
         pointerKey.key.released addObserver {
             stop()
-            pointerObservers.forEach { it.stop() }
-            pointerObservers.clear()
+            observers.forEach { it.stop() }
+            observers.clear()
             dropped(pointerKey)
+        }
+    }
+
+    fun registerDragOnMove(pointerKey : PointerKey) {
+        pointerKey.pointer.moved addObserver {
+            stop()
+            onPointerKeyPressed(pointerKey)
         }
     }
 }

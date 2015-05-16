@@ -2,7 +2,10 @@ package com.mindforge.app
 
 import com.mindforge.graphics.*
 import com.mindforge.graphics.interaction.*
+import com.mindforge.graphics.math.bottomLeftAtOrigin
+import com.mindforge.graphics.math.bottomRightAtOrigin
 import com.mindforge.graphics.math.rectangle
+import com.mindforge.graphics.math.topLeftAtOrigin
 import org.xmind.core.Core
 import org.xmind.core.ITopic
 import org.xmind.core.IWorkbook
@@ -40,13 +43,15 @@ class Shell(val screen: Screen,
             onActiveTopicChanged(it)
         }
 
-    val draggable = Draggable(coloredElement(rectangle(vector(100, lineHeight)), Fills.solid(Colors.red)))
+    var draggableSize = vector(100, lineHeight)
+    val draggable = Draggable(coloredElement(rectangle(draggableSize), Fills.solid(Colors.red)), dragLocation = draggableSize / 2)
+    
     val rootTopicElement = TopicElement(workbook.getPrimarySheet().getRootTopic() as TopicImpl)
     private val mainElements = observableArrayListOf(
             transformedElement(draggable),
             transformedElement(rootTopicElement)
     )
-    val shellContent = Scrollable(composed(mainElements))
+    val mainContent = Scrollable(composed(mainElements))
 
     private fun withActiveNoteIfHas(action: ITopic.() -> Unit) {
         val topic = activeNote
@@ -109,7 +114,7 @@ class Shell(val screen: Screen,
             }
         }
 
-        screen.content = shellContent
+        screen.content = mainContent
 
         registerInputs()
     }
@@ -149,7 +154,7 @@ class Shell(val screen: Screen,
 
             val mainButton = Stackable(textRectangleButton(mainButtonContent, onLongPressed = {
                 vibrate()
-                startDragging()
+                startDragging(it)
             }) {
                 activeNote = topic
             }, mainButtonContent.shape.size())
@@ -199,12 +204,15 @@ class Shell(val screen: Screen,
             updateStackableSize()
         }
 
-        private fun startDragging() {
-            val vector3 = shellContent.totalTransform(this).matrix.column(2)
-            draggable.dragLocation = vector(vector3.x, vector3.y)
+        private fun startDragging(pointerKey: PointerKey) {
+            val transform = mainContent.totalTransform(this)
+            val vector3 = transform.matrix.column(2)
+            draggable.dragLocation =  vector(vector3.x, vector3.y) + draggableSize / 2
 
             fun draggingInfo() = rootTopicElement.draggingInfo(dragged = content, location = draggable.dragLocation)
 
+            val mainPointerKey = pointerKey.relativeTo(transform.inverse())
+            
             val draggedObserver = draggable.moved addObserver {
                 draggingInfo().showPreview()
             }
@@ -214,11 +222,12 @@ class Shell(val screen: Screen,
                 stop()
                 draggingInfo().performDrop()
             }
+
+            draggable.registerDragOnMove(pointerKey)
         }
 
         inner class DraggingInfo(val dragged: TopicImpl, val parent: TopicImpl, val childIndex: Int) {
             fun showPreview() {
-
             }
 
             fun performDrop() {
