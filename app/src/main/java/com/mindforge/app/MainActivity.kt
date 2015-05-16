@@ -3,8 +3,6 @@ package com.mindforge.app
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.Menu
 import android.view.MenuItem
 import com.evernote.client.android.EvernoteSession
@@ -26,9 +24,8 @@ import com.mindforge.graphics.android.GlScreen
 import com.mindforge.graphics.invoke
 import com.mindforge.graphics.observableIterable
 import com.mindforge.graphics.trigger
-import kotlinx.android.synthetic.activity_main.*
+import kotlinx.android.synthetic.activity_main.mindMapLayout
 import org.jetbrains.anko.browse
-import org.jetbrains.anko.startActivity
 import org.xmind.core.ITopic
 import org.xmind.core.IWorkbook
 import org.xmind.core.internal.dom.WorkbookBuilderImpl
@@ -41,98 +38,6 @@ public class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        textInput.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                textChanged(textInput.getText().toString())
-            }
-
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
-            }
-
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-            }
-        })
-
-        newNoteButton.setOnClickListener {
-            newNote()
-        }
-
-        newSubnoteButton.setOnClickListener {
-            newSubnote()
-        }
-
-        removeNoteButton.setOnClickListener {
-            removeNode()
-        }
-
-        linkNoteButton.setOnClickListener {
-            showSelectDialog("Select link type", LinkType.values().toList()) { linkType ->
-                when (linkType) {
-                    LinkType.None -> nodeLinkChanged(NodeLink(linkType, null))
-                    LinkType.WebUrl -> showInputDialog("Web URL link", "Enter the URL", currentUrl) {
-                        if (it != null) nodeLinkChanged(NodeLink(linkType, it))
-                    }
-                    LinkType.Evernote -> {
-                        withAuthenticatedEvernoteSession {
-                            getClientFactory().createNoteStoreClient().listNotebooks(object : OnClientCallback<List<Notebook>>() {
-                                override fun onSuccess(notebooks: List<Notebook>) {
-                                    showSelectDialog("Select notebook", notebooks map {
-                                        object {
-                                            val notebook = it
-                                            override fun toString() = it.getName()
-                                        }
-                                    }) {
-                                        if (it != null) {
-                                            nodeLinkChanged(object : NodeLink(linkType, it.notebook.getWebUrl()) {
-                                                override fun updateTopic(topic: ITopic) {
-                                                    topic.setTitleText(it.notebook.getName())
-                                                    topic.getAllChildren().forEach { topic.remove(it) }
-                                                    val noteStore = this@withAuthenticatedEvernoteSession.getClientFactory().createNoteStoreClient()
-                                                    val filter = NoteFilter()
-                                                    filter.setNotebookGuid(it.notebook.getGuid())
-                                                    filter.setOrder(NoteSortOrder.CREATED.getValue())
-                                                    filter.setAscending(true)
-                                                    noteStore.findNotes(filter, 0, 1024, object : OnClientCallback<NoteList>() {
-                                                        override fun onSuccess(noteList: NoteList) {
-                                                            noteList.getNotes().forEach { note ->
-                                                                topic.getOwnedWorkbook().createTopic().let { child ->
-                                                                    child.setTitleText("loading...")
-                                                                    topic.add(child)
-                                                                    noteStore.getNoteContent(note.getGuid(), object : OnClientCallback<String>() {
-                                                                        override fun onSuccess(content: String) {
-                                                                            note.setContent(content)
-                                                                            child.setTitleText(note.plainContent())
-                                                                        }
-
-                                                                        override fun onException(ex: Exception) {
-                                                                            ex.printStackTrace()
-                                                                        }
-                                                                    })
-                                                                }
-                                                            }
-                                                        }
-
-                                                        override fun onException(ex: Exception) {
-                                                            ex.printStackTrace()
-                                                        }
-                                                    })
-                                                }
-                                            })
-                                        }
-                                    }
-                                }
-
-                                override fun onException(ex: Exception) {
-                                    ex.printStackTrace()
-                                }
-
-                            })
-                        }
-                    }
-                }
-            }
-        }
     }
 
     private val textChanged = trigger<String>()
@@ -140,6 +45,81 @@ public class MainActivity : Activity() {
     private val newNote = trigger<Unit>()
     private val newSubnote = trigger<Unit>()
     private val removeNode = trigger<Unit>()
+
+    fun linkNode() {
+        showSelectDialog("Select link type", LinkType.values().toList()) { linkType ->
+            when (linkType) {
+                LinkType.None -> nodeLinkChanged(NodeLink(linkType, null))
+                LinkType.WebUrl -> showInputDialog("Web URL link", "Enter the URL", currentUrl) {
+                    if (it != null) nodeLinkChanged(NodeLink(linkType, it))
+                }
+                LinkType.Evernote -> {
+                    withAuthenticatedEvernoteSession {
+                        getClientFactory().createNoteStoreClient().listNotebooks(object : OnClientCallback<List<Notebook>>() {
+                            override fun onSuccess(notebooks: List<Notebook>) {
+                                showSelectDialog("Select notebook", notebooks map {
+                                    object {
+                                        val notebook = it
+                                        override fun toString() = it.getName()
+                                    }
+                                }) {
+                                    if (it != null) {
+                                        nodeLinkChanged(object : NodeLink(linkType, it.notebook.getWebUrl()) {
+                                            override fun updateTopic(topic: ITopic) {
+                                                topic.setTitleText(it.notebook.getName())
+                                                topic.getAllChildren().forEach { topic.remove(it) }
+                                                val noteStore = this@withAuthenticatedEvernoteSession.getClientFactory().createNoteStoreClient()
+                                                val filter = NoteFilter()
+                                                filter.setNotebookGuid(it.notebook.getGuid())
+                                                filter.setOrder(NoteSortOrder.CREATED.getValue())
+                                                filter.setAscending(true)
+                                                noteStore.findNotes(filter, 0, 1024, object : OnClientCallback<NoteList>() {
+                                                    override fun onSuccess(noteList: NoteList) {
+                                                        noteList.getNotes().forEach { note ->
+                                                            topic.getOwnedWorkbook().createTopic().let { child ->
+                                                                child.setTitleText("loading...")
+                                                                topic.add(child)
+                                                                noteStore.getNoteContent(note.getGuid(), object : OnClientCallback<String>() {
+                                                                    override fun onSuccess(content: String) {
+                                                                        note.setContent(content)
+                                                                        child.setTitleText(note.plainContent())
+                                                                    }
+
+                                                                    override fun onException(ex: Exception) {
+                                                                        ex.printStackTrace()
+                                                                    }
+                                                                })
+                                                            }
+                                                        }
+                                                    }
+
+                                                    override fun onException(ex: Exception) {
+                                                        ex.printStackTrace()
+                                                    }
+                                                })
+                                            }
+                                        })
+                                    }
+                                }
+                            }
+
+                            override fun onException(ex: Exception) {
+                                ex.printStackTrace()
+                            }
+
+                        })
+                    }
+                }
+            }
+        }
+    }
+
+    fun editNode() {
+        showInputDialog("Edit Node", "Enter the new text", currentText) {
+            if (it != null) textChanged(it)
+        }
+    }
+
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         getMenuInflater().inflate(R.menu.menu_main, menu)
@@ -160,20 +140,43 @@ public class MainActivity : Activity() {
                 openFromDrive()
                 true
             }
-            R.id.open_from_documents -> {
-                openFromDocuments()
+        /*R.id.open_from_documents -> {
+            openFromDocuments()
+            true
+        }
+        R.id.drive_example -> {
+            startActivity<DriveSampleActivity>()
+            true
+        }
+        R.id.import_from_evernote -> {
+            importFromEvernote()
+            true
+        }
+        R.id.create_new -> {
+            createNew()
+            true
+        }*/
+            R.id.newNoteButton -> {
+                newNote()
                 true
             }
-            R.id.drive_example -> {
-                startActivity<DriveSampleActivity>()
+
+        /*R.id.newSubnoteButton -> {
+            newSubnote()
+            true
+        }*/
+
+            R.id.removeNoteButton -> {
+                removeNode()
                 true
             }
-            R.id.import_from_evernote -> {
-                importFromEvernote()
+
+            R.id.linkNoteButton -> {
+                linkNode()
                 true
             }
-            R.id.create_new -> {
-                createNew()
+            R.id.editNoteButton -> {
+                editNode()
                 true
             }
             else -> {
@@ -289,6 +292,7 @@ public class MainActivity : Activity() {
 
     var workbook: IWorkbook by Delegates.notNull()
 
+    var currentText = ""
     var currentUrl = ""
     private fun open(workbook: IWorkbook) {
         this.workbook = workbook
@@ -297,8 +301,7 @@ public class MainActivity : Activity() {
             Shell(it, observableIterable(listOf(it.touchPointerKeys)), it.keyboard, GlFont(getResources()!!), workbook,
                     onOpenHyperlink = { browse(it) },
                     onActiveTopicChanged = {
-                        textInput.setText(it?.getTitleText() ?: "")
-                        textInput.selectAll()
+                        currentText = (it?.getTitleText() ?: "")
                         currentUrl = it?.getHyperlink() ?: ""
                     },
                     textChanged = textChanged,
