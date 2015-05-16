@@ -70,8 +70,8 @@ public class MainActivity : Activity() {
             showSelectDialog("Select link type", LinkType.values().toList()) { linkType ->
                 when (linkType) {
                     LinkType.None -> nodeLinkChanged(NodeLink(linkType, null))
-                    LinkType.WebUrl -> showInputDialog("Web URL link", "Enter the URL") {
-                        nodeLinkChanged(NodeLink(linkType, it))
+                    LinkType.WebUrl -> showInputDialog("Web URL link", "Enter the URL", currentUrl) {
+                        if (it != null) nodeLinkChanged(NodeLink(linkType, it))
                     }
                     LinkType.Evernote -> {
                         withAuthenticatedEvernoteSession {
@@ -289,6 +289,7 @@ public class MainActivity : Activity() {
 
     var workbook: IWorkbook by Delegates.notNull()
 
+    var currentUrl = ""
     private fun open(workbook: IWorkbook) {
         this.workbook = workbook
 
@@ -298,6 +299,7 @@ public class MainActivity : Activity() {
                     onActiveTopicChanged = {
                         textInput.setText(it?.getTitleText() ?: "")
                         textInput.selectAll()
+                        currentUrl = it?.getHyperlink() ?: ""
                     },
                     textChanged = textChanged,
                     nodeLinkChanged = nodeLinkChanged,
