@@ -1,45 +1,45 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
-      xmlns:tools="http://schemas.android.com/tools"
-      tools:context=".MainActivity">
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context=".MainActivity">
 
 
-    <item
+    <!--item
         android:id="@+id/newNoteButton"
         android:title="@string/new_note"
         android:icon="@android:drawable/ic_menu_add"
-        android:showAsAction="ifRoom"/>
+        android:showAsAction="ifRoom"/-->
 
-    <!--item
+    <item
         android:id="@+id/newSubnoteButton"
         android:title="@string/new_subnote"
         android:icon="@android:drawable/ic_menu_add"
-        android:showAsAction="ifRoom"/-->
+        android:showAsAction="ifRoom" />
 
     <item
         android:id="@+id/editNoteButton"
         android:title="@string/edit_note"
         android:icon="@android:drawable/ic_menu_edit"
-        android:showAsAction="ifRoom"/>
+        android:showAsAction="ifRoom" />
 
 
     <item
         android:id="@+id/removeNoteButton"
         android:title="@string/remove_note"
         android:icon="@android:drawable/ic_menu_delete"
-        android:showAsAction="ifRoom"/>
+        android:showAsAction="ifRoom" />
 
     <item
         android:id="@+id/linkNoteButton"
         android:title="@string/link_note"
         android:icon="@android:drawable/ic_menu_manage"
-        android:showAsAction="ifRoom"/>
+        android:showAsAction="ifRoom" />
 
     <item
         android:id="@+id/open_from_drive"
-        android:title="@string/open_from_drive"/>
+        android:title="@string/open_from_drive" />
     <item
         android:id="@+id/save_to_drive"
-        android:title="@string/save_to_drive"/>
+        android:title="@string/save_to_drive" />
 
     <!--item
         android:id="@+id/action_settings"

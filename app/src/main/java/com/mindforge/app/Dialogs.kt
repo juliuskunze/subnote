@@ -8,6 +8,7 @@ import android.widget.EditText
 fun Context.showInputDialog(title: String, defaultValue: String = "", onValueEntered: (String?) -> Unit) =
         EditText(this).let {
             it.setText(defaultValue)
+            it.selectAll()
             AlertDialog.Builder(this)
                     .setTitle(title)
                     //.setMessage(message)

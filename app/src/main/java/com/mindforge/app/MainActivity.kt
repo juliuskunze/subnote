@@ -38,6 +38,7 @@ public class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        openFromDocuments()
     }
 
     private val textChanged = trigger<String>()
@@ -139,9 +140,9 @@ public class MainActivity : Activity() {
         val id = item!!.getItemId()
 
         return when (id) {
-            R.id.action_settings -> {
-                true
-            }
+        /*R.id.action_settings -> {
+            true
+        }*/
             R.id.open_from_drive -> {
                 openFromDrive()
                 true
@@ -161,16 +162,16 @@ public class MainActivity : Activity() {
         R.id.create_new -> {
             createNew()
             true
-        }*/
+        }
             R.id.newNoteButton -> {
                 newNote()
                 true
-            }
+            }*/
 
-        /*R.id.newSubnoteButton -> {
-            newSubnote()
-            true
-        }*/
+            R.id.newSubnoteButton -> {
+                newSubnote()
+                true
+            }
 
             R.id.removeNoteButton -> {
                 removeNode()
@@ -194,12 +195,16 @@ public class MainActivity : Activity() {
     fun createNew() {
         val workbook = workbookBuilder.createWorkbook()
         workbook.getPrimarySheet().getRootTopic().setTitleText("Title")
-
         open(workbook)
     }
 
     private fun openFromDocuments() {
-        open(File("/storage/emulated/0/documents/Projects.xmind"))
+        val file = File("/storage/emulated/0/documents/MindForge.xmind")
+        if (file.exists()) {
+            open(file)
+        } else {
+            createNew()
+        }
     }
 
     private fun openFromDrive() {
