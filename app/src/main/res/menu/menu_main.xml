@@ -31,7 +31,7 @@
     <item
         android:id="@+id/linkNoteButton"
         android:title="@string/link_note"
-        android:icon="@android:drawable/ic_menu_set_as"
+        android:icon="@android:drawable/ic_menu_manage"
         android:showAsAction="ifRoom"/>
 
     <item
@@ -41,7 +41,7 @@
         android:id="@+id/save_to_drive"
         android:title="@string/save_to_drive"/>
 
-    <item
+    <!--item
         android:id="@+id/action_settings"
-        android:title="@string/action_settings"/>
+        android:title="@string/action_settings"/-->
 </menu>
