@@ -74,9 +74,12 @@ class Shell(val screen: Screen,
         newNote addObserver {
             withActiveNoteIfHas {
                 val newNote = workbook.createTopic()
-
-                val parent = getParent()
-                parent.add(newNote, getIndex() + 1, ITopic.ATTACHED)
+                val parentIfHas = getParent()
+                if (parentIfHas != null) {
+                    parentIfHas.add(newNote, getIndex() + 1, ITopic.ATTACHED)
+                } else {
+                    add(newNote)
+                }
                 initializeNewNote(newNote)
             }
         }

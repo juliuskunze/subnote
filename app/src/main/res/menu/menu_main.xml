@@ -3,23 +3,23 @@
     tools:context=".MainActivity">
 
 
-    <!--item
+    <item
         android:id="@+id/newNoteButton"
         android:title="@string/new_note"
         android:icon="@android:drawable/ic_menu_add"
-        android:showAsAction="ifRoom"/-->
+        android:showAsAction="always" />
 
     <item
         android:id="@+id/newSubnoteButton"
         android:title="@string/new_subnote"
-        android:icon="@android:drawable/ic_menu_add"
+        android:icon="@android:drawable/stat_notify_more"
         android:showAsAction="ifRoom" />
 
     <item
         android:id="@+id/editNoteButton"
         android:title="@string/edit_note"
         android:icon="@android:drawable/ic_menu_edit"
-        android:showAsAction="ifRoom" />
+        android:showAsAction="always" />
 
 
     <item

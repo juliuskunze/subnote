@@ -162,11 +162,11 @@ public class MainActivity : Activity() {
         R.id.create_new -> {
             createNew()
             true
-        }
+        }*/
             R.id.newNoteButton -> {
                 newNote()
                 true
-            }*/
+            }
 
             R.id.newSubnoteButton -> {
                 newSubnote()
