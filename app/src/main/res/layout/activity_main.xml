@@ -44,11 +44,12 @@
                 android:layout_height="wrap_content"
                 android:text="@string/remove_note" />
 
-            <Spinner
-                android:id="@+id/linkTypeSpinner"
+            <Button
+                android:id="@+id/linkNoteButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:spinnerMode="dropdown" />
+                android:text="@string/link_note" />
+
         </LinearLayout>
 
         <RelativeLayout

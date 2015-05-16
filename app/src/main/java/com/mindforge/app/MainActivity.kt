@@ -7,9 +7,6 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import com.evernote.client.android.EvernoteSession
 import com.evernote.client.android.OnClientCallback
 import com.evernote.edam.notestore.NoteFilter
@@ -69,15 +66,12 @@ public class MainActivity : Activity() {
             removeNode()
         }
 
-        linkTypeSpinner.setAdapter(ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, LinkType.values()))
-        linkTypeSpinner.setOnItemSelectedListener(object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: View?, pos: Int, id: Long) {
-                val linkType = (parent.getItemAtPosition(pos) as LinkType)
+        linkNoteButton.setOnClickListener {
+            showSelectDialog("Select link type", LinkType.values().toList()) { linkType ->
                 when (linkType) {
                     LinkType.None -> nodeLinkChanged(NodeLink(linkType, null))
                     LinkType.WebUrl -> showInputDialog("Web URL link", "Enter the URL") {
-                        if (it == null) parent.setSelection(LinkType.None.ordinal())
-                        else nodeLinkChanged(NodeLink(linkType, it))
+                        nodeLinkChanged(NodeLink(linkType, it))
                     }
                     LinkType.Evernote -> {
                         withAuthenticatedEvernoteSession {
@@ -110,6 +104,7 @@ public class MainActivity : Activity() {
                                                                             note.setContent(content)
                                                                             child.setTitleText(note.plainContent())
                                                                         }
+
                                                                         override fun onException(ex: Exception) {
                                                                             ex.printStackTrace()
                                                                         }
@@ -137,10 +132,7 @@ public class MainActivity : Activity() {
                     }
                 }
             }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-            }
-        })
+        }
     }
 
     private val textChanged = trigger<String>()
@@ -306,7 +298,6 @@ public class MainActivity : Activity() {
                     onActiveTopicChanged = {
                         textInput.setText(it?.getTitleText() ?: "")
                         textInput.selectAll()
-                        linkTypeSpinner.setSelection((it?.getLinkType() ?: LinkType.None).ordinal())
                     },
                     textChanged = textChanged,
                     nodeLinkChanged = nodeLinkChanged,
