@@ -92,10 +92,11 @@ class Shell(val screen: Screen,
 
         removeNode addObserver {
             withActiveNoteIfHas {
-                val parent = getParent()
-                parent.remove(this)
-
-                activeNote = parent as TopicImpl
+                val parentIfHas = getParent()
+                if (parentIfHas != null) {
+                    parentIfHas.remove(this)
+                    activeNote = parentIfHas as TopicImpl
+                }
             }
         }
 

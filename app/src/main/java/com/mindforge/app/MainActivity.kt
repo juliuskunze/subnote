@@ -50,8 +50,11 @@ public class MainActivity : Activity() {
         showSelectDialog("Select link type", LinkType.values().toList()) { linkType ->
             when (linkType) {
                 LinkType.None -> nodeLinkChanged(NodeLink(linkType, null))
-                LinkType.WebUrl -> showInputDialog("Web URL link", "Enter the URL", currentUrl) {
-                    if (it != null) nodeLinkChanged(NodeLink(linkType, it))
+                LinkType.WebUrl -> showInputDialog("Edit Web URL", currentUrl) {
+                    if (it != null) {
+                        nodeLinkChanged(NodeLink(linkType, it))
+                        currentUrl = it
+                    }
                 }
                 LinkType.Evernote -> {
                     withAuthenticatedEvernoteSession {
@@ -115,8 +118,11 @@ public class MainActivity : Activity() {
     }
 
     fun editNode() {
-        showInputDialog("Edit Node", "Enter the new text", currentText) {
-            if (it != null) textChanged(it)
+        showInputDialog("Edit Node", currentText) {
+            if (it != null) {
+                textChanged(it)
+                currentText = it
+            }
         }
     }
 
