@@ -5,11 +5,13 @@ import android.content.Context
 import android.widget.ArrayAdapter
 import android.widget.EditText
 
-fun Context.showInputDialog(title: String, message: String, onValueEntered: (String?) -> Unit) =
+fun Context.showInputDialog(title: String, defaultValue: String = "", onValueEntered: (String?) -> Unit) =
         EditText(this).let {
+            it.setText(defaultValue)
+            it.selectAll()
             AlertDialog.Builder(this)
                     .setTitle(title)
-                    .setMessage(message)
+                    //.setMessage(message)
                     .setView(it)
                     .setPositiveButton("OK") { dialog, which ->
                         onValueEntered(it.getText().toString())

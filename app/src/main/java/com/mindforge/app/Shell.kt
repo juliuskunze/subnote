@@ -80,8 +80,12 @@ class Shell(val screen: Screen,
             withActiveNoteIfHas {
                 val newNote = workbook.createTopic()
 
-                val parent = getParent()
-                parent.add(newNote, getIndex() + 1)
+                val parentIfHas = getParent()
+                if (parentIfHas != null) {
+                    parentIfHas.add(newNote, getIndex() + 1)
+                } else {
+                    add(newNote)
+                }
                 initializeNewNote(newNote)
             }
         }
@@ -97,10 +101,11 @@ class Shell(val screen: Screen,
 
         removeNode addObserver {
             withActiveNoteIfHas {
-                val parent = getParent()
-                parent.remove(this)
-
-                activeNote = parent as TopicImpl
+                val parentIfHas = getParent()
+                if (parentIfHas != null) {
+                    parentIfHas.remove(this)
+                    activeNote = parentIfHas as TopicImpl
+                }
             }
         }
 
