@@ -2,9 +2,12 @@ package com.mindforge.graphics.interaction
 
 import com.mindforge.graphics.*
 import com.mindforge.graphics.math.Shape
+import java.util.concurrent.ScheduledFuture
 
 trait Button : PointersElement<Trigger<Unit>>, Composed<Trigger<Unit>> {
-    override fun onPointerKeyPressed (pointerKey: PointerKey) = content()
+    override fun onPointerKeyPressed (pointerKey: PointerKey) {
+        content()
+    }
 }
 
 fun button(
@@ -12,22 +15,52 @@ fun button(
         elements: ObservableIterable<TransformedElement<*>>,
         changed: Observable<Unit> = observable(),
         trigger: Trigger<Unit> = trigger<Unit>(),
-        onClick: () -> Unit = {}
+        onLongPressed: () -> Unit = {},
+        onClick: () -> Unit
 ) = object : Button {
+
     override val content = trigger
     override val shape = shape
     override val changed = changed
     override val elements = elements
 
     init {
-        content addObserver { onClick() }
+        trigger addObserver { onClick() }
+    }
+
+    var longPressedTask : ScheduledFuture<*>? = null
+
+    override fun onPointerKeyPressed (pointerKey : PointerKey) {
+        super.onPointerKeyPressed(pointerKey)
+
+
+        longPressedTask = scheduleDelayed(delayInMs = 700) {
+            try {
+                longPressedTask = null
+                onPointerKeyLongPressed(pointerKey)
+            }
+            catch(ex : Exception) {
+                // TODO better throw it in main thread
+                ex.printStackTrace()
+            }
+        }
+    }
+
+    override fun onPointerKeyReleased(pointerKey: PointerKey) {
+        longPressedTask?.cancel(false)
+        longPressedTask = null
+    }
+
+    fun onPointerKeyLongPressed(pointerKey: PointerKey) {
+        onLongPressed()
     }
 }
 
-fun textRectangleButton(inner: TextElement, onClick: () -> Unit) = button(
+fun textRectangleButton(inner: TextElement, onLongPressed: () -> Unit = {}, onClick: () -> Unit) = button(
         shape = inner.shape.box(),
         elements = observableIterable(listOf(transformedElement(inner))),
-        onClick = onClick
+        onClick = onClick,
+        onLongPressed = onLongPressed
     )
 
 fun coloredButton(
@@ -41,5 +74,5 @@ fun coloredButton(
         shape = shape,
         trigger = trigger,
         changed = changed,
-        elements = observableIterable(listOf<TransformedElement<*>>(transformedElement(coloredElement(shape, fill))))
+        elements = observableIterable(listOf(transformedElement(coloredElement(shape, fill))))
 )

@@ -1,12 +1,11 @@
 package com.mindforge.graphics
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException
 import java.util.ArrayList
 
 
 trait ObservableList<T> : ObservableIterable<T>, MutableList<T>
 
-fun observableArrayList<T>(vararg elements: T) = ObservableArrayList<T>(elements map { it })
+fun observableArrayListOf<T>(vararg elements: T) = ObservableArrayList<T>(elements map { it })
 
 class ObservableArrayList<T>(elements: Iterable<T> = listOf()) : ArrayList<T>(elements map { it }), ObservableList<T> {
     override val removed = trigger<T>()
@@ -81,10 +80,10 @@ class ObservableArrayList<T>(elements: Iterable<T> = listOf()) : ArrayList<T>(el
     }
 
     override fun retainAll(c: Collection<Any?>): Boolean {
-        throw NotImplementedException()
+        throw UnsupportedOperationException()
     }
 
     override fun set(index: Int, element: T): T {
-        throw NotImplementedException()
+        throw UnsupportedOperationException()
     }
 }

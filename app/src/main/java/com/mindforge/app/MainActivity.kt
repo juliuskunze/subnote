@@ -3,7 +3,9 @@ package com.mindforge.app
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.media.AudioAttributes
 import android.os.Bundle
+import android.view.View
 import android.view.Menu
 import android.view.MenuItem
 import com.evernote.client.android.EvernoteSession
@@ -27,6 +29,7 @@ import com.mindforge.graphics.observableIterable
 import com.mindforge.graphics.trigger
 import kotlinx.android.synthetic.activity_main.mindMapLayout
 import org.jetbrains.anko.browse
+import org.jetbrains.anko.vibrator
 import org.xmind.core.Core
 import org.xmind.core.ITopic
 import org.xmind.core.IWorkbook
@@ -342,7 +345,8 @@ public class MainActivity : Activity() {
                     nodeLinkChanged = nodeLinkChanged,
                     newNote = newNote,
                     newSubnote = newSubnote,
-                    removeNode = removeNode)
+                    removeNode = removeNode,
+                    vibrate = { vibrator.vibrate(70) })
         }
 
         mindMapLayout.removeAllViews()

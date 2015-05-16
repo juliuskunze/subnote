@@ -46,15 +46,6 @@ class GlScreen (context: Context, onReady: (GlScreen) -> Unit) : GLSurfaceView(c
         super<GLSurfaceView>.requestRender()
     }
 
-    private fun Composed<*>.allElements(): Set<Element<*>> = setOf(this) union elements.flatMap {
-        it.element.let {
-            when (it) {
-                is Composed<*> -> it.allElements()
-                else -> setOf(it)
-            }
-        }
-    }
-
     private val elementCache: MutableMap<Element<Any?>, GlElement> = ConcurrentHashMap()
     private var cleanupThreshold = 1
     private fun cleanupElementCache() {
