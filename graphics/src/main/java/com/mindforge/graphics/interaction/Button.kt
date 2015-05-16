@@ -33,9 +33,16 @@ fun button(
     override fun onPointerKeyPressed (pointerKey : PointerKey) {
         super.onPointerKeyPressed(pointerKey)
 
+
         longPressedTask = scheduleDelayed(delayInMs = 700) {
-            longPressedTask = null
-            onPointerKeyLongPressed(pointerKey)
+            try {
+                longPressedTask = null
+                onPointerKeyLongPressed(pointerKey)
+            }
+            catch(ex : Exception) {
+                // TODO better throw it in main thread
+                ex.printStackTrace()
+            }
         }
     }
 

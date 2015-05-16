@@ -5,7 +5,7 @@ import java.util.ArrayList
 
 trait ObservableList<T> : ObservableIterable<T>, MutableList<T>
 
-fun observableArrayList<T>(vararg elements: T) = ObservableArrayList<T>(elements map { it })
+fun observableArrayListOf<T>(vararg elements: T) = ObservableArrayList<T>(elements map { it })
 
 class ObservableArrayList<T>(elements: Iterable<T> = listOf()) : ArrayList<T>(elements map { it }), ObservableList<T> {
     override val removed = trigger<T>()

@@ -1,8 +1,7 @@
 package com.mindforge.graphics
 
-import com.mindforge.graphics.math.*
-import com.mindforge.graphics.*
-import com.mindforge.graphics.interaction.*
+import com.mindforge.graphics.interaction.Interactive
+import com.mindforge.graphics.math.Shape
 
 trait Element<out T> : Interactive<T> {
     val shape: Shape

@@ -2,6 +2,7 @@ package com.mindforge.app
 
 import android.app.Activity
 import android.content.Intent
+import android.media.AudioAttributes
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -315,7 +316,7 @@ public class MainActivity : Activity() {
                     newNote = newNote,
                     newSubnote = newSubnote,
                     removeNode = removeNode,
-                    vibrate = { vibrator.vibrate(100) })
+                    vibrate = { vibrator.vibrate(70) })
         }
 
         mindMapLayout.removeAllViews()

@@ -2,13 +2,12 @@ package com.mindforge.app
 
 import com.mindforge.graphics.*
 import com.mindforge.graphics.interaction.*
+import com.mindforge.graphics.math.rectangle
 import org.xmind.core.Core
 import org.xmind.core.ITopic
 import org.xmind.core.IWorkbook
 import org.xmind.core.event.CoreEvent
 import org.xmind.core.internal.dom.TopicImpl
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 import kotlin.properties.Delegates
 
 class Shell(val screen: Screen,
@@ -27,6 +26,8 @@ class Shell(val screen: Screen,
 ) {
     private var activeTopicLoc: TopicImpl? = null
 
+    val lineHeight = 40
+
     private var activeNote: TopicImpl?
         get() = activeTopicLoc
         set(it: TopicImpl?) {
@@ -39,12 +40,13 @@ class Shell(val screen: Screen,
             onActiveTopicChanged(it)
         }
 
-    fun content(): Composed<*> = Scrollable(composed(listOf(
-            //transformedElement(Draggable(coloredElement(rectangle(vector(200, 200)), Fills.solid(Colors.red)))),
-            //transformedElement(Draggable(coloredElement(rectangle(vector(300, 100)), Fills.solid(Colors.green)))),
-            //transformedElement(Draggable(coloredElement(rectangle(vector(100, 300)), Fills.solid(Colors.blue)))),
-            transformedElement(TopicElement(workbook.getPrimarySheet().getRootTopic() as TopicImpl))
-    )))
+    val draggable = Draggable(coloredElement(rectangle(vector(100, lineHeight)), Fills.solid(Colors.red)))
+    val rootTopicElement = TopicElement(workbook.getPrimarySheet().getRootTopic() as TopicImpl)
+    private val mainElements = observableArrayListOf(
+            transformedElement(draggable),
+            transformedElement(rootTopicElement)
+    )
+    val shellContent = Scrollable(composed(mainElements))
 
     private fun withActiveNoteIfHas(action: ITopic.() -> Unit) {
         val topic = activeNote
@@ -79,7 +81,7 @@ class Shell(val screen: Screen,
                 val newNote = workbook.createTopic()
 
                 val parent = getParent()
-                parent.add(newNote, getIndex() + 1, ITopic.ATTACHED)
+                parent.add(newNote, getIndex() + 1)
                 initializeNewNote(newNote)
             }
         }
@@ -102,7 +104,7 @@ class Shell(val screen: Screen,
             }
         }
 
-        screen.content = content()
+        screen.content = shellContent
 
         registerInputs()
     }
@@ -138,12 +140,11 @@ class Shell(val screen: Screen,
 
         private fun initElementsAndStackable() {
             val topic = content
-            val lineHeight = 40
             mainButtonContent = TextElementImpl(text(), fill = mainColor(), font = defaultFont, lineHeight = lineHeight)
 
             val mainButton = Stackable(textRectangleButton(mainButtonContent, onLongPressed = {
-                onOpenHyperlink("http://juliuskunze.com")
                 vibrate()
+                startDragging()
             }) {
                 activeNote = topic
             }, mainButtonContent.shape.size())
@@ -193,6 +194,40 @@ class Shell(val screen: Screen,
             updateStackableSize()
         }
 
+        private fun startDragging() {
+            val vector3 = shellContent.totalTransform(this).matrix.column(2)
+            draggable.dragLocation = vector(vector3.x, vector3.y)
+
+            fun draggingInfo() = rootTopicElement.draggingInfo(dragged = content, location = draggable.dragLocation)
+
+            val draggedObserver = draggable.moved addObserver {
+                draggingInfo().showPreview()
+            }
+
+            draggable.dropped addObserver {
+                draggedObserver.stop()
+                stop()
+                draggingInfo().performDrop()
+            }
+        }
+
+        inner class DraggingInfo(val dragged: TopicImpl, val parent: TopicImpl, val childIndex: Int) {
+            fun showPreview() {
+
+            }
+
+            fun performDrop() {
+                dragged.getParent().remove(dragged)
+                parent.add(dragged, childIndex)
+            }
+        }
+
+        fun draggingInfo(dragged: TopicImpl, location: Vector2): DraggingInfo {
+            val hitTopicElements = elementsAt(location).filterIsInstance<TopicImpl>()
+            // TODO: implement like in XMind:
+            return DraggingInfo(dragged = dragged, parent = hitTopicElements.firstOrNull() ?: content, childIndex = 0)
+        }
+
         private fun updateStackableSize() {
             // TODO: remove height Schlemian
             val newSize = stackableSize()
@@ -201,6 +236,7 @@ class Shell(val screen: Screen,
 
         private fun stackableSize() = vector(0, mainButtonContentHeight + subElements.map { it.stackable.size.y.toDouble() }.sum())
     }
+
 
     fun registerInputs() {
         pointers mapObservable { it.pressed } startKeepingAllObserved { pk ->
@@ -253,6 +289,10 @@ class Shell(val screen: Screen,
 
 fun TopicImpl.dispatchIsActiveChanged() {
     getCoreEventSupport().dispatch(this, CoreEvent(this, IsActiveChangedCoreEventType, null))
+}
+
+fun ITopic.add(child: ITopic, index: Int) {
+    add(child, index, ITopic.ATTACHED)
 }
 
 private val IsActiveChangedCoreEventType = "isActive"
