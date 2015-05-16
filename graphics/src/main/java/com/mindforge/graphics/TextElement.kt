@@ -4,6 +4,7 @@ import com.mindforge.graphics.math.*
 import com.mindforge.graphics.*
 import com.mindforge.graphics.interaction.KeysElement
 import com.mindforge.graphics.interaction.PointersElement
+import kotlin.properties.Delegates
 
 trait TextElement : ColoredElement<String> {
     val font: Font
@@ -11,11 +12,13 @@ trait TextElement : ColoredElement<String> {
     override val shape: TextShape get() = font.shape(content, lineHeight)
 }
 
-fun textElement(content: String, font: Font, lineHeight: Number, fill: Fill) = object : TextElement {
-    override val content = content
-    override val font = font
-    override val lineHeight = lineHeight
-    override val fill = fill
+class TextElementImpl(content: String, font: Font, lineHeight: Number, fill: Fill) : TextElement {
+    override val changed = trigger<Unit>()
+
+    override var content by Delegates.observing(content, changed)
+    override var font by Delegates.observing(font, changed)
+    override var lineHeight by Delegates.observing(lineHeight, changed)
+    override var fill by Delegates.observing(fill, changed)
 }
 
 /* YAGNI trait GlyphShape : Shape {

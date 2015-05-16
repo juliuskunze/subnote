@@ -14,7 +14,7 @@ import com.mindforge.graphics.math.Shape
 class FixedTextSpecs : Spek() {init {
     given("a fixed text element") {
         val s = "Kotlin rocks on the rocks!"
-        val x = textElement(
+        val x = TextElementImpl(
                 content = s,
                 font = object : Font {
                     override fun shape(text: String, lineHeight: Number) = object : TextShape {

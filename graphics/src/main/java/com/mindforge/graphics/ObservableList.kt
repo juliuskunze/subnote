@@ -1,6 +1,5 @@
 package com.mindforge.graphics
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException
 import java.util.ArrayList
 
 
@@ -81,10 +80,10 @@ class ObservableArrayList<T>(elements: Iterable<T> = listOf()) : ArrayList<T>(el
     }
 
     override fun retainAll(c: Collection<Any?>): Boolean {
-        throw NotImplementedException()
+        throw UnsupportedOperationException()
     }
 
     override fun set(index: Int, element: T): T {
-        throw NotImplementedException()
+        throw UnsupportedOperationException()
     }
 }

@@ -7,6 +7,8 @@ import org.xmind.core.ITopic
 import org.xmind.core.IWorkbook
 import org.xmind.core.event.CoreEvent
 import org.xmind.core.internal.dom.TopicImpl
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.properties.Delegates
 
 class Shell(val screen: Screen,
@@ -20,7 +22,8 @@ class Shell(val screen: Screen,
             val onActiveTopicChanged: (ITopic?) -> Unit,
             val newNote: Trigger<Unit>,
             val newSubnote: Trigger<Unit>,
-            val removeNode: Trigger<Unit>
+            val removeNode: Trigger<Unit>,
+            val vibrate: ()-> Unit
 ) {
     private var activeTopicLoc: TopicImpl? = null
 
@@ -109,31 +112,45 @@ class Shell(val screen: Screen,
         override val changed = trigger<Unit>()
         override val elements = ObservableArrayList<TransformedElement<*>>()
         private val subElements = ObservableArrayList<TopicElement>()
-        var stackable = Stackable(this, zeroVector2)
-        var toStop = {}
-
+        private var stackable = Stackable(this, zeroVector2)
+        private var toStop = {}
+        private var mainButtonContent: TextElementImpl by Delegates.notNull()
         private var mainButtonContentHeight: Double by Delegates.notNull()
 
         init {
             initElementsAndStackable()
 
-            val eventTypes = listOf(Core.TitleText, Core.TopicAdd, Core.TopicRemove, Core.TopicFolded, Core.TopicHyperlink, Core.TopicNotes, IsActiveChangedCoreEventType)
+            val eventTypes = listOf(Core.TopicAdd, Core.TopicRemove, Core.TopicFolded, Core.TopicHyperlink, Core.TopicNotes)
             eventTypes.forEach { content.registerCoreEventListener(it) { initElementsAndStackable() } }
+
+            content.registerCoreEventListener(IsActiveChangedCoreEventType) {
+                mainButtonContent.fill = mainColor()
+            }
+
+            content.registerCoreEventListener(Core.TitleText) {
+                mainButtonContent.content = text()
+            }
+
         }
 
+        private fun mainColor() = Fills.solid(if (activeNote == content) Colors.red else Colors.black)
+        private fun text() = content.getTitleText()
 
         private fun initElementsAndStackable() {
             val topic = content
-            val text = topic.getTitleText()
             val lineHeight = 40
-            val mainButtonContent = textElement(text, fill = Fills.solid(if (activeNote == topic) Colors.red else Colors.black), font = defaultFont, lineHeight = lineHeight)
-            val mainButton = Stackable(textRectangleButton(mainButtonContent) {
+            mainButtonContent = TextElementImpl(text(), fill = mainColor(), font = defaultFont, lineHeight = lineHeight)
+
+            val mainButton = Stackable(textRectangleButton(mainButtonContent, onLongPressed = {
+                vibrate()
+                onOpenHyperlink("http://juliuskunze.com")
+            }) {
                 activeNote = topic
             }, mainButtonContent.shape.size())
 
             val unfoldedSubTopics = if (topic.isFolded()) listOf() else topic.getAllChildren()
             val linkButtonIfHas = if (topic.getHyperlink() == null) null else {
-                val linkButtonTextElement = textElement("Link", fill = Fills.solid(Colors.blue), font = defaultFont, lineHeight = lineHeight)
+                val linkButtonTextElement = TextElementImpl("Link", fill = Fills.solid(Colors.blue), font = defaultFont, lineHeight = lineHeight)
 
                 val element = textRectangleButton(linkButtonTextElement) {
                     onOpenHyperlink(topic.getHyperlink())
@@ -142,7 +159,7 @@ class Shell(val screen: Screen,
                 Stackable(element, linkButtonTextElement.shape.size())
             }
             val collapseButtonIfHas = if (topic.getAllChildren().any()) {
-                val element = textElement(if (topic.isFolded()) " + " else " - ", fill = Fills.solid(Colors.gray), font = defaultFont, lineHeight = lineHeight)
+                val element = TextElementImpl(if (topic.isFolded()) " + " else " - ", fill = Fills.solid(Colors.gray), font = defaultFont, lineHeight = lineHeight)
                 val button = textRectangleButton(element) {
                     topic.setFolded(!topic.isFolded())
                 }
@@ -193,6 +210,7 @@ class Shell(val screen: Screen,
                 when (element) {
                     is PointersElement<*> -> {
                         element.onPointerKeyPressed(pointerKey)
+
                         break
                     }
                 }

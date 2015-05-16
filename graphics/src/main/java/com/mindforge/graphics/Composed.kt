@@ -20,7 +20,7 @@ fun transformedElement<T>(element: Element<T>, transform: Transform2 = Transform
 class MutableTransformedElement<T>(element: Element<T>, transform: Transform2 = Transforms2.identity) : TransformedElement<T> {
     override val element = element
     private val transformChangedTrigger = trigger<Unit>()
-    override var transform by Delegates.withChangedObserver(transform, transformChangedTrigger)
+    override var transform by Delegates.observing(transform, transformChangedTrigger)
     override val transformChanged: Observable<Unit> = transformChangedTrigger
 }
 

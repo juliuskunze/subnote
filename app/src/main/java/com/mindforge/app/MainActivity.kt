@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.View
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -32,6 +33,7 @@ import com.mindforge.graphics.trigger
 import kotlinx.android.synthetic.activity_main.*
 import org.jetbrains.anko.browse
 import org.jetbrains.anko.startActivity
+import org.jetbrains.anko.vibrator
 import org.xmind.core.ITopic
 import org.xmind.core.IWorkbook
 import org.xmind.core.internal.dom.WorkbookBuilderImpl
@@ -312,7 +314,8 @@ public class MainActivity : Activity() {
                     nodeLinkChanged = nodeLinkChanged,
                     newNote = newNote,
                     newSubnote = newSubnote,
-                    removeNode = removeNode)
+                    removeNode = removeNode,
+                    vibrate = { vibrator.vibrate(100) })
         }
 
         mindMapLayout.removeAllViews()
