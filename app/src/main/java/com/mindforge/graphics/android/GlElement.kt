@@ -7,6 +7,7 @@ import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import java.nio.ShortBuffer
 import java.util.Collections
+import java.util.concurrent.CopyOnWriteArrayList
 
 
 abstract class GlElement(val original: Element<*>, val screen: GlScreen) : Element<Any?> {
@@ -44,7 +45,7 @@ class GlTransformedElement(val originalTransformedElement: TransformedElement<*>
 }
 
 class GlComposed(val originalComposed: Composed<*>, screen: GlScreen) : GlElement(originalComposed, screen), Composed<Any?> {
-    val glElementList = Collections.synchronizedList(originalComposed.elements.mapObservable { GlTransformedElement(it, screen) }.toArrayList())
+    val glElementList = CopyOnWriteArrayList(originalComposed.elements.mapObservable { GlTransformedElement(it, screen) }.toList())
     private trait DetachableObservableIterable<T> : ObservableIterable<T> {
         fun detach()
     }
