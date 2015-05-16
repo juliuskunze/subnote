@@ -142,8 +142,8 @@ class Shell(val screen: Screen,
             mainButtonContent = TextElementImpl(text(), fill = mainColor(), font = defaultFont, lineHeight = lineHeight)
 
             val mainButton = Stackable(textRectangleButton(mainButtonContent, onLongPressed = {
-                vibrate()
                 onOpenHyperlink("http://juliuskunze.com")
+                vibrate()
             }) {
                 activeNote = topic
             }, mainButtonContent.shape.size())
