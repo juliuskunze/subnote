@@ -4,9 +4,16 @@ trait ObservableIterable<T> : Iterable<T> {
     val added: Observable<T>
     val removed: Observable<T>
 
+    val addedAt: Observable<IndexedValue<T>>
+    val removedAt: Observable<IndexedValue<T>>
+
     fun mapObservable<O>(transform: (T) -> O): ObservableIterable<O> = object : ObservableIterable<O> {
-        override val removed = observable(this@ObservableIterable.removed, transform)
         override val added = observable(this@ObservableIterable.added, transform)
+        override val removed = observable(this@ObservableIterable.removed, transform)
+
+        override val addedAt = observable(this@ObservableIterable.addedAt) { IndexedValue(it.index, transform(it.value)) }
+        override val removedAt = observable(this@ObservableIterable.removedAt) { IndexedValue(it.index, transform(it.value)) }
+
         override fun iterator() = (this@ObservableIterable map transform).iterator()
     }
 }
@@ -26,11 +33,11 @@ fun <T> ObservableIterable<Observable<T>>.startKeepingAllObserved(observer: (T) 
     }
 }
 
-fun observableIterable<T>(
-        elements: Iterable<T>,
-        added: Observable<T> = observable<T>(),
-        removed: Observable<T> = observable<T>()) = object : ObservableIterable<T> {
-    override val added = added
-    override val removed = removed
+fun observableIterable<T>(elements: Iterable<T>) = object : ObservableIterable<T> {
+    override val added = observable<T>()
+    override val removed = observable<T>()
+    override val addedAt = observable<IndexedValue<T>>()
+    override val removedAt = observable<IndexedValue<T>>()
+
     override fun iterator() = elements.iterator()
 }

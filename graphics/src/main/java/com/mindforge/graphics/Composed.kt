@@ -26,7 +26,7 @@ class MutableTransformedElement<T>(element: Element<T>, transform: Transform2 = 
 }
 
 trait Composed<T> : Element<T> {
-    // TODO toArrayList was used to make concurrency work, but is slow:
+    // TODO toArrayList was used to make concurrency work, but this is probably slow:
     fun elementsAt(location: Vector2): Iterable<TransformedElement<*>> = elements.toArrayList().flatMap {
         val locationRelativeToElement = it.transform.inverse()(location)
         val element = it.element

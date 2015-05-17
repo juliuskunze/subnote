@@ -2,11 +2,8 @@ package com.mindforge.graphics.android
 
 import java.util.HashMap
 import android.view.KeyEvent
-import com.mindforge.graphics.ObservableIterable
-import com.mindforge.graphics.Vector2
+import com.mindforge.graphics.*
 import com.mindforge.graphics.interaction.*
-import com.mindforge.graphics.trigger
-import com.mindforge.graphics.zeroVector2
 
 class AndroidKey(val command: Command) : Key {
     override val definition: KeyDefinition = keyDefinition(command)
@@ -28,7 +25,9 @@ class AndroidKey(val command: Command) : Key {
 class AndroidKeyboard : ObservableIterable<Key> {
     private val keyMap = HashMap<Command, AndroidKey>()
     override val added = trigger<Key>()
-    override val removed = trigger<Key>()
+    override val removed = observable<Key>()
+    override val addedAt = observable<IndexedValue<Key>>()
+    override val removedAt = observable<IndexedValue<Key>>()
     override fun iterator() = keyMap.values().iterator()
 
     fun get(event: KeyEvent): AndroidKey? {
