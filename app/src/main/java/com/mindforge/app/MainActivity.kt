@@ -1,6 +1,7 @@
 package com.mindforge.app
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.media.AudioAttributes
 import android.os.Bundle
@@ -29,18 +30,24 @@ import com.mindforge.graphics.trigger
 import kotlinx.android.synthetic.activity_main.mindMapLayout
 import org.jetbrains.anko.browse
 import org.jetbrains.anko.vibrator
+import org.xmind.core.Core
 import org.xmind.core.ITopic
 import org.xmind.core.IWorkbook
 import org.xmind.core.internal.dom.WorkbookBuilderImpl
+import org.xmind.core.internal.dom.WorkbookImpl
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 import kotlin.properties.Delegates
 
 public class MainActivity : Activity() {
+
+    val localWorkbookFile: File get() = File(getFilesDir(), "MindForge.xmind")
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        //localWorkbookFile.delete()
         openFromDocuments()
     }
 
@@ -196,18 +203,27 @@ public class MainActivity : Activity() {
     }
 
     fun createNew() {
-        val workbook = workbookBuilder.createWorkbook()
-        workbook.getPrimarySheet().getRootTopic().setTitleText("Title")
-        open(workbook)
+        val file = File(getCacheDir(), "temp.xmind")
+        getResources().openRawResource(R.raw.start).writeToFile(file)
+        open(file)
     }
 
     private fun openFromDocuments() {
-        val file = File("/storage/emulated/0/documents/MindForge.xmind")
-        if (file.exists()) {
-            open(file)
+        if (localWorkbookFile.exists()) {
+            try {
+                open(localWorkbookFile)
+            } catch (ex: Exception) {
+                ex.printStackTrace()
+                localWorkbookFile.delete()
+                createNew()
+            }
         } else {
             createNew()
         }
+    }
+
+    private fun saveToDocuments() {
+        save(localWorkbookFile)
     }
 
     private fun openFromDrive() {
@@ -225,6 +241,13 @@ public class MainActivity : Activity() {
 
     private fun open(file: File) {
         open(workbookBuilder.loadFromFile(file))
+    }
+
+    private fun save(file: File) {
+        openFileOutput(file.name, Context.MODE_PRIVATE).let {
+            workbook.save(it)
+            it.close()
+        }
     }
 
     private val workbookBuilder: WorkbookBuilderImpl by Delegates.lazy { AndroidWorkbookBuilder(cacheDirectory = getCacheDir())() }
@@ -328,6 +351,14 @@ public class MainActivity : Activity() {
 
         mindMapLayout.removeAllViews()
         mindMapLayout.addView(screen)
+
+        val eventTypes = listOf(Core.TitleText, Core.TopicAdd, Core.TopicRemove, Core.TopicFolded, Core.TopicHyperlink, Core.TopicNotes)
+        eventTypes.forEach {
+            (workbook as WorkbookImpl).getCoreEventSupport().registerGlobalListener(it) {
+                saveToDocuments()
+            }
+        }
+
     }
 
     private fun InputStream.writeToFile(file: File) {

@@ -146,6 +146,8 @@ class Shell(val screen: Screen,
                 if (parentIfHas != null) {
                     parentIfHas.remove(this)
                     activeNote = parentIfHas as TopicImpl
+                } else {
+                    getAllChildren().forEach { remove(it) }
                 }
             }
         }
