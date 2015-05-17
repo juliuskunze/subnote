@@ -3,6 +3,7 @@ package com.mindforge.graphics
 import com.mindforge.graphics
 import com.mindforge.graphics.math.Shape
 import com.mindforge.graphics.math.shape
+import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.properties.Delegates
 
 trait TransformedElement<T> {
@@ -20,12 +21,13 @@ fun transformedElement<T>(element: Element<T>, transform: Transform2 = Transform
 class MutableTransformedElement<T>(element: Element<T>, transform: Transform2 = Transforms2.identity) : TransformedElement<T> {
     override val element = element
     private val transformChangedTrigger = trigger<Unit>()
-    override var transform by Delegates.observing(transform, transformChangedTrigger)
+    override var transform by Delegates.observed(transform, transformChangedTrigger)
     override val transformChanged: Observable<Unit> = transformChangedTrigger
 }
 
 trait Composed<T> : Element<T> {
-    fun elementsAt(location: Vector2): Iterable<TransformedElement<*>> = elements.flatMap {
+    // TODO toArrayList was used to make concurrency work, but is slow:
+    fun elementsAt(location: Vector2): Iterable<TransformedElement<*>> = elements.toArrayList().flatMap {
         val locationRelativeToElement = it.transform.inverse()(location)
         val element = it.element
         val subElements: List<TransformedElement<*>> = when (element) {

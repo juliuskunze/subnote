@@ -27,25 +27,61 @@ class Shell(val screen: Screen,
             val removeNode: Trigger<Unit>,
             val vibrate: ()-> Unit
 ) {
-    private var activeTopicLoc: TopicImpl? = null
 
     val lineHeight = 40
 
-    private var activeNote: TopicImpl?
-        get() = activeTopicLoc
-        set(it: TopicImpl?) {
-            val old = activeTopicLoc
-            activeTopicLoc = it
+    private var activeNote by Delegates.observed<TopicImpl?>(null, { old, new ->
+        old?.dispatchIsActiveChanged()
+        new?.dispatchIsActiveChanged()
 
-            old?.dispatchIsActiveChanged()
-            it?.dispatchIsActiveChanged()
-
-            onActiveTopicChanged(it)
-        }
+        onActiveTopicChanged(new)
+    })
 
     var draggableSize = vector(100, lineHeight)
     val draggable = Draggable(coloredElement(rectangle(draggableSize), Fills.solid(Colors.red)), dragLocation = draggableSize / 2)
-    
+
+    class DragDropInfo(val newParent: TopicImpl, val newChildIndex: Int)
+
+    fun updateByDragLocation() {
+        // TODO: implement like in XMind:
+        val hitTopicElements = rootTopicElement.elementsAt(draggable.dragLocation).map{it.element}.filterIsInstance<TopicElement>() + rootTopicElement
+
+        dragDropInfo = DragDropInfo(newParent = hitTopicElements.first().content, newChildIndex = 0)
+    }
+
+    var dragDropInfo: DragDropInfo? by Delegates.observed<DragDropInfo?>(null, { old, new ->
+        if(old?.newParent !== new?.newParent || old?.newChildIndex != new?.newChildIndex) {
+            old?.newParent?.dispatchDragDropPreviewChanged()
+            new?.newParent?.dispatchDragDropPreviewChanged()
+        }
+    })
+
+    fun startDragDrop(dragged: TopicImpl, dragLocation: Vector2, pointerKey: PointerKey) {
+        draggable.dragLocation = dragLocation
+        dragged.setFolded(true)
+
+        updateByDragLocation()
+
+        val draggedObserver = draggable.moved addObserver {
+            updateByDragLocation()
+        }
+
+        draggable.dropped addObserver {
+            draggedObserver.stop()
+            stop()
+
+            val d = dragDropInfo!!
+            if(dragged !== d.newParent) {
+                dragged.getParent().remove(dragged)
+                d.newParent.add(dragged, d.newChildIndex)
+
+                dragDropInfo == null
+            }
+        }
+
+        draggable.registerDragOnMove(pointerKey)
+    }
+
     val rootTopicElement = TopicElement(workbook.getPrimarySheet().getRootTopic() as TopicImpl)
     private val mainElements = observableArrayListOf(
             transformedElement(draggable),
@@ -119,6 +155,8 @@ class Shell(val screen: Screen,
         registerInputs()
     }
 
+
+
     inner class TopicElement(topic: TopicImpl) : Composed<ITopic> {
         override val content = topic
         override val changed = trigger<Unit>()
@@ -132,10 +170,10 @@ class Shell(val screen: Screen,
         init {
             initElementsAndStackable()
 
-            val eventTypes = listOf(Core.TopicAdd, Core.TopicRemove, Core.TopicFolded, Core.TopicHyperlink, Core.TopicNotes)
+            val eventTypes = listOf(Core.TopicAdd, Core.TopicRemove, Core.TopicFolded, Core.TopicHyperlink, Core.TopicNotes, CoreEventTypeExtensions.dragDropPreviewChanged)
             eventTypes.forEach { content.registerCoreEventListener(it) { initElementsAndStackable() } }
 
-            content.registerCoreEventListener(IsActiveChangedCoreEventType) {
+            content.registerCoreEventListener(CoreEventTypeExtensions.isActiveChanged) {
                 mainButtonContent.fill = mainColor()
             }
 
@@ -154,7 +192,7 @@ class Shell(val screen: Screen,
 
             val mainButton = Stackable(textRectangleButton(mainButtonContent, onLongPressed = {
                 vibrate()
-                startDragging(it)
+                startDragDrop(it)
             }) {
                 activeNote = topic
             }, mainButtonContent.shape.size())
@@ -184,7 +222,21 @@ class Shell(val screen: Screen,
             val indent = lineHeight
 
             val mainStack = horizontalStack(observableIterable(listOf(mainButton, linkButtonIfHas, collapseButtonIfHas).filterNotNull()))
-            val childStack = verticalStack(observableIterable(subElements.map { it.stackable }))
+
+            val d = dragDropInfo
+            val dragDropGap = if(d == null) null else if(d.newParent != content) null else {
+                val s = TextElementImpl(" ", fill = mainColor(), font = defaultFont, lineHeight = lineHeight)
+                Stackable(s, s.shape.size())
+            }
+
+            val childElements = subElements.map { it.stackable }
+            val childElementsWithDragDropPreviewGapIfHas = if(dragDropGap == null) childElements else {
+                val list = childElements.toArrayList()
+                list.add(d!!.newChildIndex, dragDropGap)
+                list
+            }
+
+            val childStack = verticalStack(observableIterable(childElementsWithDragDropPreviewGapIfHas))
             val stacks = listOf(mainStack, childStack)
 
             mainButtonContentHeight = mainButtonContent.shape.size().y.toDouble()
@@ -204,42 +256,13 @@ class Shell(val screen: Screen,
             updateStackableSize()
         }
 
-        private fun startDragging(pointerKey: PointerKey) {
+        private fun startDragDrop(pointerKey: PointerKey) {
             val transform = rootTopicElement.totalTransform(this)
-            val vector3 = transform.matrix.column(2)
-            draggable.dragLocation =  vector(vector3.x, vector3.y) + draggableSize / 2
-
-            fun draggingInfo() = rootTopicElement.draggingInfo(dragged = content, location = draggable.dragLocation)
-
+            val v = transform.matrix.column(2)
+            val dragLocation = vector(v.x, v.y) + draggableSize / 2
             val pointerKeyRelativeToRoot = pointerKey.relativeTo(transform.inverse())
-            
-            val draggedObserver = draggable.moved addObserver {
-                draggingInfo().showPreview()
-            }
 
-            draggable.dropped addObserver {
-                draggedObserver.stop()
-                stop()
-                draggingInfo().performDrop()
-            }
-
-            draggable.registerDragOnMove(pointerKeyRelativeToRoot)
-        }
-
-        inner class DraggingInfo(val dragged: TopicImpl, val parent: TopicImpl, val childIndex: Int) {
-            fun showPreview() {
-            }
-
-            fun performDrop() {
-                dragged.getParent().remove(dragged)
-                parent.add(dragged, childIndex)
-            }
-        }
-
-        fun draggingInfo(dragged: TopicImpl, location: Vector2): DraggingInfo {
-            val hitTopicElements = elementsAt(location).map{it.element}.filterIsInstance<TopicElement>()
-            // TODO: implement like in XMind:
-            return DraggingInfo(dragged = dragged, parent = hitTopicElements.firstOrNull()?.content ?: content, childIndex = 0)
+            this@Shell.startDragDrop(dragged = content, dragLocation = dragLocation, pointerKey = pointerKeyRelativeToRoot)
         }
 
         private fun updateStackableSize() {
@@ -302,11 +325,22 @@ class Shell(val screen: Screen,
 }
 
 fun TopicImpl.dispatchIsActiveChanged() {
-    getCoreEventSupport().dispatch(this, CoreEvent(this, IsActiveChangedCoreEventType, null))
+    dispatchEvent(CoreEventTypeExtensions.isActiveChanged)
+}
+
+fun TopicImpl.dispatchDragDropPreviewChanged() {
+    dispatchEvent(CoreEventTypeExtensions.dragDropPreviewChanged)
+}
+
+fun TopicImpl.dispatchEvent(type: String) {
+    getCoreEventSupport().dispatch(this, CoreEvent(this, type, null))
 }
 
 fun ITopic.add(child: ITopic, index: Int) {
     add(child, index, ITopic.ATTACHED)
 }
 
-private val IsActiveChangedCoreEventType = "isActive"
+private object CoreEventTypeExtensions {
+    val isActiveChanged = "isActive"
+    val dragDropPreviewChanged = "dragDropPreview"
+}

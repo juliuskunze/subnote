@@ -8,7 +8,7 @@ import kotlin.properties.Delegates
 open class Draggable(val element: Element<*>, dragLocation: Vector2 = zeroVector2) : Composed<Any?>, PointersElement<Any?> {
     override val changed = trigger<Unit>()
 
-    var dragLocation by Delegates.observing(dragLocation, changed)
+    var dragLocation by Delegates.observed(dragLocation, changed)
     override val content: Any? get() = element.content
 
     override val elements: ObservableIterable<TransformedElement<*>> = observableIterable(listOf(object : TransformedElement<Any?> {
