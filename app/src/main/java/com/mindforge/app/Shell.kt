@@ -205,13 +205,13 @@ class Shell(val screen: Screen,
         }
 
         private fun startDragging(pointerKey: PointerKey) {
-            val transform = mainContent.totalTransform(this)
+            val transform = rootTopicElement.totalTransform(this)
             val vector3 = transform.matrix.column(2)
             draggable.dragLocation =  vector(vector3.x, vector3.y) + draggableSize / 2
 
             fun draggingInfo() = rootTopicElement.draggingInfo(dragged = content, location = draggable.dragLocation)
 
-            val mainPointerKey = pointerKey.relativeTo(transform.inverse())
+            val pointerKeyRelativeToRoot = pointerKey.relativeTo(transform.inverse())
             
             val draggedObserver = draggable.moved addObserver {
                 draggingInfo().showPreview()
@@ -223,7 +223,7 @@ class Shell(val screen: Screen,
                 draggingInfo().performDrop()
             }
 
-            draggable.registerDragOnMove(pointerKey)
+            draggable.registerDragOnMove(pointerKeyRelativeToRoot)
         }
 
         inner class DraggingInfo(val dragged: TopicImpl, val parent: TopicImpl, val childIndex: Int) {
@@ -237,9 +237,9 @@ class Shell(val screen: Screen,
         }
 
         fun draggingInfo(dragged: TopicImpl, location: Vector2): DraggingInfo {
-            val hitTopicElements = elementsAt(location).filterIsInstance<TopicImpl>()
+            val hitTopicElements = elementsAt(location).map{it.element}.filterIsInstance<TopicElement>()
             // TODO: implement like in XMind:
-            return DraggingInfo(dragged = dragged, parent = hitTopicElements.firstOrNull() ?: content, childIndex = 0)
+            return DraggingInfo(dragged = dragged, parent = hitTopicElements.firstOrNull()?.content ?: content, childIndex = 0)
         }
 
         private fun updateStackableSize() {
