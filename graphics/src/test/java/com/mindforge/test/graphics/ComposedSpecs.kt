@@ -44,7 +44,7 @@ class ComposedSpecs : Spek() {init {
         }
     }
 
-    given("a three nested elements") {
+    given("three nested elements") {
         val innerTransform = Transforms2.translation(vector(2, 2))
         val middleTransform = Transforms2.rotation(0.4)
 

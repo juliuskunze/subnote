@@ -41,7 +41,6 @@ import java.io.InputStream
 import kotlin.properties.Delegates
 
 public class MainActivity : Activity() {
-
     val localWorkbookFile: File get() = File(getFilesDir(), "MindForge.xmind")
 
     override fun onCreate(savedInstanceState: Bundle?) {

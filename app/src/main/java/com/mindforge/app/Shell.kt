@@ -281,25 +281,24 @@ class Shell(val screen: Screen,
 
         private fun mainLineHeightSlice() = rectangle(vector(infinity, mainButtonContentHeight)).topLeftAtOrigin().transformed(Transforms2.translation(vector(-infinity/2, 0)))
         private fun totalHeightSlice() = rectangle(stackableSize()).topLeftAtOrigin().transformed(Transforms2.translation(vector(-infinity/2, 0)))
-        private fun childrenShape() = rectangle(vector(infinity, childStackHeight())).topLeftAtOrigin().transformed(Transforms2.translation(vector(indent, lineHeight)))
+
+        private fun childrenStackShape() = rectangle(vector(infinity, childStackHeight())).topLeftAtOrigin()
         private fun childrenHalfPlane() = object : Shape {
             override fun contains(location: Vector2) = location.x.toDouble() > indent
         }
 
         private fun startDrag(pointerKey: PointerKey) {
-            val transform = rootTopicElement.totalTransform(this)
-            val v = transform.matrix.column(2)
-            val dragLocation = vector(v.x, v.y) + draggableSize / 2
-            val pointerKeyRelativeToRoot = pointerKey.relativeTo(transform.inverse())
+            val elementToRoot = rootTopicElement.totalTransform(this).inverse()
+            val pointerKeyRelativeToRoot = pointerKey.transformed(elementToRoot)
 
-            this@Shell.startDragDrop(dragged = content, dragLocation = dragLocation, pointerKey = pointerKeyRelativeToRoot)
+            this@Shell.startDragDrop(dragged = content, dragLocation = pointerKeyRelativeToRoot.pointer.location, pointerKey = pointerKeyRelativeToRoot)
         }
 
         fun dropInfoIfChanged(dropLocation: Vector2): DropInfo? {
             fun dropAsFirstChild() = DropInfo(newParent = content, newChildIndex = 0)
             fun dropHereAsLastChild() = DropInfo(newParent = content, newChildIndex = content.getAllChildren().count())
             fun dropBelowAsSibling(topic: TopicImpl) = DropInfo(newParent = topic.getParent() as TopicImpl, newChildIndex = topic.getIndex() + 1)
-            fun locationRelativeTo(child: TransformedElement<*>) = childStackTransform().before(child.transform)(dropLocation)
+            fun locationRelativeTo(child: TransformedElement<*>) = (childStackTransform() before child.transform).inverse()(dropLocation)
             fun placeHolderUnchanged() = null
 
             val isInMainLineHeight = mainLineHeightSlice().contains(dropLocation)
@@ -310,7 +309,7 @@ class Shell(val screen: Screen,
             }.singleOrNull()
 
             return if(isInChildHalfPlane && isInMainLineHeight) dropAsFirstChild()
-            else if(childInHeight == null && childrenShape().contains(dropLocation)) placeHolderUnchanged()
+            else if(childInHeight == null && childrenStackShape().contains(dropLocation)) placeHolderUnchanged()
             else if(childInHeight == null) dropHereAsLastChild()
             else if(isInChildHalfPlane) (childInHeight.element as TopicElement).dropInfoIfChanged(locationRelativeTo(childInHeight))
             else dropBelowAsSibling((childInHeight.element as TopicElement).content)
@@ -322,7 +321,7 @@ class Shell(val screen: Screen,
         pointers mapObservable { it.pressed } startKeepingAllObserved { pk ->
             for (it in screen.elementsAt(pk.pointer.location)) {
                 val element = it.element
-                val pointerKey = pointerKey(pk.pointer relativeTo it.transform, pk.key)
+                val pointerKey = pointerKey(pk.pointer transformed it.transform, pk.key)
                 when (element) {
                     is PointersElement<*> -> {
                         element.onPointerKeyPressed(pointerKey)
@@ -335,7 +334,7 @@ class Shell(val screen: Screen,
         pointers mapObservable { it.pointer.moved } startKeepingAllObserved { p ->
             for (it in screen.elementsAt(p.location)) {
                 val element = it.element
-                val pointer = p relativeTo it.transform
+                val pointer = p transformed it.transform
                 when (element) {
                     is PointersElement<*> -> {
                         element.onPointerMoved(pointer)
@@ -347,7 +346,7 @@ class Shell(val screen: Screen,
         pointers mapObservable { it.released } startKeepingAllObserved { pk ->
             for (it in screen.elementsAt(pk.pointer.location)) {
                 val element = it.element
-                val pointerKey = pointerKey(pk.pointer relativeTo it.transform, pk.key)
+                val pointerKey = pointerKey(pk.pointer transformed it.transform, pk.key)
                 when (element) {
                     is PointersElement<*> -> {
                         element.onPointerKeyReleased(pointerKey)
