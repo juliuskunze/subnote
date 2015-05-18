@@ -2,10 +2,7 @@ package com.mindforge.app
 
 import com.mindforge.graphics.*
 import com.mindforge.graphics.interaction.*
-import com.mindforge.graphics.math.bottomLeftAtOrigin
-import com.mindforge.graphics.math.bottomRightAtOrigin
-import com.mindforge.graphics.math.rectangle
-import com.mindforge.graphics.math.topLeftAtOrigin
+import com.mindforge.graphics.math.*
 import org.xmind.core.Core
 import org.xmind.core.ITopic
 import org.xmind.core.IWorkbook
@@ -29,6 +26,8 @@ class Shell(val screen: Screen,
 ) {
 
     val lineHeight = 40
+    val indent = lineHeight
+    val infinity = 5000000
 
     private var activeNote by Delegates.observed<TopicImpl?>(null, { old, new ->
         old?.dispatchIsActiveChanged()
@@ -40,16 +39,16 @@ class Shell(val screen: Screen,
     var draggableSize = vector(100, lineHeight)
     val draggable = Draggable(coloredElement(rectangle(draggableSize), Fills.solid(Colors.red)), dragLocation = draggableSize / 2)
 
-    class DragDropInfo(val newParent: TopicImpl, val newChildIndex: Int)
+    class DropInfo(val newParent: TopicImpl, val newChildIndex: Int)
 
     fun updateByDragLocation() {
-        // TODO: implement like in XMind:
-        val hitTopicElements = rootTopicElement.elementsAt(draggable.dragLocation).map{it.element}.filterIsInstance<TopicElement>() + rootTopicElement
-
-        dragDropInfo = DragDropInfo(newParent = hitTopicElements.first().content, newChildIndex = 0)
+        val dropInfoIfChanged = rootTopicElement.dropInfoIfChanged(draggable.dragLocation)
+        if(dropInfoIfChanged != null) {
+            dragDropInfo = dropInfoIfChanged
+        }
     }
 
-    var dragDropInfo: DragDropInfo? by Delegates.observed<DragDropInfo?>(null, { old, new ->
+    var dragDropInfo: DropInfo? by Delegates.observed<DropInfo?>(null, { old, new ->
         if(old?.newParent !== new?.newParent || old?.newChildIndex != new?.newChildIndex) {
             old?.newParent?.dispatchDragDropPreviewChanged()
             new?.newParent?.dispatchDragDropPreviewChanged()
@@ -72,8 +71,13 @@ class Shell(val screen: Screen,
 
             val d = dragDropInfo!!
             if(dragged !== d.newParent) {
-                dragged.getParent().remove(dragged)
-                d.newParent.add(dragged, d.newChildIndex)
+                val oldParent = dragged.getParent()
+                val oldIndex = dragged.getIndex()
+                oldParent.remove(dragged)
+                val oldSelfCorrectedNewChildIndex = if(oldParent == d.newParent && oldIndex < d.newChildIndex)
+                    d.newChildIndex - 1 else
+                    d.newChildIndex
+                d.newParent.add(dragged, oldSelfCorrectedNewChildIndex)
 
                 dragDropInfo == null
             }
@@ -163,11 +167,12 @@ class Shell(val screen: Screen,
         override val content = topic
         override val changed = trigger<Unit>()
         override val elements = ObservableArrayList<TransformedElement<*>>()
-        private val subElements = ObservableArrayList<TopicElement>()
+        private val stackables = ObservableArrayList<Stackable>()
         private var stackable = Stackable(this, zeroVector2)
         private var toStop = {}
         private var mainButtonContent: TextElementImpl by Delegates.notNull()
         private var mainButtonContentHeight: Double by Delegates.notNull()
+        private var childStack: Stack by Delegates.notNull()
 
         init {
             initElementsAndStackable()
@@ -189,17 +194,60 @@ class Shell(val screen: Screen,
         private fun text() = content.getTitleText()
 
         private fun initElementsAndStackable() {
-            val topic = content
+            toStop()
+
+            val mainLineStack = mainLine()
+
+            stackables.clearAndAddAll(subElements())
+            childStack = verticalStack(observableIterable(stackables))
+
+            val stacks = listOf(mainLineStack, childStack)
+
+            elements.clearAndAddAll(listOf(
+                    transformedElement(mainLineStack),
+                    transformedElement(childStack, childStackTransform()))
+            )
+
+            val observer = stackables.mapObservable { it.sizeChanged }.startKeepingAllObserved { updateStackableSize() }
+
+            toStop = {
+                stacks.forEach { it.removeObservers() }
+                observer.stop()
+            }
+
+            updateStackableSize()
+        }
+
+        private fun subElements(): List<Stackable> {
+            val d = dragDropInfo
+            val dragDropGap = if (d == null) null else if (d.newParent != content) null else {
+                val s = TextElementImpl(" ", fill = mainColor(), font = defaultFont, lineHeight = lineHeight)
+                Stackable(s, s.shape.size())
+            }
+
+            val unfoldedSubTopics = if (content.isFolded()) listOf() else content.getAllChildren()
+            val unfoldedTopicStackables = unfoldedSubTopics.map { TopicElement(it as TopicImpl) }.map { it.stackable }
+
+            return if (dragDropGap == null) unfoldedTopicStackables else {
+                val list = unfoldedTopicStackables.toArrayList()
+                list.add(d!!.newChildIndex, dragDropGap)
+                list
+            }
+        }
+
+        private fun mainLine(): Stack {
             mainButtonContent = TextElementImpl(text(), fill = mainColor(), font = defaultFont, lineHeight = lineHeight)
+            mainButtonContentHeight = mainButtonContent.shape.size().y.toDouble()
+
+            val topic = content
 
             val mainButton = Stackable(textRectangleButton(mainButtonContent, onLongPressed = {
                 vibrate()
-                startDragDrop(it)
+                startDrag(it)
             }) {
                 activeNote = topic
             }, mainButtonContent.shape.size())
 
-            val unfoldedSubTopics = if (topic.isFolded()) listOf() else topic.getAllChildren()
             val linkButtonIfHas = if (topic.getHyperlink() == null) null else {
                 val linkButtonTextElement = TextElementImpl("Link", fill = Fills.solid(Colors.blue), font = defaultFont, lineHeight = lineHeight)
 
@@ -218,47 +266,29 @@ class Shell(val screen: Screen,
                 Stackable(button, element.shape.size())
             } else null
 
-            toStop()
-            subElements.clearAndAddAll(unfoldedSubTopics.map { TopicElement(it as TopicImpl) })
-
-            val indent = lineHeight
-
             val mainStack = horizontalStack(observableIterable(listOf(mainButton, linkButtonIfHas, collapseButtonIfHas).filterNotNull()))
-
-            val d = dragDropInfo
-            val dragDropGap = if(d == null) null else if(d.newParent != content) null else {
-                val s = TextElementImpl(" ", fill = mainColor(), font = defaultFont, lineHeight = lineHeight)
-                Stackable(s, s.shape.size())
-            }
-
-            val childElements = subElements.map { it.stackable }
-            val childElementsWithDragDropPreviewGapIfHas = if(dragDropGap == null) childElements else {
-                val list = childElements.toArrayList()
-                list.add(d!!.newChildIndex, dragDropGap)
-                list
-            }
-
-            val childStack = verticalStack(observableIterable(childElementsWithDragDropPreviewGapIfHas))
-            val stacks = listOf(mainStack, childStack)
-
-            mainButtonContentHeight = mainButtonContent.shape.size().y.toDouble()
-
-            elements.clearAndAddAll(listOf(
-                    transformedElement(mainStack),
-                    transformedElement(childStack, Transforms2.translation(vector(indent, -mainButtonContentHeight))))
-            )
-
-            val observer = subElements.mapObservable { it.stackable.sizeChanged }.startKeepingAllObserved { updateStackableSize() }
-
-            toStop = {
-                stacks.forEach { it.removeObservers() }
-                observer.stop()
-            }
-
-            updateStackableSize()
+            return mainStack
         }
 
-        private fun startDragDrop(pointerKey: PointerKey) {
+        private fun updateStackableSize() {
+            stackable.size = stackableSize()
+        }
+
+        // TODO: remove height Schlemian
+        // TODO: width is random, should be related to the content:
+
+        private fun stackableSize() = vector(infinity, mainButtonContentHeight + childStackHeight())
+        private fun childStackHeight() = stackables.map { it.size.y.toDouble() }.sum()
+        private fun childStackTransform() = Transforms2.translation(vector(indent, -mainButtonContentHeight))
+
+        private fun mainLineHeightSlice() = rectangle(vector(infinity, mainButtonContentHeight)).topLeftAtOrigin().transformed(Transforms2.translation(vector(-infinity/2, 0)))
+        private fun totalHeightSlice() = rectangle(stackableSize()).topLeftAtOrigin().transformed(Transforms2.translation(vector(-infinity/2, 0)))
+        private fun childrenShape() = rectangle(vector(infinity, childStackHeight())).topLeftAtOrigin().transformed(Transforms2.translation(vector(indent, lineHeight)))
+        private fun childrenHalfPlane() = object : Shape {
+            override fun contains(location: Vector2) = location.y.toDouble() > indent
+        }
+
+        private fun startDrag(pointerKey: PointerKey) {
             val transform = rootTopicElement.totalTransform(this)
             val v = transform.matrix.column(2)
             val dragLocation = vector(v.x, v.y) + draggableSize / 2
@@ -267,13 +297,26 @@ class Shell(val screen: Screen,
             this@Shell.startDragDrop(dragged = content, dragLocation = dragLocation, pointerKey = pointerKeyRelativeToRoot)
         }
 
-        private fun updateStackableSize() {
-            // TODO: remove height Schlemian
-            val newSize = stackableSize()
-            stackable.size = newSize
-        }
+        fun dropInfoIfChanged(dropLocation: Vector2): DropInfo? {
+            fun dropHereAsFirst() = DropInfo(newParent = content, newChildIndex = 0)
+            fun dropHereAsLast() = DropInfo(newParent = content, newChildIndex = content.getAllChildren().count())
+            fun dropBelow(topic: TopicImpl) = DropInfo(newParent = topic.getParent() as TopicImpl, newChildIndex = topic.getIndex() + 1)
+            fun locationRelativeTo(child: TransformedElement<*>) = childStackTransform().before(child.transform)(dropLocation)
+            fun placeHolderUnchanged() = null
 
-        private fun stackableSize() = vector(0, mainButtonContentHeight + subElements.map { it.stackable.size.y.toDouble() }.sum())
+            val isInMainLineHeight = mainLineHeightSlice().contains(dropLocation)
+            val isInChildHalfPlane = childrenHalfPlane().contains(dropLocation)
+            val childInHeight = childStack.elements.filter {
+                val element = it.element
+                element is TopicElement && element.totalHeightSlice().contains(locationRelativeTo(it))
+            }.singleOrNull()
+
+            return if(isInChildHalfPlane && isInMainLineHeight) dropHereAsFirst()
+            else if(childInHeight == null && childrenShape().contains(dropLocation)) placeHolderUnchanged()
+            else if(childInHeight == null) dropHereAsLast()
+            else if(isInChildHalfPlane) (childInHeight.element as TopicElement).dropInfoIfChanged(locationRelativeTo(childInHeight))
+            else dropBelow((childInHeight.element as TopicElement).content)
+        }
     }
 
 
