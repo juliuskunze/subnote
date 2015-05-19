@@ -37,7 +37,8 @@ class Shell(val screen: Screen,
     })
 
     var draggableSize = vector(100, lineHeight)
-    val draggable = Draggable(coloredElement(rectangle(draggableSize), Fills.solid(Colors.red)), dragLocation = draggableSize / 2)
+    val draggedElements = observableArrayListOf<TransformedElement<*>>()
+    val draggable = Draggable(composed(draggedElements), dragLocation = draggableSize / 2)
 
     class DropInfo(val newParent: TopicImpl, val newChildIndex: Int)
 
@@ -69,18 +70,18 @@ class Shell(val screen: Screen,
             draggedObserver.stop()
             stop()
 
+            draggedElements.clear()
             val d = dragDropInfo!!
+            dragDropInfo = null
             if(dragged !== d.newParent) {
                 val oldParent = dragged.getParent()
                 val oldIndex = dragged.getIndex()
                 oldParent.remove(dragged)
-                val oldSelfCorrectedNewChildIndex = if (oldParent == d.newParent && oldIndex < d.newChildIndex)
+                val correctedNewChildIndex = if (oldParent == d.newParent && oldIndex < d.newChildIndex)
                     d.newChildIndex - 1 else
                     d.newChildIndex
-                d.newParent.add(dragged, oldSelfCorrectedNewChildIndex)
+                d.newParent.add(dragged, correctedNewChildIndex)
             }
-
-            dragDropInfo == null
         }
 
         draggable.registerDragOnMove(pointerKey)
@@ -167,12 +168,23 @@ class Shell(val screen: Screen,
         override val content = topic
         override val changed = trigger<Unit>()
         override val elements = ObservableArrayList<TransformedElement<*>>()
-        private val stackables = ObservableArrayList<Stackable>()
         private var stackable = Stackable(this, zeroVector2)
+        private val subStackables = ObservableArrayList<Stackable>()
         private var toStop = {}
-        private var mainButtonContent: TextElementImpl by Delegates.notNull()
-        private var mainButtonContentHeight: Double by Delegates.notNull()
-        private var childStack: Stack by Delegates.notNull()
+
+        inner class MainLine(
+                val buttonContent: TextElementImpl,
+                val stack: Stack
+        ) {
+            val height =  buttonContent.shape.size().y.toDouble()
+
+            fun stackTransform() = Transforms2.translation(vector(indent, -height))
+            fun transformedStack() = transformedElement(stack, stackTransform())
+            fun heightSlice() = rectangle(vector(infinity, height)).topLeftAtOrigin().transformed(Transforms2.translation(vector(-infinity/2, 0)))
+        }
+
+        private var mainLine: MainLine by Delegates.notNull()
+        private var subStack: Stack by Delegates.notNull()
 
         init {
             initElementsAndStackable()
@@ -181,11 +193,11 @@ class Shell(val screen: Screen,
             eventTypes.forEach { content.registerCoreEventListener(it) { initElementsAndStackable() } }
 
             content.registerCoreEventListener(CoreEventTypeExtensions.isActiveChanged) {
-                mainButtonContent.fill = mainColor()
+                mainLine.buttonContent.fill = mainColor()
             }
 
             content.registerCoreEventListener(Core.TitleText) {
-                mainButtonContent.content = text()
+                mainLine.buttonContent.content = text()
             }
 
         }
@@ -196,21 +208,19 @@ class Shell(val screen: Screen,
         private fun initElementsAndStackable() {
             toStop()
 
-            val mainLineStack = mainLine()
-
-            stackables.clearAndAddAll(subElements())
-            childStack = verticalStack(observableIterable(stackables))
-
+            mainLine = mainLine()
+            subStackables.clearAndAddAll(subElements())
+            subStack = verticalStack(observableIterable(subStackables))
 
             elements.clearAndAddAll(listOf(
-                    transformedElement(mainLineStack, mainStackTransform()),
-                    transformedElement(childStack, childStackTransform()))
+                    mainLine.transformedStack(),
+                    transformedElement(subStack, childStackTransform()))
             )
 
-            val observer = stackables.mapObservable { it.sizeChanged }.startKeepingAllObserved { updateStackableSize() }
+            val observer = subStackables.mapObservable { it.sizeChanged }.startKeepingAllObserved { updateStackableSize() }
 
             toStop = {
-                listOf(mainLineStack, childStack).forEach { it.removeObservers() }
+                listOf(mainLine.stack, subStack).forEach { it.removeObservers() }
                 observer.stop()
             }
 
@@ -218,25 +228,29 @@ class Shell(val screen: Screen,
         }
 
         private fun subElements(): List<Stackable> {
-            val d = dragDropInfo
-            val dragDropGap = if (d == null) null else if (d.newParent != content) null else {
-                val s = TextElementImpl(" ", fill = mainColor(), font = defaultFont, lineHeight = lineHeight)
-                Stackable(s, s.shape.size())
-            }
+            val dropPlaceholderIfHas = dropPlaceHolderIfHas()
 
             val childTopicsIfUnfolded = (if (content.isFolded()) listOf() else content.getAllChildren()).
                     map { TopicElement(it as TopicImpl).stackable }
 
-            return if (dragDropGap == null || content.isFolded()) childTopicsIfUnfolded else {
+            return if (dropPlaceholderIfHas == null || content.isFolded()) childTopicsIfUnfolded else {
                 val list = childTopicsIfUnfolded.toArrayList()
-                list.add(d!!.newChildIndex, dragDropGap)
+                list.add(dragDropInfo!!.newChildIndex, dropPlaceholderIfHas)
                 list
             }
         }
 
-        private fun mainLine(): Stack {
-            mainButtonContent = TextElementImpl(text(), fill = mainColor(), font = defaultFont, lineHeight = lineHeight)
-            mainButtonContentHeight = mainButtonContent.shape.size().y.toDouble()
+        private fun dropPlaceHolderIfHas(): Stackable? {
+            val d = dragDropInfo
+            return if (d == null) null else if (d.newParent != content) null else {
+                val s = TextElementImpl(" ", fill = mainColor(), font = defaultFont, lineHeight = lineHeight)
+                Stackable(s, s.shape.size())
+            }
+
+        }
+
+        private fun mainLine(): MainLine {
+            val mainButtonContent = TextElementImpl(text(), fill = mainColor(), font = defaultFont, lineHeight = lineHeight)
 
             val topic = content
 
@@ -266,7 +280,7 @@ class Shell(val screen: Screen,
             } else null
 
             val mainStack = horizontalStack(observableIterable(listOf(mainButton, linkButtonIfHas, collapseButtonIfHas).filterNotNull()))
-            return mainStack
+            return MainLine(buttonContent = mainButtonContent, stack = mainStack)
         }
 
         private fun updateStackableSize() {
@@ -274,20 +288,19 @@ class Shell(val screen: Screen,
         }
 
         // TODO remove height Schlemian:
-        private fun stackableSize() = vector(infinity, mainButtonContentHeight + childStackHeight())
-        private fun childStackHeight() = stackables.map { it.size.y.toDouble() }.sum()
-        private fun mainStackTransform() = Transforms2.translation(vector(indent, -mainButtonContentHeight))
-        private fun childStackTransform() = Transforms2.translation(vector(indent, -mainButtonContentHeight))
-
-        private fun mainLineHeightSlice() = rectangle(vector(infinity, mainButtonContentHeight)).topLeftAtOrigin().transformed(Transforms2.translation(vector(-infinity/2, 0)))
+        private fun stackableSize() = vector(infinity, mainLine.height + childStackHeight())
+        private fun childStackHeight() = subStackables.map { it.size.y.toDouble() }.sum()
+        private fun childStackTransform() = Transforms2.translation(vector(indent, -mainLine.height))
         private fun totalHeightSlice() = rectangle(stackableSize()).topLeftAtOrigin().transformed(Transforms2.translation(vector(-infinity/2, 0)))
 
         private fun childrenStackShape() = rectangle(vector(infinity, childStackHeight())).topLeftAtOrigin()
-        private fun childrenHalfPlane() = object : Shape {
-            override fun contains(location: Vector2) = location.x.toDouble() > indent
+        private fun halfPlaneWhereDropOnChildCreatesChildChildnode() = object : Shape {
+            override fun contains(location: Vector2) = location.x.toDouble() > 3 * indent
         }
 
         private fun startDrag(pointerKey: PointerKey) {
+            draggedElements.add(mainLine().transformedStack())
+
             val elementToRoot = rootTopicElement.totalTransform(this).inverse()
             val pointerKeyRelativeToRoot = pointerKey.transformed(elementToRoot)
 
@@ -301,9 +314,9 @@ class Shell(val screen: Screen,
             fun locationRelativeTo(child: TransformedElement<*>) = (childStackTransform() before child.transform).inverse()(dropLocation)
             fun placeHolderUnchanged() = null
 
-            val isInMainLineHeight = mainLineHeightSlice().contains(dropLocation)
-            val isInChildHalfPlane = childrenHalfPlane().contains(dropLocation)
-            val childInHeight = childStack.elements.filter {
+            val isInMainLineHeight = mainLine.heightSlice().contains(dropLocation)
+            val isInChildHalfPlane = halfPlaneWhereDropOnChildCreatesChildChildnode().contains(dropLocation)
+            val childInHeight = subStack.elements.filter {
                 val element = it.element
                 element is TopicElement && element.totalHeightSlice().contains(locationRelativeTo(it))
             }.singleOrNull()
@@ -315,7 +328,6 @@ class Shell(val screen: Screen,
             else dropBelowAsSibling((childInHeight.element as TopicElement).content)
         }
     }
-
 
     fun registerInputs() {
         pointers mapObservable { it.pressed } startKeepingAllObserved { pk ->
