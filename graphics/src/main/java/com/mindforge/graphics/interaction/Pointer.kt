@@ -6,7 +6,7 @@ trait Pointer {
     val moved: Observable<Pointer>
     val location: Vector2
 
-    fun relativeTo(transform: Transform2): Pointer = object : Pointer {
+    fun transformed(transform: Transform2): Pointer = object : Pointer {
         override val moved: Observable<Pointer> = observable(this@Pointer.moved) { this }
         override val location: Vector2 get() = transform.inverse()(this@Pointer.location)
     }
@@ -15,7 +15,7 @@ trait PointerKey {
     val pointer: Pointer
     val key: Key
 
-    fun relativeTo(transform: Transform2) = pointerKey(pointer.relativeTo(transform), key)
+    fun transformed(transform: Transform2) = pointerKey(pointer.transformed(transform), key)
 }
 
 fun pointerKey(pointer: Pointer, key: Key): PointerKey = object : PointerKey {

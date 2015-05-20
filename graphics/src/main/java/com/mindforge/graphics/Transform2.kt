@@ -16,6 +16,8 @@ trait Transform2 {
 
     fun inverse(): Transform2 = transform(matrix.inverse()!!)
 
+    override fun equals(other: Any?) = other is Transform2 && matrix == other.matrix
+
     override fun toString() = "transform(${matrix.toString()})"
 }
 
