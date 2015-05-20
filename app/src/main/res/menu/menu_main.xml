@@ -40,8 +40,4 @@
     <item
         android:id="@+id/save_to_drive"
         android:title="@string/save_to_drive" />
-
-    <!--item
-        android:id="@+id/action_settings"
-        android:title="@string/action_settings"/-->
 </menu>

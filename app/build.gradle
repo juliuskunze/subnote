@@ -32,7 +32,7 @@ android {
     buildToolsVersion "22.0.1"
 
     defaultConfig {
-        applicationId "com.xmind.app"
+        applicationId "net.pureal.mindforge"
         minSdkVersion 15
         targetSdkVersion 22
         versionCode 1
