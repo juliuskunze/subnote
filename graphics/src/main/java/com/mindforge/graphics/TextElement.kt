@@ -15,10 +15,10 @@ trait TextElement : ColoredElement<String> {
 class TextElementImpl(content: String, font: Font, lineHeight: Number, fill: Fill) : TextElement {
     override val changed = trigger<Unit>()
 
-    override var content by Delegates.observing(content, changed)
-    override var font by Delegates.observing(font, changed)
-    override var lineHeight by Delegates.observing(lineHeight, changed)
-    override var fill by Delegates.observing(fill, changed)
+    override var content by Delegates.observed(content, changed)
+    override var font by Delegates.observed(font, changed)
+    override var lineHeight by Delegates.observed(lineHeight, changed)
+    override var fill by Delegates.observed(fill, changed)
 }
 
 /* YAGNI trait GlyphShape : Shape {

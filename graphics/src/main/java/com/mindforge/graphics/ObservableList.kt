@@ -2,16 +2,19 @@ package com.mindforge.graphics
 
 import java.util.ArrayList
 
-
 trait ObservableList<T> : ObservableIterable<T>, MutableList<T>
 
 fun observableArrayListOf<T>(vararg elements: T) = ObservableArrayList<T>(elements map { it })
 
 class ObservableArrayList<T>(elements: Iterable<T> = listOf()) : ArrayList<T>(elements map { it }), ObservableList<T> {
-    override val removed = trigger<T>()
     override val added = trigger<T>()
+    override val removed = trigger<T>()
+    override val addedAt = trigger<IndexedValue<T>>()
+    override val removedAt = trigger<IndexedValue<T>>()
+
     override fun add(e: T) : Boolean {
         super<ArrayList>.add(e)
+
         added(e)
 
         return true
@@ -52,11 +55,8 @@ class ObservableArrayList<T>(elements: Iterable<T> = listOf()) : ArrayList<T>(el
     }
 
     override fun addAll(index: Int, c: Collection<T>): Boolean {
-        super<ArrayList>.addAll(index, c)
-
         for (e in c) {
-            //TODO call indexed version
-            added(e)
+            add(index, e)
         }
 
         return c.any()
@@ -65,16 +65,14 @@ class ObservableArrayList<T>(elements: Iterable<T> = listOf()) : ArrayList<T>(el
     override fun add(index: Int, element: T): Unit {
         super<ArrayList>.add(index, element)
 
-        //TODO call indexed version
-        added(element)
+        addedAt(IndexedValue(index, element))
     }
 
 
     override fun remove(index: Int): T {
         val o = super<ArrayList>.remove(index)
 
-        //TODO: call indexed version:
-        removed(o)
+        removedAt(IndexedValue(index, o))
 
         return o
     }

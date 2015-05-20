@@ -54,6 +54,9 @@ class GlComposed(val originalComposed: Composed<*>, screen: GlScreen) : GlElemen
         override val added = trigger<TransformedElement<*>>()
         override val removed = trigger<TransformedElement<*>>()
 
+        override val addedAt = trigger<IndexedValue<TransformedElement<*>>>()
+        override val removedAt = trigger<IndexedValue<TransformedElement<*>>>()
+
         val addedObserver = originalComposed.elements.added addObserver { addedElement ->
             val glElement = GlTransformedElement(addedElement, screen)
             glElementList.add(glElement)
@@ -70,9 +73,25 @@ class GlComposed(val originalComposed: Composed<*>, screen: GlScreen) : GlElemen
             }
             onChanged()
         }
+
+        val addedAtObserver = originalComposed.elements.addedAt addObserver { added ->
+            val glElement = GlTransformedElement(added.value, screen)
+            glElementList.add(added.index, glElement)
+            addedAt(IndexedValue(added.index, glElement))
+            onChanged()
+        }
+
+        val removedAtObserver = originalComposed.elements.removedAt addObserver { removed ->
+            val glElement = glElementList.remove(removed.index)
+            removedAt(IndexedValue(removed.index, glElement))
+            onChanged()
+        }
+
         override fun detach() {
             addedObserver.stop()
             removedObserver.stop()
+            addedAtObserver.stop()
+            removedAtObserver.stop()
         }
     }
     override fun detach() {
