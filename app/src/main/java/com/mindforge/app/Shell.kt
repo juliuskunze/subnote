@@ -68,24 +68,28 @@ class Shell(val screen: Screen,
         }
 
         draggable.dropped addObserver {
-            draggedObserver.stop()
             stop()
+            draggedObserver.stop()
 
-            draggedElements.clear()
-            val d = dropInfo!!
-            dropInfo = null
-            if(dragged !== d.newParent) {
-                val oldParent = dragged.getParent()
-                val oldIndex = dragged.getIndex()
-                oldParent.remove(dragged)
-                val correctedNewChildIndex = if (oldParent == d.newParent && oldIndex < d.newChildIndex)
-                    d.newChildIndex - 1 else
-                    d.newChildIndex
-                d.newParent.add(dragged, correctedNewChildIndex)
-            }
+            performDrop(dragged)
         }
 
         draggable.startDrag(pointerKey)
+    }
+
+    private fun performDrop(dragged: TopicImpl) {
+        draggedElements.clear()
+        val d = dropInfo!!
+        dropInfo = null
+        if (dragged !== d.newParent) {
+            val oldParent = dragged.getParent()
+            val oldIndex = dragged.getIndex()
+            oldParent.remove(dragged)
+            val correctedNewChildIndex = if (oldParent == d.newParent && oldIndex < d.newChildIndex)
+                d.newChildIndex - 1 else
+                d.newChildIndex
+            d.newParent.add(dragged, correctedNewChildIndex)
+        }
     }
 
     val rootTopicElement = TopicElement(workbook.getPrimarySheet().getRootTopic() as TopicImpl)
@@ -159,8 +163,7 @@ class Shell(val screen: Screen,
                 val stack: Stack
         ) {
             fun height() = buttonContent.shape.size().y.toDouble()
-            fun stackTransform() = Transforms2.translation(vector(0, -height()))
-            fun transformedStack() = transformedElement(stack, stackTransform())
+            fun transformedStack() = transformedElement(stack, Transforms2.translation(vector(0, -height())))
             fun heightSlice() = rectangle(vector(infinity, height())).topLeftAtOrigin().transformed(Transforms2.translation(vector(-infinity/2, 0)))
         }
 
@@ -235,9 +238,17 @@ class Shell(val screen: Screen,
 
             val topic = content
 
-            val mainButton = Stackable(textRectangleButton(mainButtonContent, onLongPressed = {
+            var mainButton : Stackable? = null
+            mainButton = Stackable(textRectangleButton(mainButtonContent, onLongPressed = {
                 vibrate()
-                startDrag(it)
+
+                val draggedMainLine = mainLine()
+                val stack = draggedMainLine.stack
+                draggedElements.add(transformedElement(stack, Transforms2.translation(-draggedMainLine.buttonContent.shape.size()/2)))
+                val elementToRoot = rootTopicElement.totalTransform(mainButton!!.element).inverse()
+                val pointerKeyRelativeToRoot = it.transformed(elementToRoot)
+
+                this@Shell.startDrag(dragged = content, dragLocation = pointerKeyRelativeToRoot.pointer.location, pointerKey = pointerKeyRelativeToRoot)
             }) {
                 activeNote = topic
             }, mainButtonContent.shape.box())
@@ -277,15 +288,6 @@ class Shell(val screen: Screen,
         private fun childrenStackShape() = rectangle(vector(infinity, childStackHeight())).topLeftAtOrigin()
         private fun halfPlaneWhereDropOnChildCreatesChildChildnode() = object : Shape {
             override fun contains(location: Vector2) = location.x.toDouble() > 3 * indent
-        }
-
-        private fun startDrag(pointerKey: PointerKey) {
-            draggedElements.add(transformedElement(mainLine().stack))
-
-            val elementToRoot = rootTopicElement.totalTransform(this).inverse()
-            val pointerKeyRelativeToRoot = pointerKey.transformed(elementToRoot)
-
-            this@Shell.startDrag(dragged = content, dragLocation = pointerKeyRelativeToRoot.pointer.location, pointerKey = pointerKeyRelativeToRoot)
         }
 
         fun dropInfoIfChanged(dropLocation: Vector2): DropInfo? {

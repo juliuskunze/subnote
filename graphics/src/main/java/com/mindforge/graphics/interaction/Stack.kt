@@ -29,16 +29,16 @@ class Stack(val stackElements: ObservableIterable<Stackable>, val horizontal: Bo
         initTransforms()
     }
 
-    val observer1 = stackElements.mapObservable { it.shapeChanged }.startKeepingAllObserved {
+    private val observer1 = stackElements.mapObservable { it.shapeChanged }.startKeepingAllObserved {
         initTransforms()
     }
 
-    val observer2 = stackElements.added addObserver {
+    private val observer2 = stackElements.added addObserver {
         elements.add(MutableTransformedElement(it.element))
         initTransforms()
     }
 
-    val observer3 = stackElements.removed addObserver  {
+    private val observer3 = stackElements.removed addObserver  {
         elements.remove(MutableTransformedElement(it.element))
         initTransforms()
     }
@@ -49,7 +49,7 @@ class Stack(val stackElements: ObservableIterable<Stackable>, val horizontal: Bo
         observer3.stop()
     }
 
-    fun initTransforms() {
+    private fun initTransforms() {
         elements.clear()
 
         var partialTransformation = zeroVector2
