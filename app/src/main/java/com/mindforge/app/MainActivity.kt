@@ -3,11 +3,10 @@ package com.mindforge.app
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.media.AudioAttributes
 import android.os.Bundle
-import android.view.View
 import android.view.Menu
 import android.view.MenuItem
+import android.view.ViewConfiguration
 import com.evernote.client.android.EvernoteSession
 import com.evernote.client.android.OnClientCallback
 import com.evernote.edam.notestore.NoteFilter
@@ -46,8 +45,26 @@ public class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        //localWorkbookFile.delete()
+
+        enableOverflowMenuButtonEvenIfHardwareMenuButtonExists()
+
         openFromDocuments()
+    }
+
+    /*
+    (Code from http://stackoverflow.com/a/13098824/1692437)
+    Why?
+    1. Hardware menu button did not do anything on S3 resulting in completely inaccessible menu items.
+    2. Having items split up into hardware menu and action bar is confusing.
+    3. Hardware menu button is dying out anyway.
+    Why is this so complicated? Questionable design decision from Google to not show overflow indicator if hardware button is available.
+    */
+    private fun enableOverflowMenuButtonEvenIfHardwareMenuButtonExists() {
+        val viewConfig = ViewConfiguration.get(this)
+
+        val menuKeyField = javaClass<ViewConfiguration>().getDeclaredField("sHasPermanentMenuKey")
+        menuKeyField.setAccessible(true)
+        menuKeyField.setBoolean(viewConfig, false)
     }
 
     private val textChanged = trigger<String>()
@@ -149,29 +166,11 @@ public class MainActivity : Activity() {
         val id = item!!.getItemId()
 
         return when (id) {
-        /*R.id.action_settings -> {
-            true
-        }*/
             R.id.open_from_drive -> {
                 openFromDrive()
                 true
             }
-        /*R.id.open_from_documents -> {
-            openFromDocuments()
-            true
-        }
-        R.id.drive_example -> {
-            startActivity<DriveSampleActivity>()
-            true
-        }
-        R.id.import_from_evernote -> {
-            importFromEvernote()
-            true
-        }
-        R.id.create_new -> {
-            createNew()
-            true
-        }*/
+
             R.id.newNoteButton -> {
                 newNote()
                 true

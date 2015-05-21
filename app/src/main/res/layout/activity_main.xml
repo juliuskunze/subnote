@@ -6,5 +6,5 @@
     <RelativeLayout
         android:id="@+id/mindMapLayout"
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent"></RelativeLayout>
+        android:layout_height="fill_parent"/>
 </RelativeLayout>
