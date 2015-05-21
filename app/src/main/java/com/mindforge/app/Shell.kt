@@ -158,11 +158,10 @@ class Shell(val screen: Screen,
                 val buttonContent: TextElementImpl,
                 val stack: Stack
         ) {
-            val height =  buttonContent.shape.size().y.toDouble()
-
-            fun stackTransform() = Transforms2.translation(vector(0, -height))
+            fun height() = buttonContent.shape.size().y.toDouble()
+            fun stackTransform() = Transforms2.translation(vector(0, -height()))
             fun transformedStack() = transformedElement(stack, stackTransform())
-            fun heightSlice() = rectangle(vector(infinity, height)).topLeftAtOrigin().transformed(Transforms2.translation(vector(-infinity/2, 0)))
+            fun heightSlice() = rectangle(vector(infinity, height())).topLeftAtOrigin().transformed(Transforms2.translation(vector(-infinity/2, 0)))
         }
 
         private var mainLine: MainLine by Delegates.notNull()
@@ -180,6 +179,7 @@ class Shell(val screen: Screen,
 
             content.registerCoreEventListener(Core.TitleText) {
                 mainLine.buttonContent.content = text()
+                updateStackableShape()
             }
 
         }
@@ -199,14 +199,14 @@ class Shell(val screen: Screen,
                     transformedElement(subStack, childStackTransform()))
             )
 
-            val observer = subStackables.mapObservable { it.shapeChanged }.startKeepingAllObserved { updateStackableSize() }
+            val observer = subStackables.mapObservable { it.shapeChanged }.startKeepingAllObserved { updateStackableShape() }
 
             toStop = {
                 listOf(mainLine.stack, subStack).forEach { it.removeObservers() }
                 observer.stop()
             }
 
-            updateStackableSize()
+            updateStackableShape()
         }
 
         private fun subElements(): List<Stackable> {
@@ -228,7 +228,6 @@ class Shell(val screen: Screen,
                 val s = TextElementImpl(" ", fill = mainColor(), font = defaultFont, lineHeight = lineHeight)
                 Stackable(s, s.shape.box())
             }
-
         }
 
         private fun mainLine(): MainLine {
@@ -265,14 +264,14 @@ class Shell(val screen: Screen,
             return MainLine(buttonContent = mainButtonContent, stack = mainStack)
         }
 
-        private fun updateStackableSize() {
+        private fun updateStackableShape() {
             stackable.shape = stackableShape()
         }
 
         // TODO remove height Schlemian:
-        private fun stackableShape() = rectangle(vector(infinity, mainLine.height + childStackHeight())).topLeftAtOrigin()
+        private fun stackableShape() = rectangle(vector(infinity, mainLine.height() + childStackHeight())).topLeftAtOrigin()
         private fun childStackHeight() = subStackables.map { it.shape.original.size.y.toDouble() }.sum()
-        private fun childStackTransform() = Transforms2.translation(vector(indent, -mainLine.height))
+        private fun childStackTransform() = Transforms2.translation(vector(indent, -mainLine.height()))
         private fun totalHeightSlice() = stackableShape().transformed(Transforms2.translation(vector(-infinity/2, 0)))
 
         private fun childrenStackShape() = rectangle(vector(infinity, childStackHeight())).topLeftAtOrigin()
