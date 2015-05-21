@@ -44,8 +44,7 @@ trait TextShape : Shape {
                 lineHeight.toDouble() * text.lineCount() + leading.toDouble() * (text.lineCount() - 1)
     )
 
-    fun box() : Shape = rectangle(size()).topLeftAtOrigin() transformed Transforms2.translation(vector(0, lineHeight.toDouble() - baseline.toDouble()))
-
+    fun box() = rectangle(size()).topLeftAtOrigin().translated(vector(0, lineHeight.toDouble() - baseline.toDouble()))
 }
 
 trait Font {

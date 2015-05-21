@@ -2,7 +2,9 @@ package com.mindforge.app
 
 import com.mindforge.graphics.*
 import com.mindforge.graphics.interaction.*
-import com.mindforge.graphics.math.*
+import com.mindforge.graphics.math.Shape
+import com.mindforge.graphics.math.rectangle
+import com.mindforge.graphics.math.topLeftAtOrigin
 import org.xmind.core.Core
 import org.xmind.core.ITopic
 import org.xmind.core.IWorkbook
@@ -29,9 +31,9 @@ class Shell(val screen: Screen,
     val indent = lineHeight
     val infinity = 5000000
 
-    private var activeNote by Delegates.observed<TopicImpl?>(null, { old, new ->
-        old?.dispatchIsActiveChanged()
-        new?.dispatchIsActiveChanged()
+    private var activeNote by Delegates.observed<TopicImpl>(workbook.getPrimarySheet().getRootTopic() as TopicImpl, { old, new ->
+        old.dispatchIsActiveChanged()
+        new.dispatchIsActiveChanged()
 
         onActiveTopicChanged(new)
     })
@@ -93,13 +95,6 @@ class Shell(val screen: Screen,
     )
     val mainContent = Scrollable(composed(mainElements))
 
-    private fun withActiveNoteIfHas(action: ITopic.() -> Unit) {
-        val topic = activeNote
-        if (topic == null) return
-
-        topic.action()
-    }
-
     private fun initializeNewNote(newNote: ITopic) {
         newNote.setTitleText("new note")
         newNote.getParent().setFolded(false)
@@ -109,51 +104,41 @@ class Shell(val screen: Screen,
 
     init {
         textChanged addObserver {
-            withActiveNoteIfHas {
-                setTitleText(it)
-            }
+            activeNote.setTitleText(it)
         }
 
         nodeLinkChanged addObserver {
-            withActiveNoteIfHas {
-                setHyperlink(it.url)
-                it.updateTopic(this)
-            }
+            activeNote.setHyperlink(it.url)
+            it.updateTopic(activeNote)
         }
 
         newNote addObserver {
-            withActiveNoteIfHas {
                 val newNote = workbook.createTopic()
 
-                val parentIfHas = getParent()
+                val parentIfHas = activeNote.getParent()
                 if (parentIfHas != null) {
-                    parentIfHas.add(newNote, getIndex() + 1)
+                    parentIfHas.add(newNote, activeNote.getIndex() + 1)
                 } else {
-                    add(newNote)
+                    activeNote.add(newNote)
                 }
                 initializeNewNote(newNote)
-            }
         }
 
         newSubnote addObserver {
-            withActiveNoteIfHas {
                 val newNote = workbook.createTopic()
-                add(newNote)
+                activeNote.add(newNote)
 
                 initializeNewNote(newNote)
-            }
         }
 
         removeNode addObserver {
-            withActiveNoteIfHas {
-                val parentIfHas = getParent()
+                val parentIfHas = activeNote.getParent()
                 if (parentIfHas != null) {
-                    parentIfHas.remove(this)
+                    parentIfHas.remove(activeNote)
                     activeNote = parentIfHas as TopicImpl
                 } else {
-                    getAllChildren().forEach { remove(it) }
+                    activeNote.getAllChildren().forEach { activeNote.remove(it) }
                 }
-            }
         }
 
         screen.content = mainContent
@@ -165,7 +150,7 @@ class Shell(val screen: Screen,
         override val content = topic
         override val changed = trigger<Unit>()
         override val elements = ObservableArrayList<TransformedElement<*>>()
-        private var stackable = Stackable(this, zeroVector2)
+        private var stackable = Stackable(this, rectangle(zeroVector2).translated())
         private val subStackables = ObservableArrayList<Stackable>()
         private var toStop = {}
 
@@ -214,7 +199,7 @@ class Shell(val screen: Screen,
                     transformedElement(subStack, childStackTransform()))
             )
 
-            val observer = subStackables.mapObservable { it.sizeChanged }.startKeepingAllObserved { updateStackableSize() }
+            val observer = subStackables.mapObservable { it.shapeChanged }.startKeepingAllObserved { updateStackableSize() }
 
             toStop = {
                 listOf(mainLine.stack, subStack).forEach { it.removeObservers() }
@@ -241,7 +226,7 @@ class Shell(val screen: Screen,
             val d = dropInfo
             return if (d == null) null else if (d.newParent != content) null else {
                 val s = TextElementImpl(" ", fill = mainColor(), font = defaultFont, lineHeight = lineHeight)
-                Stackable(s, s.shape.size())
+                Stackable(s, s.shape.box())
             }
 
         }
@@ -256,7 +241,7 @@ class Shell(val screen: Screen,
                 startDrag(it)
             }) {
                 activeNote = topic
-            }, mainButtonContent.shape.size())
+            }, mainButtonContent.shape.box())
 
             val linkButtonIfHas = if (topic.getHyperlink() == null) null else {
                 val linkButtonTextElement = TextElementImpl("Link", fill = Fills.solid(Colors.blue), font = defaultFont, lineHeight = lineHeight)
@@ -265,7 +250,7 @@ class Shell(val screen: Screen,
                     onOpenHyperlink(topic.getHyperlink())
                 }
 
-                Stackable(element, linkButtonTextElement.shape.size())
+                Stackable(element, linkButtonTextElement.shape.box())
             }
             val collapseButtonIfHas = if (topic.getAllChildren().any()) {
                 val element = TextElementImpl(if (topic.isFolded()) " + " else " - ", fill = Fills.solid(Colors.gray), font = defaultFont, lineHeight = lineHeight)
@@ -273,7 +258,7 @@ class Shell(val screen: Screen,
                     topic.setFolded(!topic.isFolded())
                 }
 
-                Stackable(button, element.shape.size())
+                Stackable(button, element.shape.box())
             } else null
 
             val mainStack = horizontalStack(observableIterable(listOf(mainButton, linkButtonIfHas, collapseButtonIfHas).filterNotNull()))
@@ -281,14 +266,14 @@ class Shell(val screen: Screen,
         }
 
         private fun updateStackableSize() {
-            stackable.size = stackableSize()
+            stackable.shape = stackableShape()
         }
 
         // TODO remove height Schlemian:
-        private fun stackableSize() = vector(infinity, mainLine.height + childStackHeight())
-        private fun childStackHeight() = subStackables.map { it.size.y.toDouble() }.sum()
+        private fun stackableShape() = rectangle(vector(infinity, mainLine.height + childStackHeight())).topLeftAtOrigin()
+        private fun childStackHeight() = subStackables.map { it.shape.original.size.y.toDouble() }.sum()
         private fun childStackTransform() = Transforms2.translation(vector(indent, -mainLine.height))
-        private fun totalHeightSlice() = rectangle(stackableSize()).topLeftAtOrigin().transformed(Transforms2.translation(vector(-infinity/2, 0)))
+        private fun totalHeightSlice() = stackableShape().transformed(Transforms2.translation(vector(-infinity/2, 0)))
 
         private fun childrenStackShape() = rectangle(vector(infinity, childStackHeight())).topLeftAtOrigin()
         private fun halfPlaneWhereDropOnChildCreatesChildChildnode() = object : Shape {
