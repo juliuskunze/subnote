@@ -16,9 +16,12 @@ fun verticalStack(elements: ObservableIterable<Stackable>) = Stack(elements, hor
 
 class Stack(val stackElements: ObservableIterable<Stackable>, val horizontal: Boolean) : Composed<Unit> {
     private fun Stackable.partialTranslation() = if (horizontal) shape.original.size.xComponent() else -shape.original.size.yComponent()
-    private fun Stackable.offset() = shape.centerLocation - (if (horizontal)
-        shape.original.size else
-        (shape.original.size.xComponent() - shape.original.size.yComponent())) / 2
+    private fun Stackable.offset(): Vector2 {
+        val c = shape.centerLocation
+        val s = shape.original.size
+        return (if (horizontal) c.xComponent() else c.yComponent()) -
+                (if (horizontal) s.xComponent() else -s.yComponent()) / 2
+    }
 
     override val elements = ObservableArrayList<TransformedElement<*>> ()
 
@@ -62,4 +65,9 @@ class Stack(val stackElements: ObservableIterable<Stackable>, val horizontal: Bo
 
         changed()
     }
+
+    fun length() = stackElements.map {
+        val size = it.shape.original.size
+        (if(horizontal) size.x else size.y).toDouble()
+    }.sum()
 }
