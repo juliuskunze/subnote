@@ -11,6 +11,7 @@ import org.xmind.core.ITopic
 import org.xmind.core.IWorkbook
 import org.xmind.core.event.CoreEvent
 import org.xmind.core.internal.dom.TopicImpl
+import java.util.HashMap
 import kotlin.properties.Delegates
 
 class Shell(val screen: Screen,
@@ -25,14 +26,16 @@ class Shell(val screen: Screen,
             val newNote: Trigger<Unit>,
             val newSubnote: Trigger<Unit>,
             val removeNode: Trigger<Unit>,
-            val vibrate: ()-> Unit
+            val vibrate: () -> Unit
 ) {
+    val topicElementCache = HashMap<ITopic, TopicElement>()
 
-    fun lineHeight(nestingLevel : Int) = when(nestingLevel) {
+    fun lineHeight(nestingLevel: Int) = when (nestingLevel) {
         0 -> 72
         1 -> 52
         else -> 40
     }
+
     val indent = 40
 
     val infinity = 5000000
@@ -51,13 +54,13 @@ class Shell(val screen: Screen,
 
     fun updateByDragLocation() {
         val dropInfoIfChanged = rootTopicElement.dropInfoIfChanged(draggable.dragLocation)
-        if(dropInfoIfChanged != null) {
+        if (dropInfoIfChanged != null) {
             dropInfo = dropInfoIfChanged
         }
     }
 
     var dropInfo: DropInfo? by Delegates.observed<DropInfo?>(null, { old, new ->
-        if(old?.newParent !== new?.newParent || old?.newChildIndex != new?.newChildIndex) {
+        if (old?.newParent !== new?.newParent || old?.newChildIndex != new?.newChildIndex) {
             old?.newParent?.dispatchDragDropPreviewChanged()
             new?.newParent?.dispatchDragDropPreviewChanged()
         }
@@ -123,32 +126,32 @@ class Shell(val screen: Screen,
         }
 
         newNote addObserver {
-                val newNote = workbook.createTopic()
+            val newNote = workbook.createTopic()
 
-                val parentIfHas = activeNote.getParent()
-                if (parentIfHas != null) {
-                    parentIfHas.add(newNote, activeNote.getIndex() + 1)
-                } else {
-                    activeNote.add(newNote)
-                }
-                initializeNewNote(newNote)
+            val parentIfHas = activeNote.getParent()
+            if (parentIfHas != null) {
+                parentIfHas.add(newNote, activeNote.getIndex() + 1)
+            } else {
+                activeNote.add(newNote)
+            }
+            initializeNewNote(newNote)
         }
 
         newSubnote addObserver {
-                val newNote = workbook.createTopic()
-                activeNote.add(newNote)
+            val newNote = workbook.createTopic()
+            activeNote.add(newNote)
 
-                initializeNewNote(newNote)
+            initializeNewNote(newNote)
         }
 
         removeNode addObserver {
-                val parentIfHas = activeNote.getParent()
-                if (parentIfHas != null) {
-                    parentIfHas.remove(activeNote)
-                    activeNote = parentIfHas as TopicImpl
-                } else {
-                    activeNote.getAllChildren().forEach { activeNote.remove(it) }
-                }
+            val parentIfHas = activeNote.getParent()
+            if (parentIfHas != null) {
+                parentIfHas.remove(activeNote)
+                activeNote = parentIfHas as TopicImpl
+            } else {
+                activeNote.getAllChildren().forEach { activeNote.remove(it) }
+            }
         }
 
         screen.content = mainContent
@@ -156,9 +159,7 @@ class Shell(val screen: Screen,
         registerInputs()
     }
 
-    inner class TopicElement(topic: TopicImpl, val nestingLevel: Int = 0) : Composed<ITopic> {
-        val lineHeight = this@Shell.lineHeight(nestingLevel)
-        val childLineHeight = this@Shell.lineHeight(nestingLevel + 1)
+    inner class TopicElement(topic: TopicImpl) : Composed<ITopic> {
 
         override val content = topic
         override val changed = trigger<Unit>()
@@ -173,7 +174,7 @@ class Shell(val screen: Screen,
         ) {
             fun height() = buttonContent.shape.boxWithBorder().original.size.y.toDouble()
             fun transformedStack() = transformedElement(stack, Transforms2.translation(vector(0, -height())))
-            fun heightSlice() = rectangle(vector(infinity, height())).topLeftAtOrigin().transformed(Transforms2.translation(vector(-infinity/2, 0)))
+            fun heightSlice() = rectangle(vector(infinity, height())).topLeftAtOrigin().transformed(Transforms2.translation(vector(-infinity / 2, 0)))
         }
 
         private var mainLine: MainLine by Delegates.notNull()
@@ -220,11 +221,15 @@ class Shell(val screen: Screen,
             updateStackableShape()
         }
 
+        val nestingLevel : Int get() = content.getPath().toTopicList().count() - 1
+        val lineHeight : Int get() = this@Shell.lineHeight(nestingLevel)
+        val childLineHeight : Int get() = this@Shell.lineHeight(nestingLevel + 1)
+
         private fun subElements(): List<Stackable> {
             val dropPlaceholderIfHas = dropPlaceHolderIfHas()
 
             val childTopicsIfUnfolded = (if (content.isFolded()) listOf() else content.getAllChildren()).
-                    map { TopicElement(it as TopicImpl, nestingLevel = nestingLevel + 1).stackable }
+                    map { topicElementCache.getOrPut(it, { TopicElement(it as TopicImpl) }).stackable }
 
             return if (dropPlaceholderIfHas == null || content.isFolded()) childTopicsIfUnfolded else {
                 val list = childTopicsIfUnfolded.toArrayList()
@@ -246,13 +251,13 @@ class Shell(val screen: Screen,
 
             val topic = content
 
-            var mainButton : Stackable? = null
+            var mainButton: Stackable? = null
             mainButton = Stackable(textRectangleButton(mainButtonContent, onLongPressed = {
                 vibrate()
 
                 val draggedMainLine = mainLine()
                 val stack = draggedMainLine.stack
-                draggedElements.add(transformedElement(stack, Transforms2.translation(-draggedMainLine.buttonContent.shape.size()/2)))
+                draggedElements.add(transformedElement(stack, Transforms2.translation(-draggedMainLine.buttonContent.shape.size() / 2)))
                 val elementToRoot = rootTopicElement.totalTransform(mainButton!!.element).inverse()
                 val pointerKeyRelativeToRoot = it.transformed(elementToRoot)
 
@@ -289,8 +294,9 @@ class Shell(val screen: Screen,
 
         // TODO remove height Schlemian:
         private fun stackableShape() = rectangle(vector(infinity, mainLine.height() + childStack.length())).topLeftAtOrigin()
+
         private fun childStackTransform() = Transforms2.translation(vector(indent, -mainLine.height()))
-        private fun totalHeightSlice() = stackableShape().transformed(Transforms2.translation(vector(-infinity/2, 0)))
+        private fun totalHeightSlice() = stackableShape().transformed(Transforms2.translation(vector(-infinity / 2, 0)))
 
         private fun childrenStackShape() = rectangle(vector(infinity, childStack.length())).topLeftAtOrigin()
         private fun halfPlaneWhereDropOnChildCreatesChildChildnode() = object : Shape {
@@ -311,10 +317,10 @@ class Shell(val screen: Screen,
                 element is TopicElement && element.totalHeightSlice().contains(locationRelativeTo(it))
             }.singleOrNull()
 
-            return if(isInChildHalfPlane && isInMainLineHeight) dropAsFirstChild()
-            else if(childInHeight == null && childrenStackShape().contains(dropLocation)) placeHolderUnchanged()
-            else if(childInHeight == null) dropHereAsLastChild()
-            else if(isInChildHalfPlane) (childInHeight.element as TopicElement).dropInfoIfChanged(locationRelativeTo(childInHeight))
+            return if (isInChildHalfPlane && isInMainLineHeight) dropAsFirstChild()
+            else if (childInHeight == null && childrenStackShape().contains(dropLocation)) placeHolderUnchanged()
+            else if (childInHeight == null) dropHereAsLastChild()
+            else if (isInChildHalfPlane) (childInHeight.element as TopicElement).dropInfoIfChanged(locationRelativeTo(childInHeight))
             else dropAboveAsSibling((childInHeight.element as TopicElement).content)
         }
     }

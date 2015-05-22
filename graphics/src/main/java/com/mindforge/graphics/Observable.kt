@@ -7,11 +7,16 @@ trait Observable<T> {
 
             override fun stop() {
                 if (!observers.remove(this)) {
-                    throw IllegalStateException("stop can only be called once.")
+                    throw IllegalStateException("Stop can only be called once.")
                 }
             }
         }
         observers.add(observer)
+
+        if (observers.count() > 16) {
+            throw IllegalStateException("Too many observers.")
+        }
+
         return observer
     }
 

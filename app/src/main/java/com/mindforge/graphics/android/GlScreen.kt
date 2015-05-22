@@ -49,18 +49,23 @@ class GlScreen (context: Context, onReady: (GlScreen) -> Unit) : GLSurfaceView(c
     private val elementCache: MutableMap<Element<Any?>, GlElement> = ConcurrentHashMap()
     private var cleanupThreshold = 1
     private fun cleanupElementCache() {
-        if (elementCache.count() > cleanupThreshold) {
+        val initialCount = elementCache.count()
+        val initialThreshold = cleanupThreshold
+        if (initialCount > initialThreshold) {
             elementCache.keySet().subtract(content.allElements()).forEach {
                 val glElement = elementCache.get(it)
                 elementCache.remove(it)
                 glElement?.detach()
             }
-            cleanupThreshold = Math.max(cleanupThreshold, elementCache.count() * 2)
+            val newCount = elementCache.count()
+            val newThreshold = Math.max(initialThreshold, newCount * 2)
+            println("removed ${initialCount-newCount}/$initialCount GlElements, threshold: $newThreshold")
+            cleanupThreshold = newThreshold
         }
     }
 
     fun glElement(original: Element<*>): GlElement {
-        val result : GlElement = when (original) {
+        val result: GlElement = when (original) {
             is GlElement -> original
             else -> elementCache.getOrPut(original) {
                 when (original) {
