@@ -15,6 +15,7 @@ import com.evernote.edam.type.NoteSortOrder
 import com.evernote.edam.type.Notebook
 import com.google.android.gms.analytics.GoogleAnalytics
 import com.google.android.gms.analytics.HitBuilders
+import com.google.android.gms.analytics.Tracker
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GooglePlayServicesUtil
 import com.google.android.gms.common.api.GoogleApiClient
@@ -43,15 +44,17 @@ import kotlin.properties.Delegates
 
 public class MainActivity : Activity() {
 
-    val analytics = GoogleAnalytics.getInstance(this)
-    val tracker = analytics.newTracker("UA-63277540-1")
+    var analytics : GoogleAnalytics by Delegates.notNull()
+    var tracker : Tracker by Delegates.notNull()
 
     val localWorkbookFile: File get() = File(getFilesDir(), "MindForge.xmind")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        analytics = GoogleAnalytics.getInstance(this)
         analytics.setLocalDispatchPeriod(1800)
+        tracker = analytics.newTracker("UA-63277540-1")
         tracker.enableExceptionReporting(true);
         tracker.enableAdvertisingIdCollection(true);
         tracker.enableAutoActivityTracking(true);
@@ -177,7 +180,7 @@ public class MainActivity : Activity() {
         //https://developer.android.com/reference/com/google/android/gms/analytics/HitBuilders.html
         tracker.send(HitBuilders.EventBuilder()
                 .setCategory("UX")
-                .setAction("menu")
+                .setAction("Menu")
                 .setLabel(item.getTitle().toString())
                 .build()
         )
