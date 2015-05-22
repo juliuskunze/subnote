@@ -1,11 +1,13 @@
 package com.mindforge.test.graphics
 
-import com.mindforge.graphics.math.*
 import com.mindforge.graphics.*
+import com.mindforge.graphics.math.circle
+import com.mindforge.graphics.math.rectangle
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.shouldBeFalse
 import org.jetbrains.spek.api.shouldBeTrue
 import org.jetbrains.spek.api.shouldEqual
+import kotlin.test.assertEquals
 
 class ComposedSpecs : Spek() {init {
     given("a composed element of a rectangle and a circle") {
@@ -38,6 +40,47 @@ class ComposedSpecs : Spek() {init {
 
             it("should return the circle") {
                 shouldEqual(c.shape, e.single().element.shape)
+            }
+        }
+    }
+
+    given("three nested elements") {
+        val innerTransform = Transforms2.translation(vector(2, 2))
+        val middleTransform = Transforms2.rotation(0.4)
+
+        val inner = transformedElement(coloredElement(rectangle(vector(2, 2)), Fills.invisible), innerTransform)
+        val middle = transformedElement(composed(observableIterable(listOf<TransformedElement<*>>(inner))), middleTransform)
+        val outer = composed(observableIterable(listOf<TransformedElement<*>>(middle)))
+
+        on("getting the path to inner") {
+            val path = outer.pathTo(inner.element)
+
+            it("should be all the elements") {
+                assertEquals(listOf(middle, inner), path)
+            }
+        }
+
+        on("getting the total transform of the inner") {
+            outer.totalTransform(inner.element)
+
+            it("should be the middle transform combined with the first transform") {
+                assertEquals(middleTransform before innerTransform, outer.totalTransform(inner.element))
+            }
+        }
+
+        on("getting whether the outer contains inner recursively") {
+            val c = outer.containsRecursively(inner.element)
+
+            it("should be true") {
+                assert(c)
+            }
+        }
+
+        on("getting whether the outer contains middle recursively") {
+            val c = outer.containsRecursively(middle.element)
+
+            it("should be true") {
+                assert(c)
             }
         }
     }

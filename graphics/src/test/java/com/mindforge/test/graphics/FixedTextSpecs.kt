@@ -4,7 +4,6 @@ import org.jetbrains.spek.api.*
 import com.mindforge.graphics.*
 import com.mindforge.graphics.*
 import com.mindforge.graphics.math.rectangle
-import com.mindforge.graphics.textElement
 import com.mindforge.graphics.Font
 import com.mindforge.graphics.Fill
 import com.mindforge.graphics.Fills
@@ -32,7 +31,7 @@ class FixedTextSpecs : Spek() {init {
         on("getting the content") {
             val c = x.content
 
-            it("should be the orginal string") {
+            it("should be the original string") {
                 shouldEqual(c, s)
             }
         }
