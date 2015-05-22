@@ -10,6 +10,8 @@ trait TransformedElement<T> {
     val element: Element<T>
     val transform: Transform2
     val transformChanged: Observable<Unit>
+
+    fun transformed(transform : Transform2) = transformedElement(element, this.transform before transform)
 }
 
 fun transformedElement<T>(element: Element<T>, transform: Transform2 = Transforms2.identity): TransformedElement<T> = object : TransformedElement<T> {

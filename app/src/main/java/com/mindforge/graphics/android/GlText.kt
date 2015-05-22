@@ -177,7 +177,8 @@ class GlGlyphs(val font: GlFont, override val text: String, override val lineHei
     }
 
     private val box = glShape(super<TextShape>.box())
-    override fun box() = box
+    //TODO why override?
+    //override fun box() = box
 
     // TODO: should technically test for the exact text shape, but YAGNI
     override fun contains(location: Vector2) = box.contains(location)

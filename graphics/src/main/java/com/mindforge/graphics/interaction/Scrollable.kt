@@ -3,13 +3,14 @@ package com.mindforge.graphics.interaction
 import com.mindforge.graphics.*
 import com.mindforge.graphics.math.*
 
+// TODO remove duplication to Draggable, why the differences?
 class Scrollable(val element: Element<*>) : Composed<Any?>, PointersElement<Any?> {
     override val content: Any? get() = element.content
     override val changed = trigger<Unit>()
-    var scrollPosition = zeroVector2
+    var scrollLocation = zeroVector2
     override val elements: ObservableIterable<TransformedElement<*>> = observableIterable(listOf(object : TransformedElement<Any?> {
         override val element: Element<Any?> = this@Scrollable.element
-        override val transform: Transform2 get() = Transforms2.translation(scrollPosition)
+        override val transform: Transform2 get() = Transforms2.translation(scrollLocation)
         override val transformChanged = this@Scrollable.changed
     }, transformedElement(coloredElement(rectangle(vector(10000, 10000)), Fills.solid(Colors.white)))))
     private var lastLocation: Vector2? = null
@@ -26,7 +27,7 @@ class Scrollable(val element: Element<*>) : Composed<Any?>, PointersElement<Any?
         val last = lastLocation
         val current = pointer.location
         if (last != null) {
-            scrollPosition += current - last
+            scrollLocation += current - last
             lastLocation = current
             changed()
         }

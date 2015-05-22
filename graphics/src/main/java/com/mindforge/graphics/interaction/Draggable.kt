@@ -25,9 +25,13 @@ open class Draggable(val element: Element<*>, dragLocation: Vector2 = zeroVector
     val dropped = trigger<PointerKey>()
     val moved = trigger<PointerKey>()
 
-    val observers = ArrayList<Observer>()
+    private val observers = ArrayList<Observer>()
 
     override fun onPointerKeyPressed(pointerKey: PointerKey) {
+        startDrag(pointerKey)
+    }
+
+    fun startDrag(pointerKey: PointerKey) {
         observers.add(pointerKey.pointer.moved addObserver { onMoved(pointerKey) })
 
         pointerKey.key.released addObserver {
@@ -35,13 +39,6 @@ open class Draggable(val element: Element<*>, dragLocation: Vector2 = zeroVector
             observers.forEach { it.stop() }
             observers.clear()
             dropped(pointerKey)
-        }
-    }
-
-    fun registerDragOnMove(pointerKey : PointerKey) {
-        pointerKey.pointer.moved addObserver {
-            stop()
-            onPointerKeyPressed(pointerKey)
         }
     }
 }

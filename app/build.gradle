@@ -32,19 +32,30 @@ android {
     buildToolsVersion "22.0.1"
 
     defaultConfig {
-        applicationId "com.xmind.app"
+        applicationId "net.pureal.mindforge"
         minSdkVersion 15
         targetSdkVersion 22
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "0.1.1"
     }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_6
         targetCompatibility JavaVersion.VERSION_1_6
     }
+
+    signingConfigs {
+        release {
+            storeFile file("android.jks")
+            storePassword "BingoIngo24*"
+            keyAlias "MindForge"
+            keyPassword "IngoBingo23"
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             zipAlignEnabled true
