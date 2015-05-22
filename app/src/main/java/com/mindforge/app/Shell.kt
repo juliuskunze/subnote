@@ -223,7 +223,7 @@ class Shell(val screen: Screen,
 
         val nestingLevel : Int get() = content.getPath().toTopicList().count() - 1
         val lineHeight : Int get() = this@Shell.lineHeight(nestingLevel)
-        val childLineHeight : Int get() = this@Shell.lineHeight(nestingLevel + 1)
+        val subLineHeight: Int get() = this@Shell.lineHeight(nestingLevel + 1)
 
         private fun subElements(): List<Stackable> {
             val dropPlaceholderIfHas = dropPlaceHolderIfHas()
