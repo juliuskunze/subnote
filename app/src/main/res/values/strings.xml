@@ -13,6 +13,7 @@
     <string name="new_note">New Node</string>
     <string name="edit_note">Edit Node</string>
     <string name="link_note">Link Node</string>
+    <string name="update_links">Update Links</string>
     <string name="none">none</string>
     <string name="url">Web</string>
     <string name="evernote">Evernote</string>

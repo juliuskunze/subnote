@@ -30,6 +30,6 @@ fun ITopic.getLinkType(): LinkType = this.getHyperlink()?.let {
 
 open class NodeLink (val linkType: LinkType, val url: String?) {
 
-    open fun updateTopic(topic: ITopic) = Unit
+    open fun updateTopic(topic: ITopic) = topic.setHyperlink(url)
 
 }

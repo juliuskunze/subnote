@@ -35,6 +35,12 @@
         android:showAsAction="ifRoom"/>
 
     <item
+        android:id="@+id/updateLinksButton"
+        android:title="@string/update_links"
+        android:icon="@android:drawable/ic_popup_sync"
+        android:showAsAction="ifRoom"/>
+
+    <item
         android:id="@+id/open_from_drive"
         android:title="@string/open_from_drive"
         android:showAsAction="never"/>

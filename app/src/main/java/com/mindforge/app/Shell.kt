@@ -121,7 +121,6 @@ class Shell(val screen: Screen,
         }
 
         nodeLinkChanged addObserver {
-            activeNote.setHyperlink(it.url)
             it.updateTopic(activeNote)
         }
 
