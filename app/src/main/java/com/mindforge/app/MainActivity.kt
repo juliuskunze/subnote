@@ -43,7 +43,6 @@ import java.io.InputStream
 import kotlin.properties.Delegates
 
 public class MainActivity : Activity() {
-
     var analytics : GoogleAnalytics by Delegates.notNull()
     var tracker : Tracker by Delegates.notNull()
 
@@ -84,18 +83,18 @@ public class MainActivity : Activity() {
     }
 
     private val textChanged = trigger<String>()
-    private val nodeLinkChanged = trigger<NodeLink>()
+    private val noteLinkChanged = trigger<NoteLink>()
     private val newNote = trigger<String>()
     private val newSubnote = trigger<String>()
-    private val removeNode = trigger<Unit>()
+    private val removeNote = trigger<Unit>()
 
-    fun linkNode() {
+    fun linkNote() {
         showSelectDialog("Select link type", LinkType.values().toList()) { linkType ->
             when (linkType) {
-                LinkType.None -> nodeLinkChanged(NodeLink(linkType, null))
+                LinkType.None -> noteLinkChanged(NoteLink(linkType, null))
                 LinkType.WebUrl -> showInputDialog("Edit Web URL", currentUrl) {
                     if (it != null) {
-                        nodeLinkChanged(NodeLink(linkType, it))
+                        noteLinkChanged(NoteLink(linkType, it))
                         currentUrl = it
                     }
                 }
@@ -110,7 +109,7 @@ public class MainActivity : Activity() {
                                     }
                                 }) {
                                     if (it != null) {
-                                        nodeLinkChanged(object : NodeLink(linkType, it.notebook.getWebUrl()) {
+                                        noteLinkChanged(object : NoteLink(linkType, it.notebook.getWebUrl()) {
                                             override fun updateTopic(topic: ITopic) {
                                                 topic.setTitleText(it.notebook.getName())
                                                 topic.getAllChildren().forEach { topic.remove(it) }
@@ -160,8 +159,8 @@ public class MainActivity : Activity() {
         }
     }
 
-    fun editNode() {
-        showInputDialog("Edit Node", currentText) {
+    fun editNote() {
+        showInputDialog("Edit Note", currentText) {
             if (it != null) {
                 textChanged(it)
                 currentText = it
@@ -215,16 +214,16 @@ public class MainActivity : Activity() {
             }
 
             R.id.removeNoteButton -> {
-                removeNode()
+                removeNote()
                 true
             }
 
             R.id.linkNoteButton -> {
-                linkNode()
+                linkNote()
                 true
             }
             R.id.editNoteButton -> {
-                editNode()
+                editNote()
                 true
             }
             else -> {
@@ -373,10 +372,10 @@ public class MainActivity : Activity() {
                         currentUrl = it?.getHyperlink() ?: ""
                     },
                     textChanged = textChanged,
-                    nodeLinkChanged = nodeLinkChanged,
+                    nodeLinkChanged = noteLinkChanged,
                     newNote = newNote,
                     newSubnote = newSubnote,
-                    removeNote = removeNode,
+                    removeNote = removeNote,
                     vibrate = { vibrator.vibrate(70) })
         }
 

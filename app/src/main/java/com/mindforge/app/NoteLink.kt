@@ -28,8 +28,6 @@ fun ITopic.getLinkType(): LinkType = this.getHyperlink()?.let {
     }
 } ?: LinkType.None
 
-open class NodeLink (val linkType: LinkType, val url: String?) {
-
+open class NoteLink (val linkType: LinkType, val url: String?) {
     open fun updateTopic(topic: ITopic) = Unit
-
 }
