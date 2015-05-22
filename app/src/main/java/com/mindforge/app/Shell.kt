@@ -20,7 +20,7 @@ class Shell(val screen: Screen,
             val workbook: IWorkbook,
             val onOpenHyperlink: (String) -> Unit,
             val textChanged: Observable<String>,
-            val nodeLinkChanged: Observable<NoteLink>,
+            val noteLinkChanged: Observable<NoteLink>,
             val onActiveTopicChanged: (ITopic?) -> Unit,
             val newNote: Trigger<String>,
             val newSubnote: Trigger<String>,
@@ -117,7 +117,7 @@ class Shell(val screen: Screen,
             activeNote.setTitleText(it)
         }
 
-        nodeLinkChanged addObserver {
+        noteLinkChanged addObserver {
             activeNote.setHyperlink(it.url)
             it.updateTopic(activeNote)
         }

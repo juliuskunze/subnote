@@ -372,7 +372,7 @@ public class MainActivity : Activity() {
                         currentUrl = it?.getHyperlink() ?: ""
                     },
                     textChanged = textChanged,
-                    nodeLinkChanged = noteLinkChanged,
+                    noteLinkChanged = noteLinkChanged,
                     newNote = newNote,
                     newSubnote = newSubnote,
                     removeNote = removeNote,
