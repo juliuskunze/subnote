@@ -3,6 +3,7 @@ package com.mindforge.app
 import com.mindforge.graphics.*
 import com.mindforge.graphics.interaction.*
 import com.mindforge.graphics.math.Shape
+import com.mindforge.graphics.math.TranslatedRectangle
 import com.mindforge.graphics.math.rectangle
 import com.mindforge.graphics.math.topLeftAtOrigin
 import org.xmind.core.Core
@@ -27,8 +28,13 @@ class Shell(val screen: Screen,
             val vibrate: ()-> Unit
 ) {
 
-    val lineHeight = 40
-    val indent = lineHeight
+    fun lineHeight(nestingLevel : Int) = when(nestingLevel) {
+        0 -> 72
+        1 -> 52
+        else -> 40
+    }
+    val indent = 40
+
     val infinity = 5000000
 
     private var activeNote by Delegates.observed<TopicImpl>(workbook.getPrimarySheet().getRootTopic() as TopicImpl, { old, new ->
@@ -150,7 +156,10 @@ class Shell(val screen: Screen,
         registerInputs()
     }
 
-    inner class TopicElement(topic: TopicImpl) : Composed<ITopic> {
+    inner class TopicElement(topic: TopicImpl, val nestingLevel: Int = 0) : Composed<ITopic> {
+        val lineHeight = this@Shell.lineHeight(nestingLevel)
+        val childLineHeight = this@Shell.lineHeight(nestingLevel + 1)
+
         override val content = topic
         override val changed = trigger<Unit>()
         override val elements = ObservableArrayList<TransformedElement<*>>()
@@ -162,13 +171,13 @@ class Shell(val screen: Screen,
                 val buttonContent: TextElementImpl,
                 val stack: Stack
         ) {
-            fun height() = buttonContent.shape.size().y.toDouble()
+            fun height() = buttonContent.shape.boxWithBorder().original.size.y.toDouble()
             fun transformedStack() = transformedElement(stack, Transforms2.translation(vector(0, -height())))
             fun heightSlice() = rectangle(vector(infinity, height())).topLeftAtOrigin().transformed(Transforms2.translation(vector(-infinity/2, 0)))
         }
 
         private var mainLine: MainLine by Delegates.notNull()
-        private var subStack: Stack by Delegates.notNull()
+        private var childStack: Stack by Delegates.notNull()
 
         init {
             initElementsAndStackable()
@@ -184,7 +193,6 @@ class Shell(val screen: Screen,
                 mainLine.buttonContent.content = text()
                 updateStackableShape()
             }
-
         }
 
         private fun mainColor() = Fills.solid(if (activeNote == content) Colors.red else Colors.black)
@@ -195,17 +203,17 @@ class Shell(val screen: Screen,
 
             mainLine = mainLine()
             subStackables.clearAndAddAll(subElements())
-            subStack = verticalStack(observableIterable(subStackables))
+            childStack = verticalStack(observableIterable(subStackables), align = false)
 
             elements.clearAndAddAll(listOf(
                     mainLine.transformedStack(),
-                    transformedElement(subStack, childStackTransform()))
+                    transformedElement(childStack, childStackTransform()))
             )
 
             val observer = subStackables.mapObservable { it.shapeChanged }.startKeepingAllObserved { updateStackableShape() }
 
             toStop = {
-                listOf(mainLine.stack, subStack).forEach { it.removeObservers() }
+                listOf(mainLine.stack, childStack).forEach { it.removeObservers() }
                 observer.stop()
             }
 
@@ -216,7 +224,7 @@ class Shell(val screen: Screen,
             val dropPlaceholderIfHas = dropPlaceHolderIfHas()
 
             val childTopicsIfUnfolded = (if (content.isFolded()) listOf() else content.getAllChildren()).
-                    map { TopicElement(it as TopicImpl).stackable }
+                    map { TopicElement(it as TopicImpl, nestingLevel = nestingLevel + 1).stackable }
 
             return if (dropPlaceholderIfHas == null || content.isFolded()) childTopicsIfUnfolded else {
                 val list = childTopicsIfUnfolded.toArrayList()
@@ -228,8 +236,8 @@ class Shell(val screen: Screen,
         private fun dropPlaceHolderIfHas(): Stackable? {
             val d = dropInfo
             return if (d == null) null else if (d.newParent != content) null else {
-                val s = TextElementImpl(" ", fill = mainColor(), font = defaultFont, lineHeight = lineHeight)
-                Stackable(s, s.shape.box())
+                val s = TextElementImpl(" ", fill = mainColor(), font = defaultFont, lineHeight = childLineHeight)
+                Stackable(s, s.shape.boxWithBorder())
             }
         }
 
@@ -251,7 +259,7 @@ class Shell(val screen: Screen,
                 this@Shell.startDrag(dragged = content, dragLocation = pointerKeyRelativeToRoot.pointer.location, pointerKey = pointerKeyRelativeToRoot)
             }) {
                 activeNote = topic
-            }, mainButtonContent.shape.box())
+            }, mainButtonContent.shape.boxWithBorder())
 
             val linkButtonIfHas = if (topic.getHyperlink() == null) null else {
                 val linkButtonTextElement = TextElementImpl("Link", fill = Fills.solid(Colors.blue), font = defaultFont, lineHeight = lineHeight)
@@ -260,7 +268,7 @@ class Shell(val screen: Screen,
                     onOpenHyperlink(topic.getHyperlink())
                 }
 
-                Stackable(element, linkButtonTextElement.shape.box())
+                Stackable(element, linkButtonTextElement.shape.boxWithBorder())
             }
             val collapseButtonIfHas = if (topic.getAllChildren().any()) {
                 val element = TextElementImpl(if (topic.isFolded()) " + " else " - ", fill = Fills.solid(Colors.gray), font = defaultFont, lineHeight = lineHeight)
@@ -268,7 +276,7 @@ class Shell(val screen: Screen,
                     topic.setFolded(!topic.isFolded())
                 }
 
-                Stackable(button, element.shape.box())
+                Stackable(button, element.shape.boxWithBorder())
             } else null
 
             val mainStack = horizontalStack(observableIterable(listOf(mainButton, linkButtonIfHas, collapseButtonIfHas).filterNotNull()))
@@ -280,12 +288,11 @@ class Shell(val screen: Screen,
         }
 
         // TODO remove height Schlemian:
-        private fun stackableShape() = rectangle(vector(infinity, mainLine.height() + childStackHeight())).topLeftAtOrigin()
-        private fun childStackHeight() = subStackables.map { it.shape.original.size.y.toDouble() }.sum()
+        private fun stackableShape() = rectangle(vector(infinity, mainLine.height() + childStack.length())).topLeftAtOrigin()
         private fun childStackTransform() = Transforms2.translation(vector(indent, -mainLine.height()))
         private fun totalHeightSlice() = stackableShape().transformed(Transforms2.translation(vector(-infinity/2, 0)))
 
-        private fun childrenStackShape() = rectangle(vector(infinity, childStackHeight())).topLeftAtOrigin()
+        private fun childrenStackShape() = rectangle(vector(infinity, childStack.length())).topLeftAtOrigin()
         private fun halfPlaneWhereDropOnChildCreatesChildChildnode() = object : Shape {
             override fun contains(location: Vector2) = location.x.toDouble() > 3 * indent
         }
@@ -299,7 +306,7 @@ class Shell(val screen: Screen,
 
             val isInMainLineHeight = mainLine.heightSlice().contains(dropLocation)
             val isInChildHalfPlane = halfPlaneWhereDropOnChildCreatesChildChildnode().contains(dropLocation)
-            val childInHeight = subStack.elements.filter {
+            val childInHeight = childStack.elements.filter {
                 val element = it.element
                 element is TopicElement && element.totalHeightSlice().contains(locationRelativeTo(it))
             }.singleOrNull()
@@ -359,6 +366,12 @@ class Shell(val screen: Screen,
             }
         }
     }
+}
+
+fun TextShape.boxWithBorder(): TranslatedRectangle {
+    val box = box()
+    val newSize = box.original.size + vector(0, 0.5 * this.lineHeight.toDouble())
+    return rectangle(newSize).translated(box.centerLocation)
 }
 
 fun TopicImpl.dispatchIsActiveChanged() {
