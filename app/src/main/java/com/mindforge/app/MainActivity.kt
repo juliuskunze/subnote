@@ -3,9 +3,7 @@ package com.mindforge.app
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.media.AudioAttributes
 import android.os.Bundle
-import android.view.View
 import android.view.Menu
 import android.view.MenuItem
 import com.evernote.client.android.EvernoteSession
@@ -14,6 +12,8 @@ import com.evernote.edam.notestore.NoteFilter
 import com.evernote.edam.notestore.NoteList
 import com.evernote.edam.type.NoteSortOrder
 import com.evernote.edam.type.Notebook
+import com.google.android.gms.analytics.GoogleAnalytics
+import com.google.android.gms.analytics.HitBuilders
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GooglePlayServicesUtil
 import com.google.android.gms.common.api.GoogleApiClient
@@ -42,10 +42,20 @@ import kotlin.properties.Delegates
 
 public class MainActivity : Activity() {
 
+    val analytics = GoogleAnalytics.getInstance(this)
+    val tracker = analytics.newTracker("UA-63277540-1")
+
     val localWorkbookFile: File get() = File(getFilesDir(), "MindForge.xmind")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        analytics.setLocalDispatchPeriod(1800)
+        tracker.enableExceptionReporting(true);
+        tracker.enableAdvertisingIdCollection(true);
+        tracker.enableAutoActivityTracking(true);
+        tracker.setScreenName(javaClass.getSimpleName());
+
         setContentView(R.layout.activity_main)
         //localWorkbookFile.delete()
         openFromDocuments()
@@ -143,11 +153,20 @@ public class MainActivity : Activity() {
         return true
     }
 
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+
+        //https://developer.android.com/reference/com/google/android/gms/analytics/HitBuilders.html
+        tracker.send(HitBuilders.EventBuilder()
+                .setCategory("UX")
+                .setAction("menu")
+                .setLabel(item.getTitle().toString())
+                .build()
+        )
+
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
-        val id = item!!.getItemId()
+        val id = item.getItemId()
 
         return when (id) {
         /*R.id.action_settings -> {
