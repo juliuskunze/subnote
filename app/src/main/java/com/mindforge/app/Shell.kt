@@ -22,8 +22,8 @@ class Shell(val screen: Screen,
             val textChanged: Observable<String>,
             val nodeLinkChanged: Observable<NodeLink>,
             val onActiveTopicChanged: (ITopic?) -> Unit,
-            val newNote: Trigger<Unit>,
-            val newSubnote: Trigger<Unit>,
+            val newNote: Trigger<String>,
+            val newSubnote: Trigger<String>,
             val removeNote: Trigger<Unit>,
             val vibrate: ()-> Unit
 ) {
@@ -105,8 +105,8 @@ class Shell(val screen: Screen,
     )
     val mainContent = Scrollable(composed(mainElements))
 
-    private fun initializeNewNote(newNote: ITopic) {
-        newNote.setTitleText("new note")
+    private fun initializeNewNote(newNote: ITopic, text: String) {
+        newNote.setTitleText(text)
         newNote.getParent().setFolded(false)
 
         activeNote = newNote as TopicImpl
@@ -131,14 +131,14 @@ class Shell(val screen: Screen,
                 } else {
                     activeNote.add(newNote)
                 }
-                initializeNewNote(newNote)
+                initializeNewNote(newNote, text = it)
         }
 
         newSubnote addObserver {
                 val newNote = workbook.createTopic()
                 activeNote.add(newNote)
 
-                initializeNewNote(newNote)
+                initializeNewNote(newNote, text = it)
         }
 
         removeNote addObserver {

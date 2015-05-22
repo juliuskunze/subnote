@@ -85,8 +85,8 @@ public class MainActivity : Activity() {
 
     private val textChanged = trigger<String>()
     private val nodeLinkChanged = trigger<NodeLink>()
-    private val newNote = trigger<Unit>()
-    private val newSubnote = trigger<Unit>()
+    private val newNote = trigger<String>()
+    private val newSubnote = trigger<String>()
     private val removeNode = trigger<Unit>()
 
     fun linkNode() {
@@ -197,12 +197,20 @@ public class MainActivity : Activity() {
             }
 
             R.id.newNoteButton -> {
-                newNote()
+                showInputDialog("New Note", "") {
+                    if (it != null && it != "") {
+                        newNote(it)
+                    }
+                }
                 true
             }
 
             R.id.newSubnoteButton -> {
-                newSubnote()
+                showInputDialog("New Subnote", "") {
+                    if (it != null && it != "") {
+                        newSubnote(it)
+                    }
+                }
                 true
             }
 
