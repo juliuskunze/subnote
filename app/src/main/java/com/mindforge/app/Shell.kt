@@ -24,7 +24,7 @@ class Shell(val screen: Screen,
             val onActiveTopicChanged: (ITopic?) -> Unit,
             val newNote: Trigger<Unit>,
             val newSubnote: Trigger<Unit>,
-            val removeNode: Trigger<Unit>,
+            val removeNote: Trigger<Unit>,
             val vibrate: ()-> Unit
 ) {
 
@@ -141,7 +141,7 @@ class Shell(val screen: Screen,
                 initializeNewNote(newNote)
         }
 
-        removeNode addObserver {
+        removeNote addObserver {
                 val parentIfHas = activeNote.getParent()
                 if (parentIfHas != null) {
                     parentIfHas.remove(activeNote)

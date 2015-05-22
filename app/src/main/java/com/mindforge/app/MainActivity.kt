@@ -368,7 +368,7 @@ public class MainActivity : Activity() {
                     nodeLinkChanged = nodeLinkChanged,
                     newNote = newNote,
                     newSubnote = newSubnote,
-                    removeNode = removeNode,
+                    removeNote = removeNode,
                     vibrate = { vibrator.vibrate(70) })
         }
 
