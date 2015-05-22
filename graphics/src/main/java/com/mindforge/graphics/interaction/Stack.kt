@@ -11,16 +11,16 @@ class Stackable(element: Element<*>, shape: TranslatedRectangle) {
     val shapeChanged: Observable<Unit> = sizeChangedTrigger
 }
 
-fun horizontalStack(elements: ObservableIterable<Stackable>) = Stack(elements, horizontal = true)
-fun verticalStack(elements: ObservableIterable<Stackable>) = Stack(elements, horizontal = false)
+fun horizontalStack(elements: ObservableIterable<Stackable>, align: Boolean = true) = Stack(elements, horizontal = true, alignToAxis = align)
+fun verticalStack(elements: ObservableIterable<Stackable>, align: Boolean = true) = Stack(elements, horizontal = false, alignToAxis = align)
 
-class Stack(val stackElements: ObservableIterable<Stackable>, val horizontal: Boolean) : Composed<Unit> {
+class Stack(val stackElements: ObservableIterable<Stackable>, val horizontal: Boolean, val alignToAxis: Boolean = true) : Composed<Unit> {
     private fun Stackable.partialTranslation() = if (horizontal) shape.original.size.xComponent() else -shape.original.size.yComponent()
     private fun Stackable.offset(): Vector2 {
-        val c = shape.centerLocation
-        val s = shape.original.size
-        return (if (horizontal) c.xComponent() else c.yComponent()) -
-                (if (horizontal) s.xComponent() else -s.yComponent()) / 2
+        val total = shape.centerLocation - (if (horizontal)
+            shape.original.size else
+            (shape.original.size.xComponent() - shape.original.size.yComponent())) / 2
+        return if(alignToAxis) total else if(horizontal) total.xComponent() else total.yComponent()
     }
 
     override val elements = ObservableArrayList<TransformedElement<*>> ()

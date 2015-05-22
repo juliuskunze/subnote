@@ -203,7 +203,7 @@ class Shell(val screen: Screen,
 
             mainLine = mainLine()
             subStackables.clearAndAddAll(subElements())
-            childStack = verticalStack(observableIterable(subStackables))
+            childStack = verticalStack(observableIterable(subStackables), align = false)
 
             elements.clearAndAddAll(listOf(
                     mainLine.transformedStack(),
@@ -370,7 +370,7 @@ class Shell(val screen: Screen,
 
 fun TextShape.boxWithBorder(): TranslatedRectangle {
     val box = box()
-    val newSize = Transforms2.scale(1, 1.5)(box.original.size)
+    val newSize = box.original.size + vector(0, 0.5 * this.lineHeight.toDouble())
     return rectangle(newSize).translated(box.centerLocation)
 }
 
