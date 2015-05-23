@@ -401,6 +401,8 @@ fun ITopic.add(child: ITopic, index: Int) {
     add(child, index, ITopic.ATTACHED)
 }
 
+fun ITopic.getChildrenRecursively() : List<ITopic> = getAllChildren().flatMap { listOf(it) + it.getChildrenRecursively()}
+
 private object CoreEventTypeExtensions {
     val isActiveChanged = "isActive"
     val dragDropPreviewChanged = "dragDropPreview"

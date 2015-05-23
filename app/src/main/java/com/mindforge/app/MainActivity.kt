@@ -396,6 +396,10 @@ public class MainActivity : Activity() {
     private fun open(workbook: IWorkbook) {
         this.workbook = workbook
 
+        val noteCount = workbook.getPrimarySheet().getRootTopic().getChildrenRecursively().count()
+
+        trackOpenedMap(noteCount)
+
         val screen = GlScreen(this) {
             Shell(it, observableIterable(listOf(it.touchPointerKeys)), it.keyboard, GlFont(getResources()!!), workbook,
                     onOpenHyperlink = { browse(it) },
@@ -422,6 +426,17 @@ public class MainActivity : Activity() {
         }
 
     }
+
+    private fun trackOpenedMap(noteCount: Int) {
+        tracker.send(HitBuilders.EventBuilder()
+                .setCategory("Content")
+                .setAction("Opened Map")
+                .setLabel("Note Count")
+                .setValue(noteCount.toLong())
+                .build()
+        )
+    }
+
 
     private fun InputStream.writeToFile(file: File) {
         try {
