@@ -48,7 +48,6 @@ import kotlin.properties.Delegates
 Outside of MainActivity because screen rotation destroys the current MainActivity and creates a new one: http://developer.android.com/training/basics/activity-lifecycle/recreating.html
 */
 object ApplicationState {
-
     var initialized = false
     var workbook: IWorkbook by Delegates.notNull()
 }
