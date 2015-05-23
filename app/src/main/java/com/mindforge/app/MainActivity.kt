@@ -31,6 +31,7 @@ import com.mindforge.graphics.observableIterable
 import com.mindforge.graphics.trigger
 import kotlinx.android.synthetic.activity_main.mindMapLayout
 import org.jetbrains.anko.browse
+import org.jetbrains.anko.toast
 import org.jetbrains.anko.vibrator
 import org.xmind.core.Core
 import org.xmind.core.ITopic
@@ -175,26 +176,13 @@ public class MainActivity : Activity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        trackMenuAction(item)
 
-        //https://developer.android.com/reference/com/google/android/gms/analytics/HitBuilders.html
-        tracker.send(HitBuilders.EventBuilder()
-                .setCategory("UX")
-                .setAction("Menu")
-                .setLabel(item.getTitle().toString())
-                .build()
-        )
-
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        val id = item.getItemId()
-
-        return when (id) {
+        return when (item.getItemId()) {
             R.id.open_from_drive -> {
                 openFromDrive()
                 true
             }
-
             R.id.newNoteButton -> {
                 showInputDialog("New Note", "") {
                     if (it != null && it != "") {
@@ -203,7 +191,6 @@ public class MainActivity : Activity() {
                 }
                 true
             }
-
             R.id.newSubnoteButton -> {
                 showInputDialog("New Subnote", "") {
                     if (it != null && it != "") {
@@ -212,7 +199,6 @@ public class MainActivity : Activity() {
                 }
                 true
             }
-
             R.id.removeNoteButton -> {
                 removeNote()
                 true
@@ -226,10 +212,42 @@ public class MainActivity : Activity() {
                 editNote()
                 true
             }
+            R.id.giveFeedback -> {
+                giveFeedback()
+                true
+            }
             else -> {
                 super.onOptionsItemSelected(item)
             }
         }
+    }
+
+    private fun trackMenuAction(item: MenuItem) {
+        //https://developer.android.com/reference/com/google/android/gms/analytics/HitBuilders.html
+        tracker.send(HitBuilders.EventBuilder()
+                .setCategory("UX")
+                .setAction("Menu")
+                .setLabel(item.getTitle().toString())
+                .build()
+        )
+    }
+
+    private fun giveFeedback() {
+        showInputDialog("Give Feedback", "") {
+            if(it != null && it != "") {
+                trackFeedback(it)
+                toast("Feedback sent. Thank you!")
+            }
+        }
+    }
+
+    private fun trackFeedback(text: String) {
+        tracker.send(HitBuilders.EventBuilder()
+                .setCategory("Feedback")
+                .setAction("Text")
+                .setLabel(text)
+                .build()
+        )
     }
 
     fun createNew() {
