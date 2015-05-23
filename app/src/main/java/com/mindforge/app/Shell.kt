@@ -98,6 +98,8 @@ class Shell(val screen: Screen,
                 d.newSubIndex - 1 else
                 d.newSubIndex
             d.newParent.add(dragged, correctedNewChildIndex)
+
+            dragged.dispatchDropped()
         }
     }
 
@@ -160,7 +162,6 @@ class Shell(val screen: Screen,
     }
 
     inner class TopicElement(topic: TopicImpl) : Composed<ITopic> {
-
         override val content = topic
         override val changed = trigger<Unit>()
         override val elements = ObservableArrayList<TransformedElement<*>>()
@@ -183,7 +184,7 @@ class Shell(val screen: Screen,
         init {
             initElementsAndStackable()
 
-            val eventTypes = listOf(Core.TopicAdd, Core.TopicRemove, Core.TopicFolded, Core.TopicHyperlink, Core.TopicNotes, CoreEventTypeExtensions.dragDropPreviewChanged)
+            val eventTypes = listOf(Core.TopicAdd, Core.TopicRemove, Core.TopicFolded, Core.TopicHyperlink, Core.TopicNotes, CoreEventTypeExtensions.dragDropPreviewChanged, CoreEventTypeExtensions.dropped)
             eventTypes.forEach { content.registerCoreEventListener(it) { initElementsAndStackable() } }
 
             content.registerCoreEventListener(CoreEventTypeExtensions.isActiveChanged) {
@@ -388,6 +389,10 @@ fun TopicImpl.dispatchDragDropPreviewChanged() {
     dispatchEvent(CoreEventTypeExtensions.dragDropPreviewChanged)
 }
 
+fun TopicImpl.dispatchDropped() {
+    dispatchEvent(CoreEventTypeExtensions.dragDropPreviewChanged)
+}
+
 fun TopicImpl.dispatchEvent(type: String) {
     getCoreEventSupport().dispatch(this, CoreEvent(this, type, null))
 }
@@ -399,4 +404,5 @@ fun ITopic.add(child: ITopic, index: Int) {
 private object CoreEventTypeExtensions {
     val isActiveChanged = "isActive"
     val dragDropPreviewChanged = "dragDropPreview"
+    val dropped = "dropped"
 }
