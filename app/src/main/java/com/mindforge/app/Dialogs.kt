@@ -11,7 +11,6 @@ fun Context.showInputDialog(title: String, defaultValue: String = "", onValueEnt
             it.selectAll()
             AlertDialog.Builder(this)
                     .setTitle(title)
-                    //.setMessage(message)
                     .setView(it)
                     .setPositiveButton("OK") { dialog, which ->
                         onValueEntered(it.getText().toString())

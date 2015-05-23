@@ -54,14 +54,6 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="com.mindforge.app.DriveSampleActivity"
-            android:label="@string/drive_title"
-            android:parentActivityName="com.mindforge.app.MainActivity">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value="com.mindforge.app.MainActivity" />
-        </activity>
-        <activity
             android:name="com.evernote.client.android.EvernoteOAuthActivity"
             android:configChanges="orientation|keyboardHidden" />
     </application>

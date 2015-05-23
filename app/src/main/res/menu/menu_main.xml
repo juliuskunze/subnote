@@ -35,13 +35,13 @@
         android:showAsAction="ifRoom"/>
 
     <item
-        android:id="@+id/open_from_drive"
-        android:title="@string/open_from_drive"
+        android:id="@+id/open_xmind_from_drive"
+        android:title="@string/open_xmind_from_drive"
         android:showAsAction="never"/>
 
     <item
-        android:id="@+id/save_to_drive"
-        android:title="@string/save_to_drive"
+        android:id="@+id/save_xmind_to_drive"
+        android:title="@string/save_xmind_to_drive"
         android:showAsAction="never"/>
 
     <item

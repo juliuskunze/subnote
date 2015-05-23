@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.ViewConfiguration
@@ -179,7 +180,7 @@ public class MainActivity : Activity() {
         trackMenuAction(item)
 
         return when (item.getItemId()) {
-            R.id.open_from_drive -> {
+            R.id.open_xmind_from_drive -> {
                 openFromDrive()
                 true
             }
@@ -275,11 +276,13 @@ public class MainActivity : Activity() {
     }
 
     private fun openFromDrive() {
-        if (!driveFileOpenerApiClient.isConnected()) {
-            driveFileOpenerApiClient.connect()
-            // chooseFileFromDrive will be called in onConnected.
+        if (!driveFileOpenerClient.isConnected()) {
+            driveFileOpenerClient.connect()
+
+            // chooseFileFromDrive() called in onConnected()
             return
         }
+
         chooseFileFromDrive()
     }
 
@@ -300,7 +303,7 @@ public class MainActivity : Activity() {
 
     private val workbookBuilder: WorkbookBuilderImpl by Delegates.lazy { AndroidWorkbookBuilder(cacheDirectory = getCacheDir())() }
 
-    private val driveFileOpenerApiClient: GoogleApiClient by Delegates.lazy {
+    private val driveFileOpenerClient: GoogleApiClient by Delegates.lazy {
         GoogleApiClient.Builder(this).addApi(Drive.API).addScope(Drive.SCOPE_FILE).addConnectionCallbacks(object : GoogleApiClient.ConnectionCallbacks {
             override fun onConnected(connectionHint: Bundle?) {
                 chooseFileFromDrive()
@@ -315,14 +318,19 @@ public class MainActivity : Activity() {
                     GooglePlayServicesUtil.getErrorDialog(result.getErrorCode(), this@MainActivity, 0).show()
                     return
                 }
-                // Called typically when the app is not yet authorized, and an authorization dialog is displayed to the user.
-                result.startResolutionForResult(this@MainActivity, IntentCode.googleClientResolution)
+
+                try {
+                    // Called typically when the app is not yet authorized, and an authorization dialog is displayed to the user.
+                    result.startResolutionForResult(this@MainActivity, IntentCode.googleClientResolution)
+                } catch (ex: Exception) {
+                    Log.e("", "Failed to connect to Play Store.")
+                }
             }
         }).build()
     }
 
     private fun chooseFileFromDrive() {
-        val intentSender = Drive.DriveApi.newOpenFileActivityBuilder().build(driveFileOpenerApiClient)
+        val intentSender = Drive.DriveApi.newOpenFileActivityBuilder().build(driveFileOpenerClient)
 
         startIntentSenderForResult(intentSender, IntentCode.openFileFromDrive, null, 0, 0, 0);
     }
@@ -354,9 +362,9 @@ public class MainActivity : Activity() {
                 }
             IntentCode.openFileFromDrive ->
                 if (resultCode == Activity.RESULT_OK) {
-                    val driveFile = Drive.DriveApi.getFile(driveFileOpenerApiClient, data!!.getExtras().get("response_drive_id") as DriveId)
+                    val driveFile = Drive.DriveApi.getFile(driveFileOpenerClient, data!!.getExtras().get("response_drive_id") as DriveId)
 
-                    driveFile.open(driveFileOpenerApiClient, DriveFile.MODE_READ_ONLY, object : DriveFile.DownloadProgressListener {
+                    driveFile.open(driveFileOpenerClient, DriveFile.MODE_READ_ONLY, object : DriveFile.DownloadProgressListener {
                         override fun onProgress(bytesDownloaded: Long, bytesExpected: Long) {
                             //TODO: mainTextView.setText("loading... " + if (bytesExpected > 0) "$bytesDownloaded / $bytesExpected bytes" else "")
                         }
@@ -372,6 +380,12 @@ public class MainActivity : Activity() {
                     })
 
                 }
+
+            IntentCode.googleClientResolution -> {
+                if (resultCode == Activity.RESULT_OK) {
+                    openFromDrive()
+                }
+            }
         }
     }
 
