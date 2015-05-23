@@ -44,6 +44,15 @@ import java.io.FileOutputStream
 import java.io.InputStream
 import kotlin.properties.Delegates
 
+/*
+Outside of MainActivity because screen rotation destroys the current MainActivity and creates a new one: http://developer.android.com/training/basics/activity-lifecycle/recreating.html
+*/
+object ApplicationState {
+
+    var initialized = false
+    var workbook: IWorkbook by Delegates.notNull()
+}
+
 public class MainActivity : Activity() {
     var analytics : GoogleAnalytics by Delegates.notNull()
     var tracker : Tracker by Delegates.notNull()
@@ -65,7 +74,12 @@ public class MainActivity : Activity() {
 
         enableOverflowMenuButtonEvenIfHardwareMenuButtonExists()
 
-        openFromDocuments()
+        if (!ApplicationState.initialized) {
+            ApplicationState.initialized = true
+            openFromDeviceOrCreateDefault()
+        } else {
+            open(ApplicationState.workbook)
+        }
     }
 
     /*
@@ -251,23 +265,23 @@ public class MainActivity : Activity() {
         )
     }
 
-    fun createNew() {
+    fun createDefaultMindMap() {
         val file = File(getCacheDir(), "temp.xmind")
         getResources().openRawResource(R.raw.start).writeToFile(file)
         open(file)
     }
 
-    private fun openFromDocuments() {
+    private fun openFromDeviceOrCreateDefault() {
         if (localWorkbookFile.exists()) {
             try {
                 open(localWorkbookFile)
             } catch (ex: Exception) {
                 ex.printStackTrace()
                 localWorkbookFile.delete()
-                createNew()
+                createDefaultMindMap()
             }
         } else {
-            createNew()
+            createDefaultMindMap()
         }
     }
 
@@ -296,7 +310,7 @@ public class MainActivity : Activity() {
 
     private fun save(file: File) {
         openFileOutput(file.name, Context.MODE_PRIVATE).let {
-            workbook.save(it)
+            ApplicationState.workbook.save(it)
             it.close()
         }
     }
@@ -389,12 +403,10 @@ public class MainActivity : Activity() {
         }
     }
 
-    var workbook: IWorkbook by Delegates.notNull()
-
     var currentText = ""
     var currentUrl = ""
     private fun open(workbook: IWorkbook) {
-        this.workbook = workbook
+        ApplicationState.workbook = workbook
 
         val noteCount = workbook.getPrimarySheet().getRootTopic().getChildrenRecursively().count()
 

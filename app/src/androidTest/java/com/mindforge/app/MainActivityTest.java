@@ -25,7 +25,7 @@ public class MainActivityTest extends ActivityUnitTestCase<MainActivity> {
     }
 
     public void testCreateNew() throws Exception {
-        activity.createNew();
+        activity.createDefaultMindMap();
         assertEquals("Title", activity.getWorkbook().getPrimarySheet().getRootTopic().getTitleText());
     }
 }
