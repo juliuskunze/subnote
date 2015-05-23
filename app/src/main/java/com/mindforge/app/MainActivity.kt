@@ -1,13 +1,18 @@
 package com.mindforge.app
 
 import android.app.Activity
+import android.app.PendingIntent
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.ServiceConnection
 import android.os.Bundle
+import android.os.IBinder
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.ViewConfiguration
+import com.android.vending.billing.IInAppBillingService
 import com.evernote.client.android.EvernoteSession
 import com.evernote.client.android.OnClientCallback
 import com.evernote.edam.notestore.NoteFilter
@@ -34,6 +39,8 @@ import kotlinx.android.synthetic.activity_main.mindMapLayout
 import org.jetbrains.anko.browse
 import org.jetbrains.anko.toast
 import org.jetbrains.anko.vibrator
+import org.json.JSONException
+import org.json.JSONObject
 import org.xmind.core.Core
 import org.xmind.core.ITopic
 import org.xmind.core.IWorkbook
@@ -217,6 +224,13 @@ public class MainActivity : Activity() {
                 giveFeedback()
                 true
             }
+
+            R.id.donate -> {
+                donate()
+
+                true
+            }
+
             else -> {
                 super.onOptionsItemSelected(item)
             }
@@ -231,6 +245,48 @@ public class MainActivity : Activity() {
                 .setLabel(item.getTitle().toString())
                 .build()
         )
+    }
+
+    private fun donate() {
+        var billingService : IInAppBillingService? = null
+
+        val serviceConnection = object: ServiceConnection {
+            override fun onServiceDisconnected(name : ComponentName) {
+                billingService = null
+            }
+
+            override fun onServiceConnected( name:ComponentName, service: IBinder) {
+                billingService = IInAppBillingService.Stub.asInterface(service)
+            }
+        }
+
+        val serviceIntent = Intent("com.android.vending.billing.InAppBillingService.BIND")
+        serviceIntent.setPackage("com.android.vending");
+        bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
+
+        val querySkus = Bundle()
+        querySkus.putStringArrayList("ITEM_ID_LIST", arrayListOf("donation"))
+
+        val inAppBillingType = "inapp"
+        val details = billingService!!.getSkuDetails(3, getPackageName(), inAppBillingType, querySkus)
+        if(details.getInt("RESPONSE_CODE") == 0) {
+            val purchasables = details.getStringArrayList("DETAILS_LIST")
+
+            for (purchasable in purchasables) {
+                val o = JSONObject(purchasable)
+                val sku = o.getString("productId")
+                val price = o.getString("price")
+
+                val buyIntentBundle = billingService!!.getBuyIntent(3, getPackageName(), sku, inAppBillingType, "")
+                val pendingIntent = buyIntentBundle.getParcelable<PendingIntent>("BUY_INTENT")
+
+                startIntentSenderForResult(pendingIntent.getIntentSender(),
+                        IntentCode.donate, Intent(), Integer.valueOf(0), Integer.valueOf(0),
+                        Integer.valueOf(0))
+            }
+
+
+        }
     }
 
     private fun giveFeedback() {
@@ -386,6 +442,23 @@ public class MainActivity : Activity() {
                     openFromDrive()
                 }
             }
+                IntentCode.donate -> {
+                    val responseCode = data!!.getIntExtra("RESPONSE_CODE", 0)
+                    val purchaseData = data.getStringExtra("INAPP_PURCHASE_DATA")
+                    val dataSignature = data.getStringExtra("INAPP_DATA_SIGNATURE")
+
+                    if (resultCode == 0) {
+                        try {
+                            val jo = JSONObject(purchaseData)
+                            val sku = jo.getString("productId")
+                            toast("You have bought the " + sku + ". Excellent choice, adventurer!");
+                        }
+                        catch (e: JSONException) {
+                            toast("Failed to parse purchase data.");
+                            e.printStackTrace();
+                        }
+                    }
+            }
         }
     }
 
@@ -461,5 +534,6 @@ public class MainActivity : Activity() {
     private object IntentCode {
         val googleClientResolution = 0
         val openFileFromDrive = 1
+        val donate = 1
     }
 }

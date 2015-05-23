@@ -48,4 +48,9 @@
         android:id="@+id/giveFeedback"
         android:title="@string/give_feedback"
         android:showAsAction="never"/>
+
+    <item
+        android:id="@+id/donate"
+        android:title="@string/donate"
+        android:showAsAction="never"/>
 </menu>
