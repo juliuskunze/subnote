@@ -35,8 +35,8 @@ android {
         applicationId "net.pureal.subnote"
         minSdkVersion 15
         targetSdkVersion 22
-        versionCode 7
-        versionName "0.1.6"
+        versionCode 8
+        versionName "0.1.7"
     }
 
     compileOptions {
