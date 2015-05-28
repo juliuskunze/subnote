@@ -62,11 +62,7 @@ class DonationService(val activity: Activity, val donationIntentCode: Int) {
 
     fun ifIsDonator(action: () -> Unit) {
         withConnection {
-            val isBillingSupported = billingService.isBillingSupported()
-
-            activity.toast("Billing Supported: $isBillingSupported")
-
-            if(isBillingSupported) {
+            if(billingService.isBillingSupported()) {
                 val isDonator = billingService.purchaseInfoIfWasPurchased(billingService.product(PurchasableProductIds.donation)) != null
                 if (isDonator) {
                     action()
@@ -75,7 +71,7 @@ class DonationService(val activity: Activity, val donationIntentCode: Int) {
         }
     }
 
-    fun resultPurchase(data: Intent) = billingService.purchaseInfo(data)
+    fun resultPurchase(data: Intent) = billingService.purchaseFromResult(data)
 }
 
 /**
@@ -92,12 +88,7 @@ class BillingService(val activity: Activity, val service : IInAppBillingService)
         val bundle = service.getPurchases(apiVersion, packageName, inAppBillingType, null)
         bundle.validateResponseCode("Failed to retrieve purchase history")
 
-
-        val all = bundle.getStringArrayList("INAPP_PURCHASE_DATA_LIST").map { purchaseInfo(it) }.toArrayList()
-
-        activity.longToast("$all")
-
-        return all
+        return bundle.getStringArrayList("INAPP_PURCHASE_DATA_LIST").map { purchaseInfo(it) }.toArrayList()
     }
 
     fun isBillingSupported() = service.isBillingSupported(apiVersion, packageName, inAppBillingType) == 0
@@ -138,7 +129,7 @@ class BillingService(val activity: Activity, val service : IInAppBillingService)
         val bundle = service.getSkuDetails(apiVersion, packageName, inAppBillingType, querySkus)
         bundle.validateResponseCode(extraMessageOnFail = "Failed to retrieve billing details")
 
-        val all = bundle.getStringArrayList("DETAILS_LIST").map {
+        return bundle.getStringArrayList("DETAILS_LIST").map {
             val o = JSONObject(it)
             ProductInfo(
                     id = o.getString("productId"),
@@ -146,10 +137,6 @@ class BillingService(val activity: Activity, val service : IInAppBillingService)
                     price = o.getString("price")
             )
         }.toArrayList().single()
-
-        activity.toast("$all")
-
-        return all
     }
 
     fun Bundle.validateResponseCode(extraMessageOnFail: String) {
@@ -157,7 +144,7 @@ class BillingService(val activity: Activity, val service : IInAppBillingService)
         if (responseCode != 0) throw BillingException(responseCode, extraMessage = extraMessageOnFail)
     }
 
-    fun purchaseInfo(data: Intent) : PurchaseInfo {
+    fun purchaseFromResult(data: Intent) : PurchaseInfo {
         val responseCode = data.getIntExtra("RESPONSE_CODE", 0)
         if (responseCode != 0) throw BillingException(responseCode, "Purchase failed")
 
