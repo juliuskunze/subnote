@@ -204,8 +204,6 @@ public class MainActivity : Activity() {
         getMenuInflater().inflate(R.menu.menu_main, menu)
         this.menu = menu
 
-        adaptMenuToIsDonator()
-
         donationService.ifIsDonator { adaptMenuToIsDonator() }
 
         return true
@@ -432,7 +430,8 @@ public class MainActivity : Activity() {
             IntentCode.donate -> {
                 if (resultCode == Activity.RESULT_OK) {
                     try {
-                        val purchase = donationService.resultPurchase(data!!)
+                        //throws if something went wrong:
+                        donationService.resultPurchase(data!!)
 
                         toast("Thank you, adventurer! Your feedback now has high priority.")
 
