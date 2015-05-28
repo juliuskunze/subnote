@@ -65,7 +65,7 @@ public class MainActivity : Activity() {
 
     val localWorkbookFile: File get() = File(getFilesDir(), "MindForge.xmind")
 
-    var billingService: IInAppBillingService? = null
+    var billingServiceOrNull: IInAppBillingService? = null
     var serviceConnection : ServiceConnection? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -429,19 +429,20 @@ public class MainActivity : Activity() {
 
         serviceConnection = object : ServiceConnection {
             override fun onServiceDisconnected(name: ComponentName) {
-                billingService = null
+                billingServiceOrNull = null
             }
 
             override fun onServiceConnected(name: ComponentName, service: IBinder) {
-                billingService = IInAppBillingService.Stub.asInterface(service)
+                billingServiceOrNull = IInAppBillingService.Stub.asInterface(service)
 
-                val billing = billingService!!
+                val billingService = billingServiceOrNull!!
 
                 val querySkus = Bundle()
                 querySkus.putStringArrayList("ITEM_ID_LIST", arrayListOf("v1donation"))
 
-                val details = billing.getSkuDetails(billingApiVersion, donationPackageName, inAppBillingType, querySkus)
-                if (details.getInt("RESPONSE_CODE") == 0) {
+                val details = billingService.getSkuDetails(billingApiVersion, donationPackageName, inAppBillingType, querySkus)
+                val detailsResponseCode = details.getInt("RESPONSE_CODE")
+                if (detailsResponseCode == 0) {
                     val purchasables = details.getStringArrayList("DETAILS_LIST")
 
                     for (purchasable in purchasables) {
@@ -449,13 +450,21 @@ public class MainActivity : Activity() {
                         val sku = o.getString("productId")
                         val price = o.getString("price")
 
-                        val buyIntentBundle = billing.getBuyIntent(billingApiVersion, donationPackageName, sku, inAppBillingType, "")
-                        val pendingIntent = buyIntentBundle.getParcelable<PendingIntent>("BUY_INTENT")
+                        val buyIntentBundle = billingService.getBuyIntent(billingApiVersion, donationPackageName, sku, inAppBillingType, "")
 
-                        startIntentSenderForResult(pendingIntent.getIntentSender(),
-                                IntentCode.donate, Intent(), Integer.valueOf(0), Integer.valueOf(0),
-                                Integer.valueOf(0))
+                        val responseCode = buyIntentBundle.getInt("RESPONSE_CODE")
+                        if (responseCode == 0) {
+                            val pendingIntent = buyIntentBundle.getParcelable<PendingIntent>("BUY_INTENT")!!
+
+                            startIntentSenderForResult(pendingIntent.getIntentSender(),
+                                    IntentCode.donate, Intent(), Integer.valueOf(0), Integer.valueOf(0),
+                                    Integer.valueOf(0))
+                        } else {
+                            toast("Failed to start donation (error code $responseCode).")
+                        }
                     }
+                } else {
+                    toast("Failed to connect to Google Billing (error code $detailsResponseCode).")
                 }
             }
         }
@@ -474,11 +483,10 @@ public class MainActivity : Activity() {
                 val sku = jo.getString("productId")
                 toast("You have bought $sku. Excellent choice, adventurer!")
                 val purchaseToken = jo.getString("purchaseToken")
-                val result = billingService!!.consumePurchase(billingApiVersion, donationPackageName, purchaseToken)
+                val result = billingServiceOrNull!!.consumePurchase(billingApiVersion, donationPackageName, purchaseToken)
                 if(result != 0) {
                     throw IllegalStateException("Failed to consume the donation.")
                 }
-
             } catch (e: JSONException) {
                 toast("Failed to parse purchase data.");
                 e.printStackTrace();
