@@ -50,7 +50,7 @@ class DonationService(val activity: Activity, val donationIntentCode: Int) {
         activity.bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
     }
 
-    fun purchaseInfo(data: Intent) = billingService.purchaseInfo(data)
+    fun resultPurchase(data: Intent) = billingService.purchaseInfo(data)
 }
 
 /**
@@ -129,4 +129,4 @@ class BillingService(val activity: Activity, val service : IInAppBillingService)
     }
 }
 
-class BillingException(val responseCode: Int, extraMessage: String) : Exception("$extraMessage: (Error code $responseCode)")
+class BillingException(val responseCode: Int, extraMessage: String) : Exception("$extraMessage (error code $responseCode)")

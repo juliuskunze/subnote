@@ -72,10 +72,10 @@ public class MainActivity : Activity() {
         analytics = GoogleAnalytics.getInstance(this)
         analytics.setLocalDispatchPeriod(1800)
         tracker = analytics.newTracker("UA-63277540-1")
-        tracker.enableExceptionReporting(true);
-        tracker.enableAdvertisingIdCollection(true);
-        tracker.enableAutoActivityTracking(true);
-        tracker.setScreenName(javaClass.getSimpleName());
+        tracker.enableExceptionReporting(true)
+        tracker.enableAdvertisingIdCollection(true)
+        tracker.enableAutoActivityTracking(true)
+        tracker.setScreenName(javaClass.getSimpleName())
 
         setContentView(R.layout.activity_main)
 
@@ -414,15 +414,17 @@ public class MainActivity : Activity() {
                 }
             IntentCode.donate -> {
                 if (resultCode == Activity.RESULT_OK) {
-                    val purchase = donationService.purchaseInfo(data!!)
+                    try {
+                        val purchase = donationService.resultPurchase(data!!)
 
-                    toast("You have bought ${purchase.productId}. Excellent choice, adventurer!")
+                        toast("Thanks a lot, adventurer!")
+                    } catch (ex : BillingException) {
+                        toast(ex.getMessage()!!)
+                    }
                 }
             }
         }
     }
-
-
 
     var currentText = ""
     var currentUrl = ""
