@@ -13,9 +13,11 @@ import org.jetbrains.anko.toast
 import org.json.JSONObject
 import kotlin.properties.Delegates
 
-class DonationService(val activity: Activity, val donationIntentCode: Int) {
-    private val donationProductId = "v1donation"
+object PurchasableProductIds {
+    val donation = "v1donation"
+}
 
+class DonationService(val activity: Activity, val donationIntentCode: Int) {
     var billingService : BillingService by Delegates.notNull()
 
     fun invoke() {
@@ -28,11 +30,11 @@ class DonationService(val activity: Activity, val donationIntentCode: Int) {
                 billingService = BillingService(activity, IInAppBillingService.Stub.asInterface(service)!!)
 
                 try {
-                    val product = billingService.product(donationProductId)
-                    val purchaseIfWasPurchased = billingService.purchaseInfoIfWasPurchased(product)
+                    val product = billingService.product(PurchasableProductIds.donation)
+                    val purchase = billingService.purchaseInfoIfWasPurchased(product)
 
-                    if (purchaseIfWasPurchased != null) {
-                        billingService.consume(purchaseIfWasPurchased)
+                    if (purchase != null) {
+                        billingService.consume(purchase)
                     }
 
                     billingService.startPurchaseIntent(product, intentCode = donationIntentCode)
@@ -56,7 +58,7 @@ class DonationService(val activity: Activity, val donationIntentCode: Int) {
  */
 class BillingService(val activity: Activity, val service : IInAppBillingService) {
     private val inAppBillingType = "inapp"
-    private val packageName = "net.pureal.subnote" // TODO: change to getPackageName()
+    private val packageName = "net.pureal.subnote" // TODO: change to activity.getPackageName() after namespace is net.pureal.subnote
     private val apiVersion = 3
 
     class PurchaseInfo(val productId: String, val purchaseToken: String)

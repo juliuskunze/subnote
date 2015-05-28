@@ -494,6 +494,6 @@ public class MainActivity : Activity() {
     private object IntentCode {
         val googleClientResolution = 0
         val openFileFromDrive = 1
-        val donate = 1
+        val donate = 2
     }
 }
