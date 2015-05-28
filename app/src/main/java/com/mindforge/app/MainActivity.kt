@@ -57,6 +57,18 @@ public class MainActivity : Activity() {
 
     val localWorkbookFile: File get() = File(getFilesDir(), "MindForge.xmind")
 
+    var billingService: IInAppBillingService? = null
+
+    val serviceConnection = object : ServiceConnection {
+        override fun onServiceDisconnected(name: ComponentName) {
+            billingService = null
+        }
+
+        override fun onServiceConnected(name: ComponentName, service: IBinder) {
+            billingService = IInAppBillingService.Stub.asInterface(service)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -247,48 +259,6 @@ public class MainActivity : Activity() {
         )
     }
 
-    private fun donate() {
-        var billingService : IInAppBillingService? = null
-
-        val serviceConnection = object: ServiceConnection {
-            override fun onServiceDisconnected(name : ComponentName) {
-                billingService = null
-            }
-
-            override fun onServiceConnected( name:ComponentName, service: IBinder) {
-                billingService = IInAppBillingService.Stub.asInterface(service)
-            }
-        }
-
-        val serviceIntent = Intent("com.android.vending.billing.InAppBillingService.BIND")
-        serviceIntent.setPackage("com.android.vending");
-        bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
-
-        val querySkus = Bundle()
-        querySkus.putStringArrayList("ITEM_ID_LIST", arrayListOf("donation"))
-
-        val inAppBillingType = "inapp"
-        val details = billingService!!.getSkuDetails(3, getPackageName(), inAppBillingType, querySkus)
-        if(details.getInt("RESPONSE_CODE") == 0) {
-            val purchasables = details.getStringArrayList("DETAILS_LIST")
-
-            for (purchasable in purchasables) {
-                val o = JSONObject(purchasable)
-                val sku = o.getString("productId")
-                val price = o.getString("price")
-
-                val buyIntentBundle = billingService!!.getBuyIntent(3, getPackageName(), sku, inAppBillingType, "")
-                val pendingIntent = buyIntentBundle.getParcelable<PendingIntent>("BUY_INTENT")
-
-                startIntentSenderForResult(pendingIntent.getIntentSender(),
-                        IntentCode.donate, Intent(), Integer.valueOf(0), Integer.valueOf(0),
-                        Integer.valueOf(0))
-            }
-
-
-        }
-    }
-
     private fun giveFeedback() {
         showInputDialog("Give Feedback", "") {
             if(it != null && it != "") {
@@ -436,28 +406,66 @@ public class MainActivity : Activity() {
                     })
 
                 }
-
-            IntentCode.googleClientResolution -> {
+            IntentCode.googleClientResolution ->
                 if (resultCode == Activity.RESULT_OK) {
                     openFromDrive()
                 }
-            }
-                IntentCode.donate -> {
-                    val responseCode = data!!.getIntExtra("RESPONSE_CODE", 0)
-                    val purchaseData = data.getStringExtra("INAPP_PURCHASE_DATA")
-                    val dataSignature = data.getStringExtra("INAPP_DATA_SIGNATURE")
+            IntentCode.donate ->
+                onDonated(data, resultCode)
+        }
+    }
 
-                    if (resultCode == 0) {
-                        try {
-                            val jo = JSONObject(purchaseData)
-                            val sku = jo.getString("productId")
-                            toast("You have bought the " + sku + ". Excellent choice, adventurer!");
-                        }
-                        catch (e: JSONException) {
-                            toast("Failed to parse purchase data.");
-                            e.printStackTrace();
-                        }
-                    }
+    val inAppBillingType = "inapp"
+    val donationPackageName = "net.pureal.subnote" // TODO: change to getPackageName()
+    val billingApiVersion = 3
+
+    private fun donate() {
+        val serviceIntent = Intent("com.android.vending.billing.InAppBillingService.BIND")
+        serviceIntent.setPackage("com.android.vending");
+        bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
+
+        val querySkus = Bundle()
+        querySkus.putStringArrayList("ITEM_ID_LIST", arrayListOf("donation"))
+
+
+        val details = billingService!!.getSkuDetails(billingApiVersion, donationPackageName, inAppBillingType, querySkus)
+        if (details.getInt("RESPONSE_CODE") == 0) {
+            val purchasables = details.getStringArrayList("DETAILS_LIST")
+
+            for (purchasable in purchasables) {
+                val o = JSONObject(purchasable)
+                val sku = o.getString("productId")
+                val price = o.getString("price")
+
+                val buyIntentBundle = billingService!!.getBuyIntent(billingApiVersion, donationPackageName, sku, inAppBillingType, "")
+                val pendingIntent = buyIntentBundle.getParcelable<PendingIntent>("BUY_INTENT")
+
+                startIntentSenderForResult(pendingIntent.getIntentSender(),
+                        IntentCode.donate, Intent(), Integer.valueOf(0), Integer.valueOf(0),
+                        Integer.valueOf(0))
+            }
+        }
+    }
+
+    private fun onDonated(data: Intent?, resultCode: Int) {
+        val responseCode = data!!.getIntExtra("RESPONSE_CODE", 0)
+        val purchaseData = data.getStringExtra("INAPP_PURCHASE_DATA")
+        val dataSignature = data.getStringExtra("INAPP_DATA_SIGNATURE")
+
+        if (resultCode == 0) {
+            try {
+                val jo = JSONObject(purchaseData)
+                val sku = jo.getString("productId")
+                toast("You have bought $sku. Excellent choice, adventurer!")
+                val purchaseToken = jo.getString("purchaseToken")
+                val result = billingService!!.consumePurchase(billingApiVersion, donationPackageName, purchaseToken)
+                if(result != 0) {
+                    throw IllegalStateException("Failed to consume the donation.")
+                }
+
+            } catch (e: JSONException) {
+                toast("Failed to parse purchase data.");
+                e.printStackTrace();
             }
         }
     }
