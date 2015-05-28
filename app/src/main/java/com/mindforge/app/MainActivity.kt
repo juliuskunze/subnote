@@ -62,11 +62,9 @@ object ApplicationState {
 public class MainActivity : Activity() {
     var analytics : GoogleAnalytics by Delegates.notNull()
     var tracker : Tracker by Delegates.notNull()
+    val donationService : DonationService by Delegates.lazy { DonationService(this, IntentCode.donate) }
 
     val localWorkbookFile: File get() = File(getFilesDir(), "MindForge.xmind")
-
-    var billingServiceOrNull: IInAppBillingService? = null
-    var serviceConnection : ServiceConnection? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -242,7 +240,7 @@ public class MainActivity : Activity() {
             }
 
             R.id.donate -> {
-                donate()
+                donationService.invoke()
 
                 true
             }
@@ -414,85 +412,17 @@ public class MainActivity : Activity() {
                 if (resultCode == Activity.RESULT_OK) {
                     openFromDrive()
                 }
-            IntentCode.donate ->
-                onDonated(data, resultCode)
-        }
-    }
+            IntentCode.donate -> {
+                if (resultCode == Activity.RESULT_OK) {
+                    val purchase = donationService.purchaseInfo(data!!)
 
-    val inAppBillingType = "inapp"
-    val donationPackageName = "net.pureal.subnote" // TODO: change to getPackageName()
-    val billingApiVersion = 3
-
-    private fun donate() {
-        val serviceIntent = Intent("com.android.vending.billing.InAppBillingService.BIND")
-        serviceIntent.setPackage("com.android.vending");
-
-        serviceConnection = object : ServiceConnection {
-            override fun onServiceDisconnected(name: ComponentName) {
-                billingServiceOrNull = null
-            }
-
-            override fun onServiceConnected(name: ComponentName, service: IBinder) {
-                billingServiceOrNull = IInAppBillingService.Stub.asInterface(service)
-
-                val billingService = billingServiceOrNull!!
-
-                val querySkus = Bundle()
-                querySkus.putStringArrayList("ITEM_ID_LIST", arrayListOf("v1donation"))
-
-                val details = billingService.getSkuDetails(billingApiVersion, donationPackageName, inAppBillingType, querySkus)
-                val detailsResponseCode = details.getInt("RESPONSE_CODE")
-                if (detailsResponseCode == 0) {
-                    val purchasables = details.getStringArrayList("DETAILS_LIST")
-
-                    for (purchasable in purchasables) {
-                        val o = JSONObject(purchasable)
-                        val sku = o.getString("productId")
-                        val price = o.getString("price")
-
-                        val buyIntentBundle = billingService.getBuyIntent(billingApiVersion, donationPackageName, sku, inAppBillingType, "")
-
-                        val responseCode = buyIntentBundle.getInt("RESPONSE_CODE")
-                        if (responseCode == 0) {
-                            val pendingIntent = buyIntentBundle.getParcelable<PendingIntent>("BUY_INTENT")!!
-
-                            startIntentSenderForResult(pendingIntent.getIntentSender(),
-                                    IntentCode.donate, Intent(), Integer.valueOf(0), Integer.valueOf(0),
-                                    Integer.valueOf(0))
-                        } else {
-                            toast("Failed to start donation (error code $responseCode).")
-                        }
-                    }
-                } else {
-                    toast("Failed to connect to Google Billing (error code $detailsResponseCode).")
+                    toast("You have bought ${purchase.productId}. Excellent choice, adventurer!")
                 }
             }
         }
-
-        bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
     }
 
-    private fun onDonated(data: Intent?, resultCode: Int) {
-        val responseCode = data!!.getIntExtra("RESPONSE_CODE", 0)
-        val purchaseData = data.getStringExtra("INAPP_PURCHASE_DATA")
-        val dataSignature = data.getStringExtra("INAPP_DATA_SIGNATURE")
 
-        if (resultCode == 0) {
-            try {
-                val jo = JSONObject(purchaseData)
-                val sku = jo.getString("productId")
-                toast("You have bought $sku. Excellent choice, adventurer!")
-                val purchaseToken = jo.getString("purchaseToken")
-                val result = billingServiceOrNull!!.consumePurchase(billingApiVersion, donationPackageName, purchaseToken)
-                if(result != 0) {
-                    throw IllegalStateException("Failed to consume the donation.")
-                }
-            } catch (e: JSONException) {
-                toast("Failed to parse purchase data.");
-                e.printStackTrace();
-            }
-        }
-    }
 
     var currentText = ""
     var currentUrl = ""
