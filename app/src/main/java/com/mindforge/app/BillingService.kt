@@ -21,6 +21,12 @@ class DonationService(val activity: Activity, val donationIntentCode: Int) {
     var billingService : BillingService by Delegates.notNull()
 
     fun invoke() {
+        withConnection {
+            donate()
+        }
+    }
+
+    fun withConnection(onConnected: () -> Unit): Unit {
         val serviceConnection = object : ServiceConnection {
             override fun onServiceDisconnected(name: ComponentName) {
                 activity.toast("Billing service disconnected.")
@@ -29,18 +35,7 @@ class DonationService(val activity: Activity, val donationIntentCode: Int) {
             override fun onServiceConnected(name: ComponentName, service: IBinder) {
                 billingService = BillingService(activity, IInAppBillingService.Stub.asInterface(service)!!)
 
-                try {
-                    val product = billingService.product(PurchasableProductIds.donation)
-                    val purchase = billingService.purchaseInfoIfWasPurchased(product)
-
-                    if (purchase != null) {
-                        billingService.consume(purchase)
-                    }
-
-                    billingService.startPurchaseIntent(product, intentCode = donationIntentCode)
-                } catch(ex: BillingException) {
-                    activity.toast(ex.getMessage()!!)
-                }
+                onConnected()
             }
         }
 
@@ -48,6 +43,30 @@ class DonationService(val activity: Activity, val donationIntentCode: Int) {
         serviceIntent.setPackage("com.android.vending")
 
         activity.bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
+    }
+
+    private fun donate() {
+        try {
+            val product = billingService.product(PurchasableProductIds.donation)
+            val purchase = billingService.purchaseInfoIfWasPurchased(product)
+
+            if (purchase != null) {
+                billingService.consume(purchase)
+            }
+
+            billingService.startPurchaseIntent(product, intentCode = donationIntentCode)
+        } catch(ex: BillingException) {
+            activity.toast(ex.getMessage()!!)
+        }
+    }
+
+    fun ifIsDonator(action: (Boolean) -> Unit) {
+        withConnection {
+            if(billingService.isBillingSupported()) {
+                val hasDonated = billingService.purchaseInfoIfWasPurchased(billingService.product(PurchasableProductIds.donation)) != null
+                action(hasDonated)
+            }
+        }
     }
 
     fun resultPurchase(data: Intent) = billingService.purchaseInfo(data)
@@ -69,6 +88,8 @@ class BillingService(val activity: Activity, val service : IInAppBillingService)
 
         return bundle.getStringArrayList("INAPP_PURCHASE_DATA_LIST").map { purchaseInfo(it) }.toArrayList()
     }
+
+    fun isBillingSupported() = service.isBillingSupported(apiVersion, packageName, inAppBillingType) == 0
 
     fun purchaseInfoIfWasPurchased(product: ProductInfo) = purchases().singleOrNull { it.productId == product.id }
 

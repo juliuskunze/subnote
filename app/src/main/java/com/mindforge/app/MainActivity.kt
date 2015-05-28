@@ -63,6 +63,7 @@ public class MainActivity : Activity() {
     var analytics : GoogleAnalytics by Delegates.notNull()
     var tracker : Tracker by Delegates.notNull()
     val donationService : DonationService by Delegates.lazy { DonationService(this, IntentCode.donate) }
+    var isDonator: Boolean = false
 
     val localWorkbookFile: File get() = File(getFilesDir(), "MindForge.xmind")
 
@@ -79,6 +80,13 @@ public class MainActivity : Activity() {
 
         setContentView(R.layout.activity_main)
 
+        donationService.ifIsDonator {
+            if(it) {
+                isDonator = true
+                onIsDonator()
+            }
+        }
+
         enableOverflowMenuButtonEvenIfHardwareMenuButtonExists()
 
         if (!ApplicationState.initialized) {
@@ -87,6 +95,11 @@ public class MainActivity : Activity() {
         } else {
             open(ApplicationState.workbook)
         }
+    }
+
+    private fun onIsDonator() {
+        // TODO translate
+        (findViewById(R.id.giveFeedback) as MenuItem).setTitle("Give High Priority Feedback")
     }
 
     /*
@@ -262,7 +275,8 @@ public class MainActivity : Activity() {
     }
 
     private fun giveFeedback() {
-        showInputDialog("Give Feedback", "") {
+        //TODO translate
+        showInputDialog(if(isDonator) "Give High Priority Feedback" else "Give Feedback", "") {
             if(it != null && it != "") {
                 trackFeedback(it)
                 toast("Feedback sent. Thank you!")
@@ -417,7 +431,9 @@ public class MainActivity : Activity() {
                     try {
                         val purchase = donationService.resultPurchase(data!!)
 
-                        toast("Thanks a lot, adventurer!")
+                        toast("Thank you, adventurer! Your feedback now has high priority.")
+
+                        onIsDonator()
                     } catch (ex : BillingException) {
                         toast(ex.getMessage()!!)
                     }
