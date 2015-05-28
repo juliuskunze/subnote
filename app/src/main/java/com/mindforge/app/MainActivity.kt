@@ -64,6 +64,7 @@ public class MainActivity : Activity() {
     var tracker : Tracker by Delegates.notNull()
     val donationService : DonationService by Delegates.lazy { DonationService(this, IntentCode.donate) }
     var isDonator: Boolean = false
+    var menu : Menu by Delegates.notNull()
 
     val localWorkbookFile: File get() = File(getFilesDir(), "MindForge.xmind")
 
@@ -80,13 +81,6 @@ public class MainActivity : Activity() {
 
         setContentView(R.layout.activity_main)
 
-        donationService.ifIsDonator {
-            if(it) {
-                isDonator = true
-                onIsDonator()
-            }
-        }
-
         enableOverflowMenuButtonEvenIfHardwareMenuButtonExists()
 
         if (!ApplicationState.initialized) {
@@ -97,9 +91,10 @@ public class MainActivity : Activity() {
         }
     }
 
-    private fun onIsDonator() {
+    private fun adaptMenuToIsDonator() {
+        isDonator = true
         // TODO translate
-        (findViewById(R.id.giveFeedback) as MenuItem).setTitle("Give High Priority Feedback")
+        menu.findItem(R.id.giveFeedback).setTitle("Give High Priority Feedback")
     }
 
     /*
@@ -205,8 +200,14 @@ public class MainActivity : Activity() {
     }
 
 
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
         getMenuInflater().inflate(R.menu.menu_main, menu)
+        this.menu = menu
+
+        adaptMenuToIsDonator()
+
+        donationService.ifIsDonator { adaptMenuToIsDonator() }
+
         return true
     }
 
@@ -275,19 +276,21 @@ public class MainActivity : Activity() {
     }
 
     private fun giveFeedback() {
+        val highPriority = isDonator
         //TODO translate
-        showInputDialog(if(isDonator) "Give High Priority Feedback" else "Give Feedback", "") {
+        showInputDialog(if(highPriority) "Give High Priority Feedback" else "Give Feedback", "") {
             if(it != null && it != "") {
-                trackFeedback(it)
+                trackFeedback(it, highPriority = highPriority)
                 toast("Feedback sent. Thank you!")
             }
         }
     }
 
-    private fun trackFeedback(text: String) {
+    private fun trackFeedback(text: String, highPriority : Boolean = false) {
+        val action = if(highPriority) "Text (High Priority)" else "Text"
         tracker.send(HitBuilders.EventBuilder()
                 .setCategory("Feedback")
-                .setAction("Text")
+                .setAction(action)
                 .setLabel(text)
                 .build()
         )
@@ -433,7 +436,7 @@ public class MainActivity : Activity() {
 
                         toast("Thank you, adventurer! Your feedback now has high priority.")
 
-                        onIsDonator()
+                        adaptMenuToIsDonator()
                     } catch (ex : BillingException) {
                         toast(ex.getMessage()!!)
                     }

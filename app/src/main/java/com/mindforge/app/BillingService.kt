@@ -29,7 +29,6 @@ class DonationService(val activity: Activity, val donationIntentCode: Int) {
     fun withConnection(onConnected: () -> Unit): Unit {
         val serviceConnection = object : ServiceConnection {
             override fun onServiceDisconnected(name: ComponentName) {
-                activity.toast("Billing service disconnected.")
             }
 
             override fun onServiceConnected(name: ComponentName, service: IBinder) {
@@ -60,11 +59,13 @@ class DonationService(val activity: Activity, val donationIntentCode: Int) {
         }
     }
 
-    fun ifIsDonator(action: (Boolean) -> Unit) {
+    fun ifIsDonator(action: () -> Unit) {
         withConnection {
             if(billingService.isBillingSupported()) {
-                val hasDonated = billingService.purchaseInfoIfWasPurchased(billingService.product(PurchasableProductIds.donation)) != null
-                action(hasDonated)
+                val isDonator = billingService.purchaseInfoIfWasPurchased(billingService.product(PurchasableProductIds.donation)) != null
+                if (isDonator) {
+                    action()
+                }
             }
         }
     }
