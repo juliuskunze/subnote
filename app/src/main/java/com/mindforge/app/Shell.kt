@@ -50,10 +50,10 @@ class Shell(val screen: Screen,
     val draggedElements = observableArrayListOf<TransformedElement<*>>()
     val draggable = Draggable(composed(draggedElements))
 
-    class DropInfo(val newParent: TopicImpl, val newSubIndex: Int)
+    class DropInfo(val dragged: TopicImpl, val newParent: TopicImpl, val newSubIndex: Int)
 
-    fun updateByDragLocation() {
-        val dropInfoIfChanged = rootTopicElement.dropInfoIfChanged(draggable.dragLocation)
+    fun updateByDragLocation(dragged: TopicImpl) {
+        val dropInfoIfChanged = rootTopicElement.dropInfoIfChanged(dragged, draggable.dragLocation)
         if (dropInfoIfChanged != null) {
             dropInfo = dropInfoIfChanged
         }
@@ -70,10 +70,10 @@ class Shell(val screen: Screen,
         draggable.dragLocation = dragLocation
         dragged.setFolded(true)
 
-        updateByDragLocation()
+        updateByDragLocation(dragged)
 
         val draggedObserver = draggable.moved addObserver {
-            updateByDragLocation()
+            updateByDragLocation(dragged)
         }
 
         draggable.dropped addObserver {
@@ -242,8 +242,8 @@ class Shell(val screen: Screen,
         private fun dropPlaceHolderIfHas(): Stackable? {
             val d = dropInfo
             return if (d == null) null else if (d.newParent != content) null else {
-                val s = TextElementImpl(" ", fill = mainColor(), font = defaultFont, lineHeight = subLineHeight)
-                Stackable(s, s.shape.boxWithBorder())
+                val textShape = TextElementImpl(d.dragged.getTitleText(), fill = mainColor(), font = defaultFont, lineHeight = subLineHeight).shape
+                Stackable(coloredElement(textShape.box(), fill = Fills.solid(Colors.gray(0.8))), textShape.boxWithBorder())
             }
         }
 
@@ -276,8 +276,14 @@ class Shell(val screen: Screen,
 
                 Stackable(element, linkButtonTextElement.shape.boxWithBorder())
             }
-            val collapseButtonIfHas = if (topic.getAllChildren().any()) {
-                val element = TextElementImpl(if (topic.isFolded()) " + " else " - ", fill = Fills.solid(Colors.gray), font = defaultFont, lineHeight = lineHeight)
+
+            val d = dropInfo
+
+            val isDropLocation = d != null && d.newParent == this.content
+            val collapseButtonIfHas = if (topic.getAllChildren().any() || isDropLocation) {
+                val isDropLocationAndFolded = isDropLocation && content.isFolded()
+                val color = if (isDropLocationAndFolded) Colors.red else Colors.gray
+                val element = TextElementImpl(if (topic.isFolded()) " + " else " - ", fill = Fills.solid(color), font = defaultFont, lineHeight = lineHeight)
                 val button = textRectangleButton(element) {
                     topic.setFolded(!topic.isFolded())
                 }
@@ -304,10 +310,10 @@ class Shell(val screen: Screen,
             override fun contains(location: Vector2) = location.x.toDouble() > 3 * indent
         }
 
-        fun dropInfoIfChanged(dropLocation: Vector2): DropInfo? {
-            fun dropAsFirstChild() = DropInfo(newParent = content, newSubIndex = 0)
-            fun dropHereAsLastChild() = DropInfo(newParent = content, newSubIndex = content.getAllChildren().count())
-            fun dropAboveAsSibling(topic: TopicImpl) = DropInfo(newParent = topic.getParent() as TopicImpl, newSubIndex = topic.getIndex() + 1)
+        fun dropInfoIfChanged(dragged: TopicImpl, dropLocation: Vector2): DropInfo? {
+            fun dropAsFirstChild() = DropInfo(dragged = dragged, newParent = content, newSubIndex = 0)
+            fun dropHereAsLastChild() = DropInfo(dragged = dragged, newParent = content, newSubIndex = content.getAllChildren().count())
+            fun dropAboveAsSibling(topic: TopicImpl) = DropInfo(dragged = dragged, newParent = topic.getParent() as TopicImpl, newSubIndex = topic.getIndex() + 1)
             fun locationRelativeTo(child: TransformedElement<*>) = (subStackTransform() before child.transform).inverse()(dropLocation)
             fun placeHolderUnchanged() = null
 
@@ -321,7 +327,7 @@ class Shell(val screen: Screen,
             return if(isInChildHalfPlane && isInMainLineHeight) dropAsFirstChild()
             else if(childInHeight == null && subStackShape().contains(dropLocation)) placeHolderUnchanged()
             else if(childInHeight == null) dropHereAsLastChild()
-            else if(isInChildHalfPlane) (childInHeight.element as TopicElement).dropInfoIfChanged(locationRelativeTo(childInHeight))
+            else if (isInChildHalfPlane) (childInHeight.element as TopicElement).dropInfoIfChanged(dragged, locationRelativeTo(childInHeight))
             else dropAboveAsSibling((childInHeight.element as TopicElement).content)
         }
     }
