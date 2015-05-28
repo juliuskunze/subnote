@@ -37,6 +37,7 @@ import com.mindforge.graphics.observableIterable
 import com.mindforge.graphics.trigger
 import kotlinx.android.synthetic.activity_main.mindMapLayout
 import org.jetbrains.anko.browse
+import org.jetbrains.anko.longToast
 import org.jetbrains.anko.toast
 import org.jetbrains.anko.vibrator
 import org.json.JSONException
@@ -433,7 +434,7 @@ public class MainActivity : Activity() {
                         //throws if something went wrong:
                         donationService.resultPurchase(data!!)
 
-                        toast("Thank you, adventurer! Your feedback now has high priority.")
+                        longToast("Thank you, adventurer! Your feedback has high priority now.")
 
                         adaptMenuToIsDonator()
                     } catch (ex : BillingException) {

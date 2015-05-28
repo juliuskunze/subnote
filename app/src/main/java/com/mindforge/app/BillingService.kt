@@ -9,6 +9,7 @@ import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
 import com.android.vending.billing.IInAppBillingService
+import org.jetbrains.anko.longToast
 import org.jetbrains.anko.toast
 import org.json.JSONObject
 import kotlin.properties.Delegates
@@ -61,7 +62,11 @@ class DonationService(val activity: Activity, val donationIntentCode: Int) {
 
     fun ifIsDonator(action: () -> Unit) {
         withConnection {
-            if(billingService.isBillingSupported()) {
+            val isBillingSupported = billingService.isBillingSupported()
+
+            activity.toast("Billing Supported: $isBillingSupported")
+
+            if(isBillingSupported) {
                 val isDonator = billingService.purchaseInfoIfWasPurchased(billingService.product(PurchasableProductIds.donation)) != null
                 if (isDonator) {
                     action()
@@ -81,13 +86,18 @@ class BillingService(val activity: Activity, val service : IInAppBillingService)
     private val packageName = "net.pureal.subnote" // TODO: change to activity.getPackageName() after namespace is net.pureal.subnote
     private val apiVersion = 3
 
-    class PurchaseInfo(val productId: String, val purchaseToken: String)
+    data class PurchaseInfo(val productId: String, val purchaseToken: String)
 
     fun purchases(): List<PurchaseInfo> {
         val bundle = service.getPurchases(apiVersion, packageName, inAppBillingType, null)
         bundle.validateResponseCode("Failed to retrieve purchase history")
 
-        return bundle.getStringArrayList("INAPP_PURCHASE_DATA_LIST").map { purchaseInfo(it) }.toArrayList()
+
+        val all = bundle.getStringArrayList("INAPP_PURCHASE_DATA_LIST").map { purchaseInfo(it) }.toArrayList()
+
+        activity.longToast("$all")
+
+        return all
     }
 
     fun isBillingSupported() = service.isBillingSupported(apiVersion, packageName, inAppBillingType) == 0
@@ -119,7 +129,7 @@ class BillingService(val activity: Activity, val service : IInAppBillingService)
         if (responseCode != 0) throw BillingException(responseCode, "Failed to consume purchase: $responseCode).")
     }
 
-    class ProductInfo(val id: String, val title: String, val price: String)
+    data class ProductInfo(val id: String, val title: String, val price: String)
 
     fun product(productId: String): ProductInfo {
         val querySkus = Bundle()
@@ -128,7 +138,7 @@ class BillingService(val activity: Activity, val service : IInAppBillingService)
         val bundle = service.getSkuDetails(apiVersion, packageName, inAppBillingType, querySkus)
         bundle.validateResponseCode(extraMessageOnFail = "Failed to retrieve billing details")
 
-        return bundle.getStringArrayList("DETAILS_LIST").map {
+        val all = bundle.getStringArrayList("DETAILS_LIST").map {
             val o = JSONObject(it)
             ProductInfo(
                     id = o.getString("productId"),
@@ -136,6 +146,10 @@ class BillingService(val activity: Activity, val service : IInAppBillingService)
                     price = o.getString("price")
             )
         }.toArrayList().single()
+
+        activity.toast("$all")
+
+        return all
     }
 
     fun Bundle.validateResponseCode(extraMessageOnFail: String) {
