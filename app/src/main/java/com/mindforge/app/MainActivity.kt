@@ -58,16 +58,7 @@ public class MainActivity : Activity() {
     val localWorkbookFile: File get() = File(getFilesDir(), "MindForge.xmind")
 
     var billingService: IInAppBillingService? = null
-
-    val serviceConnection = object : ServiceConnection {
-        override fun onServiceDisconnected(name: ComponentName) {
-            billingService = null
-        }
-
-        override fun onServiceConnected(name: ComponentName, service: IBinder) {
-            billingService = IInAppBillingService.Stub.asInterface(service)
-        }
-    }
+    var serviceConnection : ServiceConnection? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -422,29 +413,41 @@ public class MainActivity : Activity() {
     private fun donate() {
         val serviceIntent = Intent("com.android.vending.billing.InAppBillingService.BIND")
         serviceIntent.setPackage("com.android.vending");
-        bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
 
-        val querySkus = Bundle()
-        querySkus.putStringArrayList("ITEM_ID_LIST", arrayListOf("donation"))
+        serviceConnection = object : ServiceConnection {
+            override fun onServiceDisconnected(name: ComponentName) {
+                billingService = null
+            }
 
+            override fun onServiceConnected(name: ComponentName, service: IBinder) {
+                billingService = IInAppBillingService.Stub.asInterface(service)
 
-        val details = billingService!!.getSkuDetails(billingApiVersion, donationPackageName, inAppBillingType, querySkus)
-        if (details.getInt("RESPONSE_CODE") == 0) {
-            val purchasables = details.getStringArrayList("DETAILS_LIST")
+                val billing = billingService!!
 
-            for (purchasable in purchasables) {
-                val o = JSONObject(purchasable)
-                val sku = o.getString("productId")
-                val price = o.getString("price")
+                val querySkus = Bundle()
+                querySkus.putStringArrayList("ITEM_ID_LIST", arrayListOf("v1donation"))
 
-                val buyIntentBundle = billingService!!.getBuyIntent(billingApiVersion, donationPackageName, sku, inAppBillingType, "")
-                val pendingIntent = buyIntentBundle.getParcelable<PendingIntent>("BUY_INTENT")
+                val details = billing.getSkuDetails(billingApiVersion, donationPackageName, inAppBillingType, querySkus)
+                if (details.getInt("RESPONSE_CODE") == 0) {
+                    val purchasables = details.getStringArrayList("DETAILS_LIST")
 
-                startIntentSenderForResult(pendingIntent.getIntentSender(),
-                        IntentCode.donate, Intent(), Integer.valueOf(0), Integer.valueOf(0),
-                        Integer.valueOf(0))
+                    for (purchasable in purchasables) {
+                        val o = JSONObject(purchasable)
+                        val sku = o.getString("productId")
+                        val price = o.getString("price")
+
+                        val buyIntentBundle = billing.getBuyIntent(billingApiVersion, donationPackageName, sku, inAppBillingType, "")
+                        val pendingIntent = buyIntentBundle.getParcelable<PendingIntent>("BUY_INTENT")
+
+                        startIntentSenderForResult(pendingIntent.getIntentSender(),
+                                IntentCode.donate, Intent(), Integer.valueOf(0), Integer.valueOf(0),
+                                Integer.valueOf(0))
+                    }
+                }
             }
         }
+
+        bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
     }
 
     private fun onDonated(data: Intent?, resultCode: Int) {
