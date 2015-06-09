@@ -10,10 +10,10 @@ import java.util.Collections
 import java.util.concurrent.CopyOnWriteArrayList
 
 
-abstract class GlElement(val original: Element<*>, val screen: GlScreen) : Element<Any?> {
+abstract class GlElement<T>(val original: Element<T>, val screen: GlScreen) : Element<T> {
     override val shape: GlShape get() = glShape(original.shape)
     override val changed: Observable<Unit> get() = original.changed
-    override val content: Any? get() = original.content;
+    override val content: T get() = original.content
     abstract fun draw(parentTransform: GlTransform)
 
     protected fun onChanged() {
@@ -44,7 +44,7 @@ class GlTransformedElement(val originalTransformedElement: TransformedElement<*>
     }
 }
 
-class GlComposed(val originalComposed: Composed<*>, screen: GlScreen) : GlElement(originalComposed, screen), Composed<Any?> {
+class GlComposed(val originalComposed: Composed<*>, screen: GlScreen) : GlElement<Any?>(originalComposed, screen), Composed<Any?> {
     val glElementList = CopyOnWriteArrayList(originalComposed.elements.mapObservable { GlTransformedElement(it, screen) }.toList())
     private trait DetachableObservableIterable<T> : ObservableIterable<T> {
         fun detach()
@@ -104,7 +104,7 @@ class GlComposed(val originalComposed: Composed<*>, screen: GlScreen) : GlElemen
     override fun draw(parentTransform: GlTransform) = glElementList.reverse() forEach { it.element.draw(it.transform before parentTransform) }
 }
 
-open class GlColoredElement(val originalColoredElement: ColoredElement<*>, screen: GlScreen) : GlElement(originalColoredElement, screen), ColoredElement<Any?> {
+open class GlColoredElement<T>(val originalColoredElement: ColoredElement<T>, screen: GlScreen) : GlElement<T>(originalColoredElement, screen), ColoredElement<T> {
     override val shape: GlShape  get() = glShape
     override val fill: Fill get() = originalColoredElement.fill
 

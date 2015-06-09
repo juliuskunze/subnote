@@ -22,7 +22,7 @@ import java.io.StringReader
 import java.security.MessageDigest
 import javax.xml.parsers.DocumentBuilderFactory
 
-fun NodeList.toList() = this.getLength().indices.map { this.item(it) }
+fun NodeList.toList() = (0..this.getLength() - 1).map { this.item(it) }
 
 fun Note.plainContent() : String {
     val document = xmlDocument(this.getContent())

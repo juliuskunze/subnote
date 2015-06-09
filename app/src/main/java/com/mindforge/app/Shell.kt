@@ -334,38 +334,38 @@ class Shell(val screen: Screen,
 
     fun registerInputs() {
         pointers mapObservable { it.pressed } startKeepingAllObserved { pk ->
-            for (it in screen.elementsAt(pk.pointer.location)) {
+            loop@ for (it in screen.elementsAt(pk.pointer.location)) {
                 val element = it.element
                 val pointerKey = pointerKey(pk.pointer transformed it.transform, pk.key)
                 when (element) {
                     is PointersElement<*> -> {
                         element.onPointerKeyPressed(pointerKey)
 
-                        break
+                        break@loop
                     }
                 }
             }
         }
         pointers mapObservable { it.pointer.moved } startKeepingAllObserved { p ->
-            for (it in screen.elementsAt(p.location)) {
+            loop@ for (it in screen.elementsAt(p.location)) {
                 val element = it.element
                 val pointer = p transformed it.transform
                 when (element) {
                     is PointersElement<*> -> {
                         element.onPointerMoved(pointer)
-                        break
+                        break@loop
                     }
                 }
             }
         }
         pointers mapObservable { it.released } startKeepingAllObserved { pk ->
-            for (it in screen.elementsAt(pk.pointer.location)) {
+            loop@ for (it in screen.elementsAt(pk.pointer.location)) {
                 val element = it.element
                 val pointerKey = pointerKey(pk.pointer transformed it.transform, pk.key)
                 when (element) {
                     is PointersElement<*> -> {
                         element.onPointerKeyReleased(pointerKey)
-                        break
+                        break@loop
                     }
                 }
             }

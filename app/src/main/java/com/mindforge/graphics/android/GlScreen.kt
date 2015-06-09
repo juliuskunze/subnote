@@ -46,7 +46,7 @@ class GlScreen (context: Context, onReady: (GlScreen) -> Unit) : GLSurfaceView(c
         super<GLSurfaceView>.requestRender()
     }
 
-    private val elementCache: MutableMap<Element<Any?>, GlElement> = ConcurrentHashMap()
+    private val elementCache: MutableMap<Element<Any?>, GlElement<*>> = ConcurrentHashMap()
     private var cleanupThreshold = 1
     private fun cleanupElementCache() {
         val initialCount = elementCache.count()
@@ -64,8 +64,8 @@ class GlScreen (context: Context, onReady: (GlScreen) -> Unit) : GLSurfaceView(c
         }
     }
 
-    fun glElement(original: Element<*>): GlElement {
-        val result: GlElement = when (original) {
+    fun glElement(original: Element<*>): GlElement<*> {
+        val result: GlElement<*> = when (original) {
             is GlElement -> original
             else -> elementCache.getOrPut(original) {
                 when (original) {

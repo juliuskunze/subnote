@@ -12,7 +12,7 @@ import com.mindforge.graphics.math.Shape
 import java.util.ArrayList
 
 //TODO: "override val original" instad of "val originalTextElement  (runtime compiler barf)
-class GlTextElement(val originalTextElement: TextElement, screen: GlScreen) : TextElement, GlColoredElement(originalTextElement, screen) {
+class GlTextElement(val originalTextElement: TextElement, screen: GlScreen) : TextElement, GlColoredElement<String>(originalTextElement, screen) {
     override val shader = screen.fontShader
     override val shape: GlGlyphs get() = super<GlColoredElement>.shape as GlGlyphs
     override val font: GlFont get() = glFont(originalTextElement.font)
