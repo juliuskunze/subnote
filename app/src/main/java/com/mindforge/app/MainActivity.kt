@@ -450,7 +450,7 @@ public class MainActivity : Activity() {
     private fun open(workbook: IWorkbook) {
         ApplicationState.workbook = workbook
 
-        val noteCount = workbook.getPrimarySheet().getRootTopic().getChildrenRecursively().count()
+        val noteCount = workbook.getPrimarySheet().getRootTopic().childrenRecursively().count()
 
         trackOpenedMap(noteCount)
 

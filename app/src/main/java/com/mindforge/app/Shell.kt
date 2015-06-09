@@ -30,6 +30,8 @@ class Shell(val screen: Screen,
 ) {
     val topicElementCache = HashMap<ITopic, TopicElement>()
 
+    fun cachedElementOrAdd(topic: TopicImpl) = topicElementCache.getOrPut(topic, { TopicElement(topic) })
+
     fun lineHeight(nestingLevel: Int) = when (nestingLevel) {
         0 -> 72
         1 -> 52
@@ -103,12 +105,47 @@ class Shell(val screen: Screen,
         }
     }
 
-    val rootTopicElement = TopicElement(workbook.getPrimarySheet().getRootTopic() as TopicImpl)
-    private val mainElements = observableArrayListOf(
-            transformedElement(draggable),
-            transformedElement(rootTopicElement)
+    var displayedRootTopic = workbook.getPrimarySheet().getRootTopic() as TopicImpl
+
+    val rootTopicElement = TopicElement(displayedRootTopic)
+
+    fun changeDisplayedRootTopicElement(newRoot: TopicImpl) {
+        displayedRootTopic = newRoot
+        setMainContent()
+
+        fun refresh(t: TopicElement) {
+            t.initElementsAndStackable()
+            t.childElementsIfUnfolded().forEach { refresh(it) }
+        }
+
+        refresh(cachedElementOrAdd(newRoot))
+    }
+
+    val ancestorsLineHeight = lineHeight(1)
+
+    private fun ancestorHeadlineElements() = displayedRootTopic.ancestors().map {
+        val textElement = TextElementImpl(it.getTitleText() + " >", fill = Fills.solid(Colors.black), font = defaultFont, lineHeight = ancestorsLineHeight)
+        Stackable(textRectangleButton(textElement) {
+            changeDisplayedRootTopicElement(it as TopicImpl)
+        }, shape = textElement.shape.boxWithBorder())
+    }
+
+    private fun parentHeadline() = composed(observableArrayListOf<TransformedElement<*>>(
+            transformedElement(horizontalStack(observableIterable(ancestorHeadlineElements())), Transforms2.translation(vector(0, -defaultFont.shape(" ", ancestorsLineHeight).boxWithBorder().original.size.y.toDouble())))
+    ))
+
+    private fun mainContent() = composed(
+            observableArrayListOf(
+                    transformedElement(parentHeadline(), Transforms2.translation(-screen.shape.halfSize.xComponent() + screen.shape.halfSize.yComponent())),
+                    transformedElement(Scrollable(
+                            composed(observableArrayListOf(
+                                    transformedElement(draggable),
+                                    transformedElement(cachedElementOrAdd(displayedRootTopic))
+                            )))
+                    )
+            )
     )
-    val mainContent = Scrollable(composed(mainElements))
+
 
     private fun initializeNewNote(newNote: ITopic, text: String) {
         newNote.setTitleText(text)
@@ -156,9 +193,13 @@ class Shell(val screen: Screen,
             }
         }
 
-        screen.content = mainContent
+        setMainContent()
 
         registerInputs()
+    }
+
+    private fun setMainContent() {
+        screen.content = mainContent()
     }
 
     inner class TopicElement(topic: TopicImpl) : Composed<ITopic> {
@@ -200,7 +241,7 @@ class Shell(val screen: Screen,
         private fun mainColor() = Fills.solid(if (activeNote == content) Colors.red else Colors.black)
         private fun text() = content.getTitleText()
 
-        private fun initElementsAndStackable() {
+        fun initElementsAndStackable() {
             toStop()
 
             mainLine = mainLine()
@@ -222,15 +263,17 @@ class Shell(val screen: Screen,
             updateStackableShape()
         }
 
-        val nestingLevel : Int get() = content.getPath().toTopicList().count() - 1
+        val nestingLevel: Int get() = content.getPath().toTopicList().count() - displayedRootTopic.getPath().toTopicList().count()
         val lineHeight : Int get() = this@Shell.lineHeight(nestingLevel)
         val subLineHeight: Int get() = this@Shell.lineHeight(nestingLevel + 1)
+
+        fun childElementsIfUnfolded() = (if (content.isFolded()) kotlin.listOf() else content.getAllChildren()).
+                map { cachedElementOrAdd(it as TopicImpl) }
 
         private fun subElements(): List<Stackable> {
             val dropPlaceholderIfHas = dropPlaceHolderIfHas()
 
-            val childTopicsIfUnfolded = (if (content.isFolded()) listOf() else content.getAllChildren()).
-                    map { topicElementCache.getOrPut(it, { TopicElement(it as TopicImpl) }).stackable }
+            val childTopicsIfUnfolded = childElementsIfUnfolded().map { it.stackable }
 
             return if (dropPlaceholderIfHas == null || content.isFolded()) childTopicsIfUnfolded else {
                 val list = childTopicsIfUnfolded.toArrayList()
@@ -263,6 +306,8 @@ class Shell(val screen: Screen,
                 val pointerKeyRelativeToRoot = it.transformed(elementToRoot)
 
                 this@Shell.startDrag(dragged = content, dragLocation = pointerKeyRelativeToRoot.pointer.location, pointerKey = pointerKeyRelativeToRoot)
+            }, onDoubleClick = {
+                changeDisplayedRootTopicElement(content)
             }) {
                 activeNote = topic
             }, mainButtonContent.shape.boxWithBorder())
@@ -407,7 +452,12 @@ fun ITopic.add(child: ITopic, index: Int) {
     add(child, index, ITopic.ATTACHED)
 }
 
-fun ITopic.getChildrenRecursively() : List<ITopic> = getAllChildren().flatMap { listOf(it) + it.getChildrenRecursively()}
+fun ITopic.childrenRecursively(): List<ITopic> = getAllChildren().flatMap { listOf(it) + it.childrenRecursively() }
+
+fun ITopic.ancestors(): List<ITopic> {
+    val parent = getParent()
+    return if (parent != null) parent.ancestors() + listOf(parent) else emptyList()
+}
 
 private object CoreEventTypeExtensions {
     val isActiveChanged = "isActive"

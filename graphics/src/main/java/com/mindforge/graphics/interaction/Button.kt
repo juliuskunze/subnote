@@ -16,9 +16,9 @@ fun button(
         changed: Observable<Unit> = observable(),
         trigger: Trigger<Unit> = trigger<Unit>(),
         onLongPressed: (PointerKey) -> Unit = {},
+        onDoubleClick: ((PointerKey) -> Unit)? = null,
         onClick: () -> Unit
 ) = object : Button {
-
     override val content = trigger
     override val shape = shape
     override val changed = changed
@@ -30,12 +30,19 @@ fun button(
 
     var longPressedTask : ScheduledFuture<*>? = null
 
+    var lastPressedInMs: Long? = null
+
+    private val longTapDelayInMs: Long = 700
+    private val maxDoubleClickDelayInMs = 700
+
     override fun onPointerKeyPressed (pointerKey : PointerKey) {
         super.onPointerKeyPressed(pointerKey)
 
-        longPressedTask = scheduleDelayed(delayInMs = 700) {
+        longPressedTask = scheduleDelayed(delayInMs = longTapDelayInMs) {
             try {
                 longPressedTask = null
+                lastPressedInMs = null
+
                 onPointerKeyLongPressed(pointerKey)
             }
             catch(ex : Exception) {
@@ -43,9 +50,22 @@ fun button(
                 ex.printStackTrace()
             }
         }
+
+        val l = lastPressedInMs
+
+        if (onDoubleClick != null && l != null && System.currentTimeMillis() - l < maxDoubleClickDelayInMs) {
+            cancelLongPressed()
+            onDoubleClick(pointerKey)
+        }
+
+        lastPressedInMs = System.currentTimeMillis()
     }
 
     override fun onPointerKeyReleased(pointerKey: PointerKey) {
+        cancelLongPressed()
+    }
+
+    private fun cancelLongPressed() {
         longPressedTask?.cancel(false)
         longPressedTask = null
     }
@@ -55,11 +75,12 @@ fun button(
     }
 }
 
-fun textRectangleButton(inner: TextElement, onLongPressed: (PointerKey) -> Unit = {}, onClick: () -> Unit) = button(
+fun textRectangleButton(inner: TextElement, onLongPressed: (PointerKey) -> Unit = {}, onDoubleClick: (PointerKey) -> Unit = {}, onClick: () -> Unit) = button(
         shape = inner.shape.box(),
         elements = observableIterable(listOf(transformedElement(inner))),
-        onClick = onClick,
-        onLongPressed = onLongPressed
+        onLongPressed = onLongPressed,
+        onDoubleClick = onDoubleClick,
+        onClick = onClick
     )
 
 fun coloredButton(

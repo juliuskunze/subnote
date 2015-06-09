@@ -6,6 +6,6 @@ import com.mindforge.graphics.math.*
 
 interface Screen {
     var content: Composed<*>
-    val shape: Shape
+    val shape: Rectangle
     fun elementsAt(location: Vector2) = content.elementsAt(location)
 }
