@@ -46,7 +46,7 @@ class GlTransformedElement(val originalTransformedElement: TransformedElement<*>
 
 class GlComposed(val originalComposed: Composed<*>, screen: GlScreen) : GlElement<Any?>(originalComposed, screen), Composed<Any?> {
     val glElementList = CopyOnWriteArrayList(originalComposed.elements.mapObservable { GlTransformedElement(it, screen) }.toList())
-    private trait DetachableObservableIterable<T> : ObservableIterable<T> {
+    private interface DetachableObservableIterable<T> : ObservableIterable<T> {
         fun detach()
     }
     override val elements = object : DetachableObservableIterable<TransformedElement<*>> {
@@ -141,8 +141,7 @@ open class GlColoredElement<T>(val originalColoredElement: ColoredElement<T>, sc
 
         val colorHandle = GLES20.glGetUniformLocation(program, "u_Color")
         val color = fill.colorAt(vector(0, 0))
-        GLES20.glUniform4fv(colorHandle, 1, floatArray(
-                color.r.toFloat(),
+        GLES20.glUniform4fv(colorHandle, 1, floatArrayOf(color.r.toFloat(),
                 color.g.toFloat(),
                 color.b.toFloat(),
                 color.a.toFloat()), 0)
@@ -161,7 +160,7 @@ open class GlColoredElement<T>(val originalColoredElement: ColoredElement<T>, sc
     private var drawListBuffer = buildDrawListBuffer()
     fun buildVertexBuffer(): FloatBuffer {
         // 4 bytes per float
-        val byteBuffer = ByteBuffer.allocateDirect(shape.vertexCoordinates.size * 4)
+        val byteBuffer = ByteBuffer.allocateDirect(shape.vertexCoordinates.size() * 4)
         byteBuffer order ByteOrder.nativeOrder()
         val floatBuffer = byteBuffer.asFloatBuffer()
         floatBuffer put shape.vertexCoordinates
@@ -171,7 +170,7 @@ open class GlColoredElement<T>(val originalColoredElement: ColoredElement<T>, sc
 
     fun buildUvBuffer(): FloatBuffer {
         // 4 bytes per float
-        val byteBuffer = ByteBuffer.allocateDirect(shape.textureCoordinates.size * 4)
+        val byteBuffer = ByteBuffer.allocateDirect(shape.textureCoordinates.size() * 4)
         byteBuffer order ByteOrder.nativeOrder()
         val floatBuffer = byteBuffer.asFloatBuffer()
         floatBuffer put shape.textureCoordinates
@@ -181,7 +180,7 @@ open class GlColoredElement<T>(val originalColoredElement: ColoredElement<T>, sc
 
     fun buildDrawListBuffer(): ShortBuffer {
         // 2 bytes per short
-        val byteBuffer = ByteBuffer.allocateDirect(shape.drawOrder.size * 2)
+        val byteBuffer = ByteBuffer.allocateDirect(shape.drawOrder.size() * 2)
         byteBuffer order ByteOrder.nativeOrder()
         val shortBuffer = byteBuffer.asShortBuffer()
         shortBuffer put shape.drawOrder

@@ -9,7 +9,7 @@ object Evernote {
     val evernoteService = EvernoteSession.EvernoteService.SANDBOX;
     val linkPrefix = "https://sandbox.evernote.com/Home.action#b="
     fun isEvernoteLink(url: String) = url.startsWith(linkPrefix)
-    fun extractNotebookGuid(url: String) = url.trimLeading(linkPrefix).split("&").first()
+    fun extractNotebookGuid(url: String) = url.removePrefix(linkPrefix).split("&".toRegex()).toTypedArray().first()
 }
 
 fun Notebook.getWebUrl() = "${Evernote.linkPrefix}${getGuid()}&sh=1&"

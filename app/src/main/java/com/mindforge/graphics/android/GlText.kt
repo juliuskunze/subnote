@@ -40,7 +40,7 @@ class GlFont(resources: Resources) : Font {
                 if (entries.any()) {
                     val tag = entries[0]
                     val values = (entries drop 1 map {
-                        val strings = it.split("=")
+                        val strings = it.split("=".toRegex()).toTypedArray()
                         Pair(strings.first(), strings.last())
                     }).toMap()
                     // TODO: use "when" instead (causes compiler barf right now)
@@ -71,7 +71,7 @@ class GlFont(resources: Resources) : Font {
     val textureName: Int get() = textureNames[0]
 
     init {
-        GLES20.glGenTextures(textureNames.size, textureNames, 0);
+        GLES20.glGenTextures(textureNames.size(), textureNames, 0);
         val bmp = BitmapFactory.decodeResource(resources, R.drawable.roboto_regular)!!;
 
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureName);

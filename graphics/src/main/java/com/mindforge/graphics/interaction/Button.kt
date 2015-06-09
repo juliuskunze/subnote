@@ -4,7 +4,7 @@ import com.mindforge.graphics.*
 import com.mindforge.graphics.math.Shape
 import java.util.concurrent.ScheduledFuture
 
-trait Button : PointersElement<Trigger<Unit>>, Composed<Trigger<Unit>> {
+interface Button : PointersElement<Trigger<Unit>>, Composed<Trigger<Unit>> {
     override fun onPointerKeyPressed (pointerKey: PointerKey) {
         content()
     }

@@ -9,9 +9,9 @@ import org.xmind.core.ITopic
  */
 enum class LinkType {
     /** Nothing happens... */
-    None
+    None,
     /** The hyperlink is a 'regular' link to a web site. */
-    WebUrl
+    WebUrl,
     /** The hyperlink references an Evernote notebook */
     Evernote
 

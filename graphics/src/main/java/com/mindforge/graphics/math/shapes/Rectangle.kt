@@ -5,7 +5,7 @@ import com.mindforge.graphics.Transforms2
 import com.mindforge.graphics.Vector2
 import com.mindforge.graphics.zeroVector2
 
-trait Rectangle : Shape {
+interface Rectangle : Shape {
     val size: Vector2
     val halfSize: Vector2 get() = size / 2
 
@@ -17,7 +17,7 @@ trait Rectangle : Shape {
     }
 }
 
-trait TranslatedRectangle : TransformedShape {
+interface TranslatedRectangle : TransformedShape {
     override val original : Rectangle
     val centerLocation: Vector2
     override val transform : Transform2 get() = Transforms2.translation(centerLocation)

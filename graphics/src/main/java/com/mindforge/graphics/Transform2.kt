@@ -3,7 +3,7 @@ package com.mindforge.graphics
 import com.mindforge.graphics.*
 import com.mindforge.graphics.math.*
 
-trait Transform2 {
+interface Transform2 {
     val matrix: Matrix3
 
     fun invoke(vector: Vector2): Vector2 {

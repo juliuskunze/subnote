@@ -3,7 +3,7 @@ package com.mindforge.graphics
 import com.mindforge.graphics.*
 import com.mindforge.graphics.math.*
 
-trait ColoredElement<out T> : Element<T> {
+interface ColoredElement<out T> : Element<T> {
     val fill: Fill
     fun colorAt(location: Vector2) = if (shape.contains(location)) fill.colorAt(location) else null
 }

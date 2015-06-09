@@ -1,6 +1,6 @@
 package com.mindforge.graphics
 
-trait Trigger<T> : Observable<T> {
+interface Trigger<T> : Observable<T> {
     final fun invoke(info: T) {
         notifyObservers(info)
     }

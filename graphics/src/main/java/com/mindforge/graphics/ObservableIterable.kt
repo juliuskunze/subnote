@@ -1,6 +1,6 @@
 package com.mindforge.graphics
 
-trait ObservableIterable<T> : Iterable<T> {
+interface ObservableIterable<T> : Iterable<T> {
     val added: Observable<T>
     val removed: Observable<T>
 
@@ -19,7 +19,7 @@ trait ObservableIterable<T> : Iterable<T> {
 }
 
 fun <T> ObservableIterable<Observable<T>>.startKeepingAllObserved(observer: (T) -> Unit): Observer {
-    val observersByElement = hashMapOf(*(this.map { it to (it addObserver { observer(it) } ) }.copyToArray()))
+    val observersByElement = hashMapOf(*(this.map { it to (it addObserver { observer(it) } ) }.toTypedArray()))
 
     val o1 = added addObserver { observersByElement.put(it, it addObserver { observer(it) }) }
     val o2 = removed addObserver { observersByElement.remove(it).stop() }

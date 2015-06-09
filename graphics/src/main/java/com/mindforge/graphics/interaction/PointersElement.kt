@@ -9,7 +9,7 @@ fun scheduleDelayed(delayInMs : Long, action: () -> Unit) : ScheduledFuture<*> =
     Executors.newSingleThreadScheduledExecutor().schedule(action, delayInMs, TimeUnit.MILLISECONDS)
 
 
-trait PointersElement<T> : Element<T> {
+interface PointersElement<T> : Element<T> {
     fun onPointerKeyPressed(pointerKey: PointerKey) {}
     fun onPointerKeyReleased(pointerKey: PointerKey) {}
     fun onPointerMoved(pointer: Pointer) {}

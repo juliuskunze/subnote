@@ -8,8 +8,7 @@ import kotlin.properties.Delegates
 
 class GlMatrix(val values: FloatArray) : Matrix3 {
 
-    constructor(m: Matrix3) : this(floatArray(
-            m.a.toFloat(), m.d.toFloat(), 0f, m.g.toFloat(),
+    constructor(m: Matrix3) : this(floatArrayOf(m.a.toFloat(), m.d.toFloat(), 0f, m.g.toFloat(),
             m.b.toFloat(), m.e.toFloat(), 0f, m.h.toFloat(),
             0f, 0f, 1f, 0f,
             m.c.toFloat(), m.f.toFloat(), 0f, m.i.toFloat())

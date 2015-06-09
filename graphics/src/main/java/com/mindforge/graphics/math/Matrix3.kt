@@ -2,7 +2,7 @@ package com.mindforge.graphics
 
 import java.util.concurrent.ConcurrentHashMap
 
-trait Matrix3 : Iterable<Number> {
+interface Matrix3 : Iterable<Number> {
     val a: Number
     val b: Number
     val c: Number

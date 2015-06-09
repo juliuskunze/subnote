@@ -6,7 +6,7 @@ import com.mindforge.graphics.interaction.*
 import com.mindforge.graphics.math.rectangle
 
 enum class State {
-    neverClicked
+    neverClicked,
     clicked
 }
 

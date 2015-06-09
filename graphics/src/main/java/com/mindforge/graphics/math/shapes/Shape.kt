@@ -2,7 +2,7 @@ package com.mindforge.graphics.math
 
 import com.mindforge.graphics.*
 
-trait Shape {
+interface Shape {
     fun contains(location: Vector2): Boolean
     fun transformed(transform: Transform2): TransformedShape = object : TransformedShape {
         override val original = this@Shape
@@ -16,7 +16,7 @@ fun shape(contains: (Vector2) -> Boolean) = object : Shape {
 
 fun concatenatedShape(shapes: Iterable<Shape>) = shape({ location -> shapes.any({ it.contains(location) }) })
 
-trait TransformedShape : Shape {
+interface TransformedShape : Shape {
     val original: Shape
     val transform: Transform2
     override fun contains(location: Vector2) = original.contains(transform.inverse()(location))

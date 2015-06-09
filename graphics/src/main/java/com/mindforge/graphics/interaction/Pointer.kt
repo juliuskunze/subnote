@@ -2,7 +2,7 @@ package com.mindforge.graphics.interaction
 
 import com.mindforge.graphics.*
 
-trait Pointer {
+interface Pointer {
     val moved: Observable<Pointer>
     val location: Vector2
 
@@ -11,7 +11,7 @@ trait Pointer {
         override val location: Vector2 get() = transform.inverse()(this@Pointer.location)
     }
 }
-trait PointerKey {
+interface PointerKey {
     val pointer: Pointer
     val key: Key
 
@@ -23,7 +23,7 @@ fun pointerKey(pointer: Pointer, key: Key): PointerKey = object : PointerKey {
     override val key = key
 }
 
-trait PointerKeys {
+interface PointerKeys {
     val pointer: Pointer
     val keys: Iterable<Key>
     val pressed: Observable<PointerKey>
@@ -37,6 +37,6 @@ fun pointerKeys(pointer: Pointer, keys: Iterable<Key>) = object : PointerKeys {
     override val released = observable((keys map { it.released })) { pointerKey(pointer, it) }
 }
 
-trait Scroll {
+interface Scroll {
     val scrolled: Observable<Number>
 }

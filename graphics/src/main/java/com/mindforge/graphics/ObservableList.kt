@@ -2,7 +2,7 @@ package com.mindforge.graphics
 
 import java.util.ArrayList
 
-trait ObservableList<T> : ObservableIterable<T>, MutableList<T>
+interface ObservableList<T> : ObservableIterable<T>, MutableList<T>
 
 fun observableArrayListOf<T>(vararg elements: T) = ObservableArrayList<T>(elements map { it })
 

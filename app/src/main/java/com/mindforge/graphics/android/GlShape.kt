@@ -36,7 +36,7 @@ class GlTransformedShape(override val original: TransformedShape) : GlShape(orig
     val glOriginal = glShape(original.original)
     override val vertexCoordinates: FloatArray get() {
         val originalCoordinates = glOriginal.vertexCoordinates
-        val result = FloatArray(originalCoordinates.size)
+        val result = FloatArray(originalCoordinates.size())
         val transformed = (glOriginal.vertexCoordinates.withIndices() groupBy { it.first / 2 }).toSortedMap().values() flatMap {
             original.transform(vector(it[0].second, it[1].second)) map { it.toFloat() }
         }
@@ -55,20 +55,18 @@ class GlRectangle(override val original: Rectangle) : GlShape(original) {
     override val vertexCoordinates: FloatArray get() {
         val x = original.size.x.toFloat() / 2
         val y = original.size.y.toFloat() / 2
-        return floatArray(
-                +x, +y, // 0 top right
+        return floatArrayOf(+x, +y, // 0 top right
                 -x, +y, // 1 top left
                 -x, -y, // 2 bottom left
                 +x, -y // 3 bottom right
         )
     }
-    override val textureCoordinates: FloatArray = floatArray(
-            1f, 1f,
+    override val textureCoordinates: FloatArray = floatArrayOf(1f, 1f,
             0f, 1f,
             0f, 0f,
             1f, 0f
     )
     override val textureName = null
-    override val drawOrder = shortArray(0, 1, 2, 3)
+    override val drawOrder = shortArrayOf(0, 1, 2, 3)
     override val glVertexMode: Int = GLES20.GL_TRIANGLE_FAN
 }
