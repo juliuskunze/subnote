@@ -13,7 +13,7 @@ class ComposedSpecs : Spek() {init {
     given("a composed element of a rectangle and a circle") {
         val c = coloredElement(shape = circle(0.6), fill = Fills.solid(Colors.red))
         val r = coloredElement(shape = rectangle(vector(1, 1)), fill = Fills.solid(Colors.blue))
-        val x = composed(observableIterable(listOf(c, r) map { transformedElement(it) : TransformedElement<*> }))
+        val x = composed(observableIterable(listOf(c, r) map { transformedElement(it) as TransformedElement<*> }))
 
         on("getting the shape") {
             val s = x.shape
