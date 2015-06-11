@@ -2,6 +2,7 @@ package com.mindforge.graphics.interaction
 
 import com.mindforge.graphics.*
 import com.mindforge.graphics.math.Shape
+import com.mindforge.graphics.math.rectangle
 import java.util.concurrent.ScheduledFuture
 
 trait Button : PointersElement<Trigger<Unit>>, Composed<Trigger<Unit>> {
@@ -57,10 +58,10 @@ fun button(
 fun textRectangleButton(inner: TextElement, onLongPressed: (PointerKey) -> Unit = {}, onClick: () -> Unit) = button(
         shape = inner.shape.box(),
         elements = observableIterable(listOf(
-                transformedElement(inner) /* DEBUG,
+                transformedElement(inner) /* DEBUG */,
                 transformedElement(coloredElement(inner.shape.box(), Fills.solid(Colors.black * .1))),
                 transformedElement(coloredElement(rectangle(vector(10, 1)), Fills.solid(Colors.blue))),
-                transformedElement(coloredElement(rectangle(vector(1, 10)), Fills.solid(Colors.blue))) */
+                transformedElement(coloredElement(rectangle(vector(1, 10)), Fills.solid(Colors.blue))) /**/
         )),
         onClick = onClick,
         onLongPressed = onLongPressed

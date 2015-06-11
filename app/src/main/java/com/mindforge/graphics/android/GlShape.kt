@@ -24,7 +24,7 @@ fun glShape(original: Shape): GlShape = when (original) {
 }
 
 class GlUnknownShape(original: Shape) : GlShape(original), Shape by original {
-    val ex : Throwable get() = UnsupportedOperationException("No OpenGL implementation for shape '${original}'.")
+    val ex: Throwable get() = UnsupportedOperationException("No OpenGL implementation for shape '${original}'.")
     override val vertexCoordinates: FloatArray get() = throw ex
     override val textureCoordinates: FloatArray get() = throw ex
     override val textureName: Int? get() = throw ex
@@ -53,13 +53,15 @@ class GlTransformedShape(override val original: TransformedShape) : GlShape(orig
 
 class GlRectangle(override val original: Rectangle) : GlShape(original) {
     override val vertexCoordinates: FloatArray get() {
-        val x = original.size.x.toFloat() / 2
-        val y = original.size.y.toFloat() / 2
+        val w2 = original.halfSize.x.toFloat()
+        val h2 = original.halfSize.y.toFloat()
+        val cx = original.center.x.toFloat()
+        val cy = original.center.y.toFloat()
         return floatArray(
-                +x, +y, // 0 top right
-                -x, +y, // 1 top left
-                -x, -y, // 2 bottom left
-                +x, -y // 3 bottom right
+                cx + w2, cy + h2, // 0 top right
+                cx - w2, cy + h2, // 1 top left
+                cx - w2, cy - h2, // 2 bottom left
+                cx + w2, cy - h2 /// 3 bottom right
         )
     }
     override val textureCoordinates: FloatArray = floatArray(

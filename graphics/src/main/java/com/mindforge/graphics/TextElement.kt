@@ -2,7 +2,6 @@ package com.mindforge.graphics
 
 import com.mindforge.graphics.math.Shape
 import com.mindforge.graphics.math.rectangle
-import com.mindforge.graphics.math.topLeftAtOrigin
 import kotlin.properties.Delegates
 
 trait TextElement : ColoredElement<String> {
@@ -55,7 +54,7 @@ trait TextShape : Shape {
             lineHeight.toDouble() * text.lineCount() + leading.toDouble() * (text.lineCount() - 1)
     )
 
-    fun box() = rectangle(size()).topLeftAtOrigin()
+    fun box() = rectangle(size(), quadrant = 4)
 }
 
 trait Font {
