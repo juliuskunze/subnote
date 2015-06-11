@@ -1,9 +1,10 @@
 package com.mindforge.test.graphics.shapes
 
 import com.mindforge.graphics.math.rectangle
-import com.mindforge.graphics.math.topLeftAtOrigin
 import com.mindforge.graphics.vector
 import org.jetbrains.spek.api.*
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class RectangleSpecs : Spek() {init {
     given("a rectangle") {
@@ -26,11 +27,11 @@ class RectangleSpecs : Spek() {init {
         }
 
         on("calling topLeftAtOrigin") {
-            val newRect = x.topLeftAtOrigin()
+            val newRect = rectangle(x.size, quadrant = 4)
 
             it("should be translated accordingly") {
-                assert(!newRect.contains(vector(0.1, 0.1)))
-                assert(newRect.contains(vector(0.9, -2.9)))
+                assertFalse(newRect.contains(vector(0.1, 0.1)))
+                assertTrue(newRect.contains(vector(0.9, -2.9)))
             }
         }
     }
