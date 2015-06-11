@@ -8,7 +8,11 @@ trait Rectangle : Shape {
     val center: Vector2
     val halfSize: Vector2 get() = size / 2
 
-    override fun contains(location: Vector2) = Math.abs(location.x.toDouble()) <= halfSize.x.toDouble() && Math.abs(location.y.toDouble()) <= halfSize.y.toDouble()
+    override fun contains(location: Vector2) = (location - center).let {
+        listOf(it.x to halfSize.x, it.y to halfSize.y).all {
+            Math.abs(it.first.toDouble()) <= it.second.toDouble()
+        }
+    }
 
     final fun translated(offset: Vector2) = rectangle(size, center + offset)
 }
