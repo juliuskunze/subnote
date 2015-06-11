@@ -1,22 +1,14 @@
 <resources>
     <string name="app_name">MindForge</string>
 
-    <string name="action_settings">Settings</string>
-    <string name="open_from_drive">Open from Drive</string>
-    <string name="save_to_drive">Save to Drive</string>
-    <string name="open_from_documents">Open from file</string>
-    <string name="drive_title">From Drive</string>
-    <string name="drive_example">Drive Example</string>
-    <string name="import_from_evernote">Import from Evernote</string>
-    <string name="new_subnote">New Subnode</string>
-    <string name="remove_note">Delete Node</string>
-    <string name="new_note">New Node</string>
-    <string name="edit_note">Edit Node</string>
-    <string name="link_note">Link Node</string>
-    <string name="update_links">Update Links</string>
-    <string name="none">none</string>
-    <string name="url">Web</string>
-    <string name="evernote">Evernote</string>
-    <string name="gmail">Gmail</string>
-    <string name="create_new">Create new map</string>
+    <string name="open_xmind_from_drive">Open XMind File from Drive</string>
+    <string name="save_xmind_to_drive">Save XMind File to Drive</string>
+    <string name="drive_title">XMind File</string>
+    <string name="new_subnote">New Subnote</string>
+    <string name="remove_note">Delete Note</string>
+    <string name="new_note">New Note</string>
+    <string name="edit_note">Edit Note</string>
+    <string name="link_note">Link Note</string>
+    <string name="give_feedback">Give Feedback</string>
+    <string name="donate">Support Us With Pizza</string>
 </resources>

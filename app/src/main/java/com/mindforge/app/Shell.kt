@@ -21,11 +21,11 @@ class Shell(val screen: Screen,
             val workbook: IWorkbook,
             val onOpenHyperlink: (String) -> Unit,
             val textChanged: Observable<String>,
-            val nodeLinkChanged: Observable<NodeLink>,
+            val noteLinkChanged: Observable<NoteLink>,
             val onActiveTopicChanged: (ITopic?) -> Unit,
-            val newNote: Trigger<Unit>,
-            val newSubnote: Trigger<Unit>,
-            val removeNode: Trigger<Unit>,
+            val newNote: Trigger<String>,
+            val newSubnote: Trigger<String>,
+            val removeNote: Trigger<Unit>,
             val vibrate: () -> Unit
 ) {
     val topicElementCache = HashMap<ITopic, TopicElement>()
@@ -50,17 +50,17 @@ class Shell(val screen: Screen,
     val draggedElements = observableArrayListOf<TransformedElement<*>>()
     val draggable = Draggable(composed(draggedElements))
 
-    class DropInfo(val newParent: TopicImpl, val newChildIndex: Int)
+    class DropInfo(val dragged: TopicImpl, val newParent: TopicImpl, val newSubIndex: Int)
 
-    fun updateByDragLocation() {
-        val dropInfoIfChanged = rootTopicElement.dropInfoIfChanged(draggable.dragLocation)
+    fun updateByDragLocation(dragged: TopicImpl) {
+        val dropInfoIfChanged = rootTopicElement.dropInfoIfChanged(dragged, draggable.dragLocation)
         if (dropInfoIfChanged != null) {
             dropInfo = dropInfoIfChanged
         }
     }
 
     var dropInfo: DropInfo? by Delegates.observed<DropInfo?>(null, { old, new ->
-        if (old?.newParent !== new?.newParent || old?.newChildIndex != new?.newChildIndex) {
+        if(old?.newParent !== new?.newParent || old?.newSubIndex != new?.newSubIndex) {
             old?.newParent?.dispatchDragDropPreviewChanged()
             new?.newParent?.dispatchDragDropPreviewChanged()
         }
@@ -70,10 +70,10 @@ class Shell(val screen: Screen,
         draggable.dragLocation = dragLocation
         dragged.setFolded(true)
 
-        updateByDragLocation()
+        updateByDragLocation(dragged)
 
         val draggedObserver = draggable.moved addObserver {
-            updateByDragLocation()
+            updateByDragLocation(dragged)
         }
 
         draggable.dropped addObserver {
@@ -94,10 +94,12 @@ class Shell(val screen: Screen,
             val oldParent = dragged.getParent()
             val oldIndex = dragged.getIndex()
             oldParent.remove(dragged)
-            val correctedNewChildIndex = if (oldParent == d.newParent && oldIndex < d.newChildIndex)
-                d.newChildIndex - 1 else
-                d.newChildIndex
+            val correctedNewChildIndex = if (oldParent == d.newParent && oldIndex < d.newSubIndex)
+                d.newSubIndex - 1 else
+                d.newSubIndex
             d.newParent.add(dragged, correctedNewChildIndex)
+
+            dragged.dispatchDropped()
         }
     }
 
@@ -108,8 +110,8 @@ class Shell(val screen: Screen,
     )
     val mainContent = Scrollable(composed(mainElements))
 
-    private fun initializeNewNote(newNote: ITopic) {
-        newNote.setTitleText("new note")
+    private fun initializeNewNote(newNote: ITopic, text: String) {
+        newNote.setTitleText(text)
         newNote.getParent().setFolded(false)
 
         activeNote = newNote as TopicImpl
@@ -120,30 +122,30 @@ class Shell(val screen: Screen,
             activeNote.setTitleText(it)
         }
 
-        nodeLinkChanged addObserver {
+        noteLinkChanged addObserver {
             it.updateTopic(activeNote)
         }
 
         newNote addObserver {
             val newNote = workbook.createTopic()
 
-            val parentIfHas = activeNote.getParent()
-            if (parentIfHas != null) {
-                parentIfHas.add(newNote, activeNote.getIndex() + 1)
-            } else {
-                activeNote.add(newNote)
-            }
-            initializeNewNote(newNote)
+                val parentIfHas = activeNote.getParent()
+                if (parentIfHas != null) {
+                    parentIfHas.add(newNote, activeNote.getIndex() + 1)
+                } else {
+                    activeNote.add(newNote)
+                }
+                initializeNewNote(newNote, text = it)
         }
 
         newSubnote addObserver {
             val newNote = workbook.createTopic()
             activeNote.add(newNote)
 
-            initializeNewNote(newNote)
+                initializeNewNote(newNote, text = it)
         }
 
-        removeNode addObserver {
+        removeNote addObserver {
             val parentIfHas = activeNote.getParent()
             if (parentIfHas != null) {
                 parentIfHas.remove(activeNote)
@@ -159,7 +161,6 @@ class Shell(val screen: Screen,
     }
 
     inner class TopicElement(topic: TopicImpl) : Composed<ITopic> {
-
         override val content = topic
         override val changed = trigger<Unit>()
         override val elements = ObservableArrayList<TransformedElement<*>>()
@@ -177,12 +178,12 @@ class Shell(val screen: Screen,
         }
 
         private var mainLine: MainLine by Delegates.notNull()
-        private var childStack: Stack by Delegates.notNull()
+        private var subStack: Stack by Delegates.notNull()
 
         init {
             initElementsAndStackable()
 
-            val eventTypes = listOf(Core.TopicAdd, Core.TopicRemove, Core.TopicFolded, Core.TopicHyperlink, Core.TopicNotes, CoreEventTypeExtensions.dragDropPreviewChanged)
+            val eventTypes = listOf(Core.TopicAdd, Core.TopicRemove, Core.TopicFolded, Core.TopicHyperlink, Core.TopicNotes, CoreEventTypeExtensions.dragDropPreviewChanged, CoreEventTypeExtensions.dropped)
             eventTypes.forEach { content.registerCoreEventListener(it) { initElementsAndStackable() } }
 
             content.registerCoreEventListener(CoreEventTypeExtensions.isActiveChanged) {
@@ -203,17 +204,17 @@ class Shell(val screen: Screen,
 
             mainLine = mainLine()
             subStackables.clearAndAddAll(subElements())
-            childStack = verticalStack(observableIterable(subStackables), align = false)
+            subStack = verticalStack(observableIterable(subStackables), align = false)
 
             elements.clearAndAddAll(listOf(
                     mainLine.transformedStack(),
-                    transformedElement(childStack, childStackTransform()))
+                    transformedElement(subStack, subStackTransform()))
             )
 
             val observer = subStackables.mapObservable { it.shapeChanged }.startKeepingAllObserved { updateStackableShape() }
 
             toStop = {
-                listOf(mainLine.stack, childStack).forEach { it.removeObservers() }
+                listOf(mainLine.stack, subStack).forEach { it.removeObservers() }
                 observer.stop()
             }
 
@@ -222,7 +223,7 @@ class Shell(val screen: Screen,
 
         val nestingLevel : Int get() = content.getPath().toTopicList().count() - 1
         val lineHeight : Int get() = this@Shell.lineHeight(nestingLevel)
-        val childLineHeight : Int get() = this@Shell.lineHeight(nestingLevel + 1)
+        val subLineHeight: Int get() = this@Shell.lineHeight(nestingLevel + 1)
 
         private fun subElements(): List<Stackable> {
             val dropPlaceholderIfHas = dropPlaceHolderIfHas()
@@ -232,7 +233,7 @@ class Shell(val screen: Screen,
 
             return if (dropPlaceholderIfHas == null || content.isFolded()) childTopicsIfUnfolded else {
                 val list = childTopicsIfUnfolded.toArrayList()
-                list.add(dropInfo!!.newChildIndex, dropPlaceholderIfHas)
+                list.add(dropInfo!!.newSubIndex, dropPlaceholderIfHas)
                 list
             }
         }
@@ -240,8 +241,8 @@ class Shell(val screen: Screen,
         private fun dropPlaceHolderIfHas(): Stackable? {
             val d = dropInfo
             return if (d == null) null else if (d.newParent != content) null else {
-                val s = TextElementImpl(" ", fill = mainColor(), font = defaultFont, lineHeight = childLineHeight)
-                Stackable(s, s.shape.boxWithBorder())
+                val textShape = TextElementImpl(d.dragged.getTitleText(), fill = mainColor(), font = defaultFont, lineHeight = subLineHeight).shape
+                Stackable(coloredElement(textShape.box(), fill = Fills.solid(Colors.gray(0.8))), textShape.boxWithBorder())
             }
         }
 
@@ -274,8 +275,14 @@ class Shell(val screen: Screen,
 
                 Stackable(element, linkButtonTextElement.shape.boxWithBorder())
             }
-            val collapseButtonIfHas = if (topic.getAllChildren().any()) {
-                val element = TextElementImpl(if (topic.isFolded()) " + " else " - ", fill = Fills.solid(Colors.gray), font = defaultFont, lineHeight = lineHeight)
+
+            val d = dropInfo
+
+            val isDropLocation = d != null && d.newParent == this.content
+            val collapseButtonIfHas = if (topic.getAllChildren().any() || isDropLocation) {
+                val isDropLocationAndFolded = isDropLocation && content.isFolded()
+                val color = if (isDropLocationAndFolded) Colors.red else Colors.gray
+                val element = TextElementImpl(if (topic.isFolded()) " + " else " - ", fill = Fills.solid(color), font = defaultFont, lineHeight = lineHeight)
                 val button = textRectangleButton(element) {
                     topic.setFolded(!topic.isFolded())
                 }
@@ -292,34 +299,34 @@ class Shell(val screen: Screen,
         }
 
         // TODO remove height Schlemian:
-        private fun stackableShape() = rectangle(vector(infinity, mainLine.height() + childStack.length())).topLeftAtOrigin()
+        private fun stackableShape() = rectangle(vector(infinity, mainLine.height() + subStack.length())).topLeftAtOrigin()
 
-        private fun childStackTransform() = Transforms2.translation(vector(indent, -mainLine.height()))
+        private fun subStackTransform() = Transforms2.translation(vector(indent, -mainLine.height()))
         private fun totalHeightSlice() = stackableShape().transformed(Transforms2.translation(vector(-infinity / 2, 0)))
 
-        private fun childrenStackShape() = rectangle(vector(infinity, childStack.length())).topLeftAtOrigin()
-        private fun halfPlaneWhereDropOnChildCreatesChildChildnode() = object : Shape {
+        private fun subStackShape() = rectangle(vector(infinity, subStack.length())).topLeftAtOrigin()
+        private fun halfPlaneWhereDropOnSubCreatesSubSubnote() = object : Shape {
             override fun contains(location: Vector2) = location.x.toDouble() > 3 * indent
         }
 
-        fun dropInfoIfChanged(dropLocation: Vector2): DropInfo? {
-            fun dropAsFirstChild() = DropInfo(newParent = content, newChildIndex = 0)
-            fun dropHereAsLastChild() = DropInfo(newParent = content, newChildIndex = content.getAllChildren().count())
-            fun dropAboveAsSibling(topic: TopicImpl) = DropInfo(newParent = topic.getParent() as TopicImpl, newChildIndex = topic.getIndex() + 1)
-            fun locationRelativeTo(child: TransformedElement<*>) = (childStackTransform() before child.transform).inverse()(dropLocation)
+        fun dropInfoIfChanged(dragged: TopicImpl, dropLocation: Vector2): DropInfo? {
+            fun dropAsFirstChild() = DropInfo(dragged = dragged, newParent = content, newSubIndex = 0)
+            fun dropHereAsLastChild() = DropInfo(dragged = dragged, newParent = content, newSubIndex = content.getAllChildren().count())
+            fun dropAboveAsSibling(topic: TopicImpl) = DropInfo(dragged = dragged, newParent = topic.getParent() as TopicImpl, newSubIndex = topic.getIndex() + 1)
+            fun locationRelativeTo(child: TransformedElement<*>) = (subStackTransform() before child.transform).inverse()(dropLocation)
             fun placeHolderUnchanged() = null
 
             val isInMainLineHeight = mainLine.heightSlice().contains(dropLocation)
-            val isInChildHalfPlane = halfPlaneWhereDropOnChildCreatesChildChildnode().contains(dropLocation)
-            val childInHeight = childStack.elements.filter {
+            val isInChildHalfPlane = halfPlaneWhereDropOnSubCreatesSubSubnote().contains(dropLocation)
+            val childInHeight = subStack.elements.filter {
                 val element = it.element
                 element is TopicElement && element.totalHeightSlice().contains(locationRelativeTo(it))
             }.singleOrNull()
 
-            return if (isInChildHalfPlane && isInMainLineHeight) dropAsFirstChild()
-            else if (childInHeight == null && childrenStackShape().contains(dropLocation)) placeHolderUnchanged()
-            else if (childInHeight == null) dropHereAsLastChild()
-            else if (isInChildHalfPlane) (childInHeight.element as TopicElement).dropInfoIfChanged(locationRelativeTo(childInHeight))
+            return if(isInChildHalfPlane && isInMainLineHeight) dropAsFirstChild()
+            else if(childInHeight == null && subStackShape().contains(dropLocation)) placeHolderUnchanged()
+            else if(childInHeight == null) dropHereAsLastChild()
+            else if (isInChildHalfPlane) (childInHeight.element as TopicElement).dropInfoIfChanged(dragged, locationRelativeTo(childInHeight))
             else dropAboveAsSibling((childInHeight.element as TopicElement).content)
         }
     }
@@ -387,6 +394,10 @@ fun TopicImpl.dispatchDragDropPreviewChanged() {
     dispatchEvent(CoreEventTypeExtensions.dragDropPreviewChanged)
 }
 
+fun TopicImpl.dispatchDropped() {
+    dispatchEvent(CoreEventTypeExtensions.dragDropPreviewChanged)
+}
+
 fun TopicImpl.dispatchEvent(type: String) {
     getCoreEventSupport().dispatch(this, CoreEvent(this, type, null))
 }
@@ -395,7 +406,10 @@ fun ITopic.add(child: ITopic, index: Int) {
     add(child, index, ITopic.ATTACHED)
 }
 
+fun ITopic.getChildrenRecursively() : List<ITopic> = getAllChildren().flatMap { listOf(it) + it.getChildrenRecursively()}
+
 private object CoreEventTypeExtensions {
     val isActiveChanged = "isActive"
     val dragDropPreviewChanged = "dragDropPreview"
+    val dropped = "dropped"
 }

@@ -1,12 +1,18 @@
 package com.mindforge.app
 
 import android.app.Activity
+import android.app.PendingIntent
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.ServiceConnection
 import android.os.Bundle
+import android.os.IBinder
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.ViewConfiguration
+import com.android.vending.billing.IInAppBillingService
 import com.evernote.client.android.EvernoteSession
 import com.evernote.client.android.OnClientCallback
 import com.evernote.edam.type.Notebook
@@ -28,7 +34,11 @@ import com.mindforge.graphics.observableIterable
 import com.mindforge.graphics.trigger
 import kotlinx.android.synthetic.activity_main.mindMapLayout
 import org.jetbrains.anko.browse
+import org.jetbrains.anko.longToast
+import org.jetbrains.anko.toast
 import org.jetbrains.anko.vibrator
+import org.json.JSONException
+import org.json.JSONObject
 import org.xmind.core.Core
 import org.xmind.core.ITopic
 import org.xmind.core.IWorkbook
@@ -39,10 +49,20 @@ import java.io.FileOutputStream
 import java.io.InputStream
 import kotlin.properties.Delegates
 
-public class MainActivity : Activity() {
+/*
+Outside of MainActivity because screen rotation destroys the current MainActivity and creates a new one: http://developer.android.com/training/basics/activity-lifecycle/recreating.html
+*/
+object ApplicationState {
+    var initialized = false
+    var workbook: IWorkbook by Delegates.notNull()
+}
 
-    var analytics: GoogleAnalytics by Delegates.notNull()
-    var tracker: Tracker by Delegates.notNull()
+public class MainActivity : Activity() {
+    var analytics : GoogleAnalytics by Delegates.notNull()
+    var tracker : Tracker by Delegates.notNull()
+    val donationService : DonationService by Delegates.lazy { DonationService(this, IntentCode.donate) }
+    var isDonator: Boolean = false
+    var menu : Menu by Delegates.notNull()
 
     val localWorkbookFile: File get() = File(getFilesDir(), "MindForge.xmind")
 
@@ -52,16 +72,27 @@ public class MainActivity : Activity() {
         analytics = GoogleAnalytics.getInstance(this)
         analytics.setLocalDispatchPeriod(1800)
         tracker = analytics.newTracker("UA-63277540-1")
-        tracker.enableExceptionReporting(true);
-        tracker.enableAdvertisingIdCollection(true);
-        tracker.enableAutoActivityTracking(true);
-        tracker.setScreenName(javaClass.getSimpleName());
+        tracker.enableExceptionReporting(true)
+        tracker.enableAdvertisingIdCollection(true)
+        tracker.enableAutoActivityTracking(true)
+        tracker.setScreenName(javaClass.getSimpleName())
 
         setContentView(R.layout.activity_main)
 
         enableOverflowMenuButtonEvenIfHardwareMenuButtonExists()
 
-        openFromDocuments()
+        if (!ApplicationState.initialized) {
+            ApplicationState.initialized = true
+            openFromDeviceOrCreateDefault()
+        } else {
+            open(ApplicationState.workbook)
+        }
+    }
+
+    private fun adaptMenuToIsDonator() {
+        isDonator = true
+        // TODO translate
+        menu.findItem(R.id.giveFeedback).setTitle("Give High Priority Feedback")
     }
 
     /*
@@ -81,18 +112,18 @@ public class MainActivity : Activity() {
     }
 
     private val textChanged = trigger<String>()
-    private val nodeLinkChanged = trigger<NodeLink>()
-    private val newNote = trigger<Unit>()
-    private val newSubnote = trigger<Unit>()
-    private val removeNode = trigger<Unit>()
+    private val noteLinkChanged = trigger<NoteLink>()
+    private val newNote = trigger<String>()
+    private val newSubnote = trigger<String>()
+    private val removeNote = trigger<Unit>()
 
-    fun linkNode() {
+    fun linkNote() {
         showSelectDialog("Select link type", LinkType.values().toList()) { linkType ->
             when (linkType) {
-                LinkType.None -> nodeLinkChanged(NodeLink(linkType, null))
+                LinkType.None -> noteLinkChanged(NoteLink(linkType, null))
                 LinkType.WebUrl -> showInputDialog("Edit Web URL", currentUrl) {
                     if (it != null) {
-                        nodeLinkChanged(NodeLink(linkType, it))
+                        noteLinkChanged(NoteLink(linkType, it))
                         currentUrl = it
                     }
                 }
@@ -108,7 +139,7 @@ public class MainActivity : Activity() {
                                     }
                                 }) {
                                     if (it != null) {
-                                        nodeLinkChanged(EvernoteLink(it.notebook, noteStoreClient))
+                                        noteLinkChanged(EvernoteLink(it.notebook, noteStoreClient))
                                     }
                                 }
                             }
@@ -124,8 +155,8 @@ public class MainActivity : Activity() {
         }
     }
 
-    fun editNode() {
-        showInputDialog("Edit Node", currentText) {
+    fun editNote() {
+        showInputDialog("Edit Note", currentText) {
             if (it != null) {
                 textChanged(it)
                 currentText = it
@@ -134,44 +165,41 @@ public class MainActivity : Activity() {
     }
 
 
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
         getMenuInflater().inflate(R.menu.menu_main, menu)
+        this.menu = menu
+
+        donationService.ifIsDonator { adaptMenuToIsDonator() }
+
         return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        trackMenuAction(item)
 
-        //https://developer.android.com/reference/com/google/android/gms/analytics/HitBuilders.html
-        tracker.send(HitBuilders.EventBuilder()
-                .setCategory("UX")
-                .setAction("Menu")
-                .setLabel(item.getTitle().toString())
-                .build()
-        )
-
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        val id = item.getItemId()
-
-        return when (id) {
-            R.id.open_from_drive -> {
+        return when (item.getItemId()) {
+            R.id.open_xmind_from_drive -> {
                 openFromDrive()
                 true
             }
-
             R.id.newNoteButton -> {
-                newNote()
+                showInputDialog("New Note", "") {
+                    if (it != null && it != "") {
+                        newNote(it)
+                    }
+                }
                 true
             }
-
             R.id.newSubnoteButton -> {
-                newSubnote()
+                showInputDialog("New Subnote", "") {
+                    if (it != null && it != "") {
+                        newSubnote(it)
+                    }
+                }
                 true
             }
-
             R.id.removeNoteButton -> {
-                removeNode()
+                removeNote()
                 true
             }
 
@@ -181,12 +209,21 @@ public class MainActivity : Activity() {
             }
 
             R.id.linkNoteButton -> {
-                linkNode()
+                linkNote()
+                true
+            }
+            R.id.editNoteButton -> {
+                editNote()
+                true
+            }
+            R.id.giveFeedback -> {
+                giveFeedback()
                 true
             }
 
-            R.id.updateLinksButton -> {
-                updateLinks(workbook.getPrimarySheet().getRootTopic())
+            R.id.donate -> {
+                donationService.invoke()
+
                 true
             }
 
@@ -196,23 +233,54 @@ public class MainActivity : Activity() {
         }
     }
 
-    fun createNew() {
+    private fun trackMenuAction(item: MenuItem) {
+        //https://developer.android.com/reference/com/google/android/gms/analytics/HitBuilders.html
+        tracker.send(HitBuilders.EventBuilder()
+                .setCategory("UX")
+                .setAction("Menu")
+                .setLabel(item.getTitle().toString())
+                .build()
+        )
+    }
+
+    private fun giveFeedback() {
+        val highPriority = isDonator
+        //TODO translate
+        showInputDialog(if(highPriority) "Give High Priority Feedback" else "Give Feedback", "") {
+            if(it != null && it != "") {
+                trackFeedback(it, highPriority = highPriority)
+                toast("Feedback sent. Thank you!")
+            }
+        }
+    }
+
+    private fun trackFeedback(text: String, highPriority : Boolean = false) {
+        val action = if(highPriority) "Text (High Priority)" else "Text"
+        tracker.send(HitBuilders.EventBuilder()
+                .setCategory("Feedback")
+                .setAction(action)
+                .setLabel(text)
+                .build()
+        )
+    }
+
+    fun createDefaultMindMap() {
         val file = File(getCacheDir(), "temp.xmind")
         getResources().openRawResource(R.raw.start).writeToFile(file)
         open(file)
     }
 
-    private fun openFromDocuments() {
+    private fun openFromDeviceOrCreateDefault() {
         if (localWorkbookFile.exists()) {
             try {
                 open(localWorkbookFile)
             } catch (ex: Exception) {
                 ex.printStackTrace()
                 localWorkbookFile.delete()
-                createNew()
+                createDefaultMindMap()
             }
         } else {
-            createNew()
+            createDefaultMindMap()
         }
     }
 
@@ -221,11 +289,13 @@ public class MainActivity : Activity() {
     }
 
     private fun openFromDrive() {
-        if (!driveFileOpenerApiClient.isConnected()) {
-            driveFileOpenerApiClient.connect()
-            // chooseFileFromDrive will be called in onConnected.
+        if (!driveFileOpenerClient.isConnected()) {
+            driveFileOpenerClient.connect()
+
+            // chooseFileFromDrive() called in onConnected()
             return
         }
+
         chooseFileFromDrive()
     }
 
@@ -239,14 +309,14 @@ public class MainActivity : Activity() {
 
     private fun save(file: File) {
         openFileOutput(file.name, Context.MODE_PRIVATE).let {
-            workbook.save(it)
+            ApplicationState.workbook.save(it)
             it.close()
         }
     }
 
     private val workbookBuilder: WorkbookBuilderImpl by Delegates.lazy { AndroidWorkbookBuilder(cacheDirectory = getCacheDir())() }
 
-    private val driveFileOpenerApiClient: GoogleApiClient by Delegates.lazy {
+    private val driveFileOpenerClient: GoogleApiClient by Delegates.lazy {
         GoogleApiClient.Builder(this).addApi(Drive.API).addScope(Drive.SCOPE_FILE).addConnectionCallbacks(object : GoogleApiClient.ConnectionCallbacks {
             override fun onConnected(connectionHint: Bundle?) {
                 chooseFileFromDrive()
@@ -261,14 +331,19 @@ public class MainActivity : Activity() {
                     GooglePlayServicesUtil.getErrorDialog(result.getErrorCode(), this@MainActivity, 0).show()
                     return
                 }
-                // Called typically when the app is not yet authorized, and an authorization dialog is displayed to the user.
-                result.startResolutionForResult(this@MainActivity, IntentCode.googleClientResolution)
+
+                try {
+                    // Called typically when the app is not yet authorized, and an authorization dialog is displayed to the user.
+                    result.startResolutionForResult(this@MainActivity, IntentCode.googleClientResolution)
+                } catch (ex: Exception) {
+                    Log.e("", "Failed to connect to Play Store.")
+                }
             }
         }).build()
     }
 
     private fun chooseFileFromDrive() {
-        val intentSender = Drive.DriveApi.newOpenFileActivityBuilder().build(driveFileOpenerApiClient)
+        val intentSender = Drive.DriveApi.newOpenFileActivityBuilder().build(driveFileOpenerClient)
 
         startIntentSenderForResult(intentSender, IntentCode.openFileFromDrive, null, 0, 0, 0);
     }
@@ -300,9 +375,9 @@ public class MainActivity : Activity() {
                 }
             IntentCode.openFileFromDrive ->
                 if (resultCode == Activity.RESULT_OK) {
-                    val driveFile = Drive.DriveApi.getFile(driveFileOpenerApiClient, data!!.getExtras().get("response_drive_id") as DriveId)
+                    val driveFile = Drive.DriveApi.getFile(driveFileOpenerClient, data!!.getExtras().get("response_drive_id") as DriveId)
 
-                    driveFile.open(driveFileOpenerApiClient, DriveFile.MODE_READ_ONLY, object : DriveFile.DownloadProgressListener {
+                    driveFile.open(driveFileOpenerClient, DriveFile.MODE_READ_ONLY, object : DriveFile.DownloadProgressListener {
                         override fun onProgress(bytesDownloaded: Long, bytesExpected: Long) {
                             //TODO: mainTextView.setText("loading... " + if (bytesExpected > 0) "$bytesDownloaded / $bytesExpected bytes" else "")
                         }
@@ -318,15 +393,35 @@ public class MainActivity : Activity() {
                     })
 
                 }
+            IntentCode.googleClientResolution ->
+                if (resultCode == Activity.RESULT_OK) {
+                    openFromDrive()
+                }
+            IntentCode.donate -> {
+                if (resultCode == Activity.RESULT_OK) {
+                    try {
+                        //throws if something went wrong:
+                        donationService.resultPurchase(data!!)
+
+                        longToast("Thank you, adventurer! Your feedback has high priority now.")
+
+                        adaptMenuToIsDonator()
+                    } catch (ex : BillingException) {
+                        toast(ex.getMessage()!!)
+                    }
+                }
+            }
         }
     }
-
-    var workbook: IWorkbook by Delegates.notNull()
 
     var currentText = ""
     var currentUrl = ""
     private fun open(workbook: IWorkbook) {
-        this.workbook = workbook
+        ApplicationState.workbook = workbook
+
+        val noteCount = workbook.getPrimarySheet().getRootTopic().getChildrenRecursively().count()
+
+        trackOpenedMap(noteCount)
 
         updateLinks(workbook.getPrimarySheet().getRootTopic())
 
@@ -338,10 +433,10 @@ public class MainActivity : Activity() {
                         currentUrl = it?.getHyperlink() ?: ""
                     },
                     textChanged = textChanged,
-                    nodeLinkChanged = nodeLinkChanged,
+                    noteLinkChanged = noteLinkChanged,
                     newNote = newNote,
                     newSubnote = newSubnote,
-                    removeNode = removeNode,
+                    removeNote = removeNote,
                     vibrate = { vibrator.vibrate(70) })
         }
 
@@ -376,6 +471,17 @@ public class MainActivity : Activity() {
         topic.getAllChildren().forEach { updateLinks (it) }
     }
 
+    private fun trackOpenedMap(noteCount: Int) {
+        tracker.send(HitBuilders.EventBuilder()
+                .setCategory("Content")
+                .setAction("Opened Map")
+                .setLabel("Note Count")
+                .setValue(noteCount.toLong())
+                .build()
+        )
+    }
+
+
     private fun InputStream.writeToFile(file: File) {
         try {
             val output = FileOutputStream(file)
@@ -399,5 +505,6 @@ public class MainActivity : Activity() {
     private object IntentCode {
         val googleClientResolution = 0
         val openFileFromDrive = 1
+        val donate = 2
     }
 }
