@@ -51,11 +51,11 @@ trait TextShape : Shape {
     val lines: List<LineShape>
 
     fun size() = vector(
-                lines.map { it.width.toDouble () }.max() ?: 0.0,
-                lineHeight.toDouble() * text.lineCount() + leading.toDouble() * (text.lineCount() - 1)
+            lines.map { it.width.toDouble () }.max() ?: 0.0,
+            lineHeight.toDouble() * text.lineCount() + leading.toDouble() * (text.lineCount() - 1)
     )
 
-    fun box() = rectangle(size()).topLeftAtOrigin().translated(vector(0, lineHeight.toDouble() - baseline.toDouble()))
+    fun box() = rectangle(size()).topLeftAtOrigin()
 }
 
 trait Font {

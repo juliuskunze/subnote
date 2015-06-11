@@ -5,7 +5,7 @@ import com.mindforge.graphics.math.Shape
 import java.util.concurrent.ScheduledFuture
 
 trait Button : PointersElement<Trigger<Unit>>, Composed<Trigger<Unit>> {
-    override fun onPointerKeyPressed (pointerKey: PointerKey) {
+    override fun onPointerKeyPressed(pointerKey: PointerKey) {
         content()
     }
 }
@@ -28,17 +28,16 @@ fun button(
         trigger addObserver { onClick() }
     }
 
-    var longPressedTask : ScheduledFuture<*>? = null
+    var longPressedTask: ScheduledFuture<*>? = null
 
-    override fun onPointerKeyPressed (pointerKey : PointerKey) {
+    override fun onPointerKeyPressed(pointerKey: PointerKey) {
         super.onPointerKeyPressed(pointerKey)
 
         longPressedTask = scheduleDelayed(delayInMs = 700) {
             try {
                 longPressedTask = null
                 onPointerKeyLongPressed(pointerKey)
-            }
-            catch(ex : Exception) {
+            } catch(ex: Exception) {
                 // TODO better throw it in main thread
                 ex.printStackTrace()
             }
@@ -57,10 +56,15 @@ fun button(
 
 fun textRectangleButton(inner: TextElement, onLongPressed: (PointerKey) -> Unit = {}, onClick: () -> Unit) = button(
         shape = inner.shape.box(),
-        elements = observableIterable(listOf(transformedElement(inner))),
+        elements = observableIterable(listOf(
+                transformedElement(inner) /* DEBUG,
+                transformedElement(coloredElement(inner.shape.box(), Fills.solid(Colors.black * .1))),
+                transformedElement(coloredElement(rectangle(vector(10, 1)), Fills.solid(Colors.blue))),
+                transformedElement(coloredElement(rectangle(vector(1, 10)), Fills.solid(Colors.blue))) */
+        )),
         onClick = onClick,
         onLongPressed = onLongPressed
-    )
+)
 
 fun coloredButton(
         shape: Shape,
