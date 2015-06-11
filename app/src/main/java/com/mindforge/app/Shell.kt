@@ -133,7 +133,7 @@ class Shell(val screen: Screen,
     }
 
     private fun parentHeadline() = composed(observableArrayListOf<TransformedElement<*>>(
-            transformedElement(horizontalStack(observableIterable(ancestorHeadlineElements())), Transforms2.translation(vector(0, -defaultFont.shape(" ", ancestorsLineHeight).boxWithBorder().original.size.y.toDouble())))
+            transformedElement(horizontalStack(observableIterable(ancestorHeadlineElements())), Transforms2.translation(vector(0, -defaultFont.shape(" ", ancestorsLineHeight).boxWithBorder().size.y.toDouble())))
     ))
 
     private fun mainContent() = composed(

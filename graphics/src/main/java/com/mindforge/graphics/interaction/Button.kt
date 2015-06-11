@@ -78,10 +78,10 @@ fun button(
 fun textRectangleButton(inner: TextElement, onLongPressed: (PointerKey) -> Unit = {}, onDoubleClick: (PointerKey) -> Unit = {}, onClick: () -> Unit) = button(
         shape = inner.shape.box(),
         elements = observableIterable(listOf(
-                transformedElement(inner) /* DEBUG */,
+                transformedElement(inner) /* DEBUG ,
                 transformedElement(coloredElement(inner.shape.box(), Fills.solid(Colors.black * .1))),
                 transformedElement(coloredElement(rectangle(vector(10, 1)), Fills.solid(Colors.blue))),
-                transformedElement(coloredElement(rectangle(vector(1, 10)), Fills.solid(Colors.blue))) /**/
+                transformedElement(coloredElement(rectangle(vector(1, 10)), Fills.solid(Colors.blue))) */
         )),
         onLongPressed = onLongPressed,
         onDoubleClick = onDoubleClick,
