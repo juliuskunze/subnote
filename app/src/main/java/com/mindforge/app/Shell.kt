@@ -55,7 +55,7 @@ class Shell(val screen: Screen,
     class DropInfo(val dragged: TopicImpl, val newParent: TopicImpl, val newSubIndex: Int)
 
     fun updateByDragLocation(dragged: TopicImpl) {
-        val dropInfoIfChanged = rootTopicElement.dropInfoIfChanged(dragged, draggable.dragLocation)
+        val dropInfoIfChanged = rootElement.dropInfoIfChanged(dragged, draggable.dragLocation)
         if (dropInfoIfChanged != null) {
             dropInfo = dropInfoIfChanged
         }
@@ -105,12 +105,11 @@ class Shell(val screen: Screen,
         }
     }
 
-    var displayedRootTopic = workbook.getPrimarySheet().getRootTopic() as TopicImpl
-
-    val rootTopicElement = TopicElement(displayedRootTopic)
+    var root = workbook.getPrimarySheet().getRootTopic() as TopicImpl
+    val rootElement : TopicElement get() = cachedElementOrAdd(root)
 
     fun changeDisplayedRootTopicElement(newRoot: TopicImpl) {
-        displayedRootTopic = newRoot
+        root = newRoot
         setMainContent()
 
         fun refresh(t: TopicElement) {
@@ -123,11 +122,15 @@ class Shell(val screen: Screen,
 
     val ancestorsLineHeight = lineHeight(1)
 
-    private fun ancestorHeadlineElements() = displayedRootTopic.ancestors().map {
-        val textElement = TextElementImpl(it.getTitleText() + " >", fill = Fills.solid(Colors.black), font = defaultFont, lineHeight = ancestorsLineHeight)
-        Stackable(textRectangleButton(textElement) {
-            changeDisplayedRootTopicElement(it as TopicImpl)
-        }, shape = textElement.shape.boxWithBorder())
+    private fun ancestorHeadlineElements() = root.ancestors().flatMap {
+        fun stackable(text: String = it.getTitleText(), color: Color = Colors.black) : Stackable {
+            val textElement = TextElementImpl(text, fill = Fills.solid(color), font = defaultFont, lineHeight = ancestorsLineHeight)
+            return Stackable(textRectangleButton(textElement) {
+                changeDisplayedRootTopicElement(it as TopicImpl)
+            }, shape = textElement.shape.boxWithBorder())
+        }
+
+        listOf(stackable(), stackable(" > ", Colors.gray))
     }
 
     private fun parentHeadline() = composed(observableArrayListOf<TransformedElement<*>>(
@@ -140,7 +143,7 @@ class Shell(val screen: Screen,
                     transformedElement(Scrollable(
                             composed(observableArrayListOf(
                                     transformedElement(draggable),
-                                    transformedElement(cachedElementOrAdd(displayedRootTopic))
+                                    transformedElement(rootElement)
                             )))
                     )
             )
@@ -263,7 +266,7 @@ class Shell(val screen: Screen,
             updateStackableShape()
         }
 
-        val nestingLevel: Int get() = content.getPath().toTopicList().count() - displayedRootTopic.getPath().toTopicList().count()
+        val nestingLevel: Int get() = content.getPath().toTopicList().count() - root.getPath().toTopicList().count()
         val lineHeight : Int get() = this@Shell.lineHeight(nestingLevel)
         val subLineHeight: Int get() = this@Shell.lineHeight(nestingLevel + 1)
 
@@ -302,7 +305,7 @@ class Shell(val screen: Screen,
                 val draggedMainLine = mainLine()
                 val stack = draggedMainLine.stack
                 draggedElements.add(transformedElement(stack, Transforms2.translation(-draggedMainLine.buttonContent.shape.size() / 2)))
-                val elementToRoot = rootTopicElement.totalTransform(mainButton!!.element).inverse()
+                val elementToRoot = rootElement.totalTransform(mainButton!!.element).inverse()
                 val pointerKeyRelativeToRoot = it.transformed(elementToRoot)
 
                 this@Shell.startDrag(dragged = content, dragLocation = pointerKeyRelativeToRoot.pointer.location, pointerKey = pointerKeyRelativeToRoot)
