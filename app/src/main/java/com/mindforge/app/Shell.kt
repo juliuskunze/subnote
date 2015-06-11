@@ -2,10 +2,9 @@ package com.mindforge.app
 
 import com.mindforge.graphics.*
 import com.mindforge.graphics.interaction.*
+import com.mindforge.graphics.math.Rectangle
 import com.mindforge.graphics.math.Shape
-import com.mindforge.graphics.math.TranslatedRectangle
 import com.mindforge.graphics.math.rectangle
-import com.mindforge.graphics.math.topLeftAtOrigin
 import org.xmind.core.Core
 import org.xmind.core.ITopic
 import org.xmind.core.IWorkbook
@@ -123,7 +122,6 @@ class Shell(val screen: Screen,
         }
 
         noteLinkChanged addObserver {
-            activeNote.setHyperlink(it.url)
             it.updateTopic(activeNote)
         }
 
@@ -165,7 +163,7 @@ class Shell(val screen: Screen,
         override val content = topic
         override val changed = trigger<Unit>()
         override val elements = ObservableArrayList<TransformedElement<*>>()
-        private var stackable = Stackable(this, rectangle(zeroVector2).translated())
+        private var stackable = Stackable(this, rectangle(zeroVector2))
         private val subStackables = ObservableArrayList<Stackable>()
         private var toStop = {}
 
@@ -173,9 +171,9 @@ class Shell(val screen: Screen,
                 val buttonContent: TextElementImpl,
                 val stack: Stack
         ) {
-            fun height() = buttonContent.shape.boxWithBorder().original.size.y.toDouble()
+            fun height() = buttonContent.shape.boxWithBorder().size.y.toDouble()
             fun transformedStack() = transformedElement(stack, Transforms2.translation(vector(0, -height())))
-            fun heightSlice() = rectangle(vector(infinity, height())).topLeftAtOrigin().transformed(Transforms2.translation(vector(-infinity / 2, 0)))
+            fun heightSlice() = rectangle(vector(infinity, height()), quadrant = 4).transformed(Transforms2.translation(vector(-infinity / 2, 0)))
         }
 
         private var mainLine: MainLine by Delegates.notNull()
@@ -300,12 +298,12 @@ class Shell(val screen: Screen,
         }
 
         // TODO remove height Schlemian:
-        private fun stackableShape() = rectangle(vector(infinity, mainLine.height() + subStack.length())).topLeftAtOrigin()
+        private fun stackableShape() = rectangle(vector(infinity, mainLine.height() + subStack.length()), quadrant = 4)
 
         private fun subStackTransform() = Transforms2.translation(vector(indent, -mainLine.height()))
         private fun totalHeightSlice() = stackableShape().transformed(Transforms2.translation(vector(-infinity / 2, 0)))
 
-        private fun subStackShape() = rectangle(vector(infinity, subStack.length())).topLeftAtOrigin()
+        private fun subStackShape() = rectangle(vector(infinity, subStack.length()), quadrant = 4)
         private fun halfPlaneWhereDropOnSubCreatesSubSubnote() = object : Shape {
             override fun contains(location: Vector2) = location.x.toDouble() > 3 * indent
         }
@@ -381,10 +379,10 @@ class Shell(val screen: Screen,
     }
 }
 
-fun TextShape.boxWithBorder(): TranslatedRectangle {
+fun TextShape.boxWithBorder(): Rectangle {
     val box = box()
-    val newSize = box.original.size + vector(0, 0.5 * this.lineHeight.toDouble())
-    return rectangle(newSize).translated(box.centerLocation)
+    val newSize = box.size + vector(0, 0.5 * this.lineHeight.toDouble())
+    return rectangle(newSize).translated(box.center)
 }
 
 fun TopicImpl.dispatchIsActiveChanged() {

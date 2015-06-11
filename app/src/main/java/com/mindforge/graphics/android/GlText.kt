@@ -71,7 +71,7 @@ class GlFont(resources: Resources) : Font {
     val textureName: Int get() = textureNames[0]
 
     init {
-        GLES20.glGenTextures(textureNames.size, textureNames, 0);
+        GLES20.glGenTextures(textureNames.size(), textureNames, 0);
         val bmp = BitmapFactory.decodeResource(resources, R.drawable.roboto_regular)!!;
 
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureName);
@@ -155,7 +155,7 @@ class GlGlyphs(val font: GlFont, override val text: String, override val lineHei
         }
 
         var cx = 0f
-        var cy = templateSize.toFloat()
+        var cy = templateBaseline
         for (char in text) {
             val glyph = font.glyphs[char] ?: font.glyphs[' ']!!
             val x = cx + glyph.xOffset

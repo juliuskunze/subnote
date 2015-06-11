@@ -1,10 +1,10 @@
 package com.mindforge.graphics.interaction
 
 import com.mindforge.graphics.*
-import com.mindforge.graphics.math.TranslatedRectangle
+import com.mindforge.graphics.math.Rectangle
 import kotlin.properties.Delegates
 
-class Stackable(element: Element<*>, shape: TranslatedRectangle) {
+class Stackable(element: Element<*>, shape: Rectangle) {
     val element = element
     private val sizeChangedTrigger = trigger<Unit>()
     var shape by Delegates.observed(shape, sizeChangedTrigger)
@@ -15,11 +15,11 @@ fun horizontalStack(elements: ObservableIterable<Stackable>, align: Boolean = tr
 fun verticalStack(elements: ObservableIterable<Stackable>, align: Boolean = true) = Stack(elements, horizontal = false, alignToAxis = align)
 
 class Stack(val stackElements: ObservableIterable<Stackable>, val horizontal: Boolean, val alignToAxis: Boolean = true) : Composed<Unit> {
-    private fun Stackable.partialTranslation() = if (horizontal) shape.original.size.xComponent() else -shape.original.size.yComponent()
+    private fun Stackable.partialTranslation() = if (horizontal) shape.size.xComponent() else -shape.size.yComponent()
     private fun Stackable.offset(): Vector2 {
-        val total = shape.centerLocation - (if (horizontal)
-            shape.original.size else
-            (shape.original.size.xComponent() - shape.original.size.yComponent())) / 2
+        val total = shape.center - (if (horizontal)
+            shape.size else
+            (shape.size.xComponent() - shape.size.yComponent())) / 2
         return if(alignToAxis) total else if(horizontal) total.xComponent() else total.yComponent()
     }
 
@@ -67,7 +67,7 @@ class Stack(val stackElements: ObservableIterable<Stackable>, val horizontal: Bo
     }
 
     fun length() = stackElements.map {
-        val size = it.shape.original.size
+        val size = it.shape.size
         (if(horizontal) size.x else size.y).toDouble()
     }.sum()
 }

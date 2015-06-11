@@ -15,9 +15,6 @@ import android.view.ViewConfiguration
 import com.android.vending.billing.IInAppBillingService
 import com.evernote.client.android.EvernoteSession
 import com.evernote.client.android.OnClientCallback
-import com.evernote.edam.notestore.NoteFilter
-import com.evernote.edam.notestore.NoteList
-import com.evernote.edam.type.NoteSortOrder
 import com.evernote.edam.type.Notebook
 import com.google.android.gms.analytics.GoogleAnalytics
 import com.google.android.gms.analytics.HitBuilders
@@ -132,7 +129,8 @@ public class MainActivity : Activity() {
                 }
                 LinkType.Evernote -> {
                     withAuthenticatedEvernoteSession {
-                        getClientFactory().createNoteStoreClient().listNotebooks(object : OnClientCallback<List<Notebook>>() {
+                        val noteStoreClient = getClientFactory().createNoteStoreClient()
+                        noteStoreClient.listNotebooks(object : OnClientCallback<List<Notebook>>() {
                             override fun onSuccess(notebooks: List<Notebook>) {
                                 showSelectDialog("Select notebook", notebooks map {
                                     object {
@@ -141,41 +139,7 @@ public class MainActivity : Activity() {
                                     }
                                 }) {
                                     if (it != null) {
-                                        noteLinkChanged(object : NoteLink(linkType, it.notebook.getWebUrl()) {
-                                            override fun updateTopic(topic: ITopic) {
-                                                topic.setTitleText(it.notebook.getName())
-                                                topic.getAllChildren().forEach { topic.remove(it) }
-                                                val noteStore = this@withAuthenticatedEvernoteSession.getClientFactory().createNoteStoreClient()
-                                                val filter = NoteFilter()
-                                                filter.setNotebookGuid(it.notebook.getGuid())
-                                                filter.setOrder(NoteSortOrder.CREATED.getValue())
-                                                filter.setAscending(true)
-                                                noteStore.findNotes(filter, 0, 1024, object : OnClientCallback<NoteList>() {
-                                                    override fun onSuccess(noteList: NoteList) {
-                                                        noteList.getNotes().forEach { note ->
-                                                            topic.getOwnedWorkbook().createTopic().let { child ->
-                                                                child.setTitleText("loading...")
-                                                                topic.add(child)
-                                                                noteStore.getNoteContent(note.getGuid(), object : OnClientCallback<String>() {
-                                                                    override fun onSuccess(content: String) {
-                                                                        note.setContent(content)
-                                                                        child.setTitleText(note.plainContent())
-                                                                    }
-
-                                                                    override fun onException(ex: Exception) {
-                                                                        ex.printStackTrace()
-                                                                    }
-                                                                })
-                                                            }
-                                                        }
-                                                    }
-
-                                                    override fun onException(ex: Exception) {
-                                                        ex.printStackTrace()
-                                                    }
-                                                })
-                                            }
-                                        })
+                                        noteLinkChanged(EvernoteLink(it.notebook, noteStoreClient))
                                     }
                                 }
                             }
@@ -236,6 +200,11 @@ public class MainActivity : Activity() {
             }
             R.id.removeNoteButton -> {
                 removeNote()
+                true
+            }
+
+            R.id.editNoteButton -> {
+                editNote()
                 true
             }
 
@@ -454,6 +423,8 @@ public class MainActivity : Activity() {
 
         trackOpenedMap(noteCount)
 
+        updateLinks(workbook.getPrimarySheet().getRootTopic())
+
         val screen = GlScreen(this) {
             Shell(it, observableIterable(listOf(it.touchPointerKeys)), it.keyboard, GlFont(getResources()!!), workbook,
                     onOpenHyperlink = { browse(it) },
@@ -479,6 +450,25 @@ public class MainActivity : Activity() {
             }
         }
 
+    }
+
+    private fun updateLinks(topic: ITopic) {
+        when (topic.getLinkType()) {
+            LinkType.Evernote -> withAuthenticatedEvernoteSession {
+                val noteStoreClient = getClientFactory().createNoteStoreClient()
+                val guid = Evernote.extractNotebookGuid(topic.getHyperlink())
+                noteStoreClient.getNotebook(guid, object : OnClientCallback<Notebook>() {
+                    override fun onSuccess(notebook: Notebook) {
+                        EvernoteLink(notebook, noteStoreClient).updateTopic(topic)
+                    }
+
+                    override fun onException(ex: Exception) {
+                        ex.printStackTrace()
+                    }
+                })
+            }
+        }
+        topic.getAllChildren().forEach { updateLinks (it) }
     }
 
     private fun trackOpenedMap(noteCount: Int) {

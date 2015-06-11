@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">subNote</string>
+    <string name="app_name">MindForge</string>
 
     <string name="open_xmind_from_drive">Open XMind File from Drive</string>
     <string name="save_xmind_to_drive">Save XMind File to Drive</string>
