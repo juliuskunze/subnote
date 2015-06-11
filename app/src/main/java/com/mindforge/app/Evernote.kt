@@ -20,7 +20,7 @@ object Evernote {
 
 fun Notebook.getWebUrl() = "${Evernote.linkPrefix}${getGuid()}&sh=1&"
 
-class EvernoteLink(val notebook: Notebook, val noteStore: AsyncNoteStoreClient) : NodeLink(LinkType.Evernote, notebook.getWebUrl()) {
+class EvernoteLink(val notebook: Notebook, val noteStore: AsyncNoteStoreClient) : NoteLink(LinkType.Evernote, notebook.getWebUrl()) {
     override fun updateTopic(topic: ITopic) {
         super.updateTopic(topic)
         topic.setTitleText(notebook.getName())

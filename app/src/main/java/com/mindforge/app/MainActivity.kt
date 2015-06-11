@@ -204,7 +204,7 @@ public class MainActivity : Activity() {
             }
 
             R.id.editNoteButton -> {
-                editNode()
+                editNote()
                 true
             }
 
