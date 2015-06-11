@@ -29,5 +29,5 @@ fun ITopic.getLinkType(): LinkType = this.getHyperlink()?.let {
 } ?: LinkType.None
 
 open class NoteLink (val linkType: LinkType, val url: String?) {
-    open fun updateTopic(topic: ITopic) = Unit
+    open fun updateTopic(topic: ITopic) = topic.setHyperlink(url)
 }

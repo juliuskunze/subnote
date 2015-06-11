@@ -2,7 +2,6 @@ package com.mindforge.test.graphics.shapes
 
 import com.mindforge.graphics.Transforms2
 import com.mindforge.graphics.math.rectangle
-import com.mindforge.graphics.math.topLeftAtOrigin
 import com.mindforge.graphics.vector
 import org.jetbrains.spek.api.*
 

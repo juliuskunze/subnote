@@ -40,6 +40,9 @@ interface Vector2 : Iterable<Number> {
 
     fun xComponent(): Vector2 = vector(x, 0)
     fun yComponent(): Vector2 = vector(0, y)
+
+    fun mirrorX() = yComponent() - xComponent()
+    fun mirrorY() = xComponent() - yComponent()
 }
 
 fun vector(x: Number, y: Number) = object : Vector2 {

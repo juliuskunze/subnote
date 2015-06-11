@@ -2,10 +2,11 @@ package com.mindforge.graphics.interaction
 
 import com.mindforge.graphics.*
 import com.mindforge.graphics.math.Shape
+import com.mindforge.graphics.math.rectangle
 import java.util.concurrent.ScheduledFuture
 
 interface Button : PointersElement<Trigger<Unit>>, Composed<Trigger<Unit>> {
-    override fun onPointerKeyPressed (pointerKey: PointerKey) {
+    override fun onPointerKeyPressed(pointerKey: PointerKey) {
         content()
     }
 }
@@ -28,14 +29,14 @@ fun button(
         trigger addObserver { onClick() }
     }
 
-    var longPressedTask : ScheduledFuture<*>? = null
+    var longPressedTask: ScheduledFuture<*>? = null
 
     var lastPressedInMs: Long? = null
 
     private val longTapDelayInMs: Long = 700
     private val maxDoubleClickDelayInMs = 700
 
-    override fun onPointerKeyPressed (pointerKey : PointerKey) {
+    override fun onPointerKeyPressed(pointerKey: PointerKey) {
         super.onPointerKeyPressed(pointerKey)
 
         longPressedTask = scheduleDelayed(delayInMs = longTapDelayInMs) {
@@ -44,8 +45,7 @@ fun button(
                 lastPressedInMs = null
 
                 onPointerKeyLongPressed(pointerKey)
-            }
-            catch(ex : Exception) {
+            } catch(ex: Exception) {
                 // TODO better throw it in main thread
                 ex.printStackTrace()
             }
@@ -77,11 +77,16 @@ fun button(
 
 fun textRectangleButton(inner: TextElement, onLongPressed: (PointerKey) -> Unit = {}, onDoubleClick: (PointerKey) -> Unit = {}, onClick: () -> Unit) = button(
         shape = inner.shape.box(),
-        elements = observableIterable(listOf(transformedElement(inner))),
+        elements = observableIterable(listOf(
+                transformedElement(inner) /* DEBUG */,
+                transformedElement(coloredElement(inner.shape.box(), Fills.solid(Colors.black * .1))),
+                transformedElement(coloredElement(rectangle(vector(10, 1)), Fills.solid(Colors.blue))),
+                transformedElement(coloredElement(rectangle(vector(1, 10)), Fills.solid(Colors.blue))) /**/
+        )),
         onLongPressed = onLongPressed,
         onDoubleClick = onDoubleClick,
         onClick = onClick
-    )
+)
 
 fun coloredButton(
         shape: Shape,

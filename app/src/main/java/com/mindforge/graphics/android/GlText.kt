@@ -155,7 +155,7 @@ class GlGlyphs(val font: GlFont, override val text: String, override val lineHei
         }
 
         var cx = 0f
-        var cy = templateSize.toFloat()
+        var cy = templateBaseline
         for (char in text) {
             val glyph = font.glyphs[char] ?: font.glyphs[' ']!!
             val x = cx + glyph.xOffset
