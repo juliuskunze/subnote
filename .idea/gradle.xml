@@ -12,6 +12,7 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/app" />
             <option value="$PROJECT_DIR$/graphics" />
+            <option value="$PROJECT_DIR$/prototree" />
           </set>
         </option>
       </GradleProjectSettings>

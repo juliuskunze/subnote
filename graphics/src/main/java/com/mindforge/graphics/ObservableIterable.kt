@@ -22,7 +22,7 @@ fun <T> ObservableIterable<Observable<T>>.startKeepingAllObserved(observer: (T) 
     val observersByElement = hashMapOf(*(this.map { it to (it addObserver { observer(it) } ) }.copyToArray()))
 
     val o1 = added addObserver { observersByElement.put(it, it addObserver { observer(it) }) }
-    val o2 = removed addObserver { observersByElement.remove(it).stop() }
+    val o2 = removed addObserver { observersByElement.remove(it)!!.stop() }
 
     return object : Observer {
         override fun stop() {

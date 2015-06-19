@@ -3,7 +3,7 @@ package com.mindforge.graphics
 import com.mindforge.graphics
 import com.mindforge.graphics.math.Shape
 import com.mindforge.graphics.math.shape
-import java.util.concurrent.CopyOnWriteArrayList
+//import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.properties.Delegates
 
 trait TransformedElement<T> {

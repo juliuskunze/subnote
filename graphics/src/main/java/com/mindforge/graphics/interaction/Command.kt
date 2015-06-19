@@ -17,7 +17,7 @@ trait CharacterCommand : Command {
 object Commands {
     object Keyboard {
         fun character(char: Char) = object : CharacterCommand {
-            override val name = String(charArray(char))
+            override val name = char.toString()
             override val character = char
         }
 

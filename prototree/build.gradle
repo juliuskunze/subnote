@@ -1,0 +1,44 @@
+buildscript {
+    ext.kotlin_version = '0.11.91.4'
+
+    repositories {
+        jcenter()
+        mavenCentral()
+        maven {
+            url "http://oss.sonatype.org/content/repositories/snapshots"
+        }
+    }
+
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+apply plugin: 'kotlin2js'
+
+sourceSets {
+    main {
+        kotlin {
+            srcDir '../graphics/src/main/java'
+            srcDir 'src/main/kotlin'
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+    maven {
+        url "http://repository.jetbrains.com/all"
+    }
+}
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-js-library:$kotlin_version"
+}
+
+compileKotlin2Js.kotlinOptions.outputFile = "${projectDir}/web/js/app.js"
+compileKotlin2Js.kotlinOptions.suppressWarnings = false
+compileKotlin2Js.kotlinOptions.verbose = true
+compileKotlin2Js.kotlinOptions.version = true
+compileKotlin2Js.kotlinOptions.sourceMap = true

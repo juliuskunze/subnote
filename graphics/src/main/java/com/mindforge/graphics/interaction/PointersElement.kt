@@ -1,12 +1,12 @@
 package com.mindforge.graphics.interaction
 
 import com.mindforge.graphics.Element
-import java.util.concurrent.Executors
+/* not available in JS: import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeUnit*/
 
-fun scheduleDelayed(delayInMs : Long, action: () -> Unit) : ScheduledFuture<*> =
-    Executors.newSingleThreadScheduledExecutor().schedule(action, delayInMs, TimeUnit.MILLISECONDS)
+/* fun scheduleDelayed(delayInMs : Long, action: () -> Unit) : ScheduledFuture<*> =
+    Executors.newSingleThreadScheduledExecutor().schedule(action, delayInMs, TimeUnit.MILLISECONDS)*/
 
 
 trait PointersElement<T> : Element<T> {

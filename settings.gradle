@@ -1,1 +1,1 @@
-include ':app', ':graphics'
+include ':app', ':graphics', ':prototree'

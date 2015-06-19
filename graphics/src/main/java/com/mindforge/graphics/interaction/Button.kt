@@ -3,7 +3,7 @@ package com.mindforge.graphics.interaction
 import com.mindforge.graphics.*
 import com.mindforge.graphics.math.Shape
 import com.mindforge.graphics.math.rectangle
-import java.util.concurrent.ScheduledFuture
+// not available in JS: import java.util.concurrent.ScheduledFuture
 
 trait Button : PointersElement<Trigger<Unit>>, Composed<Trigger<Unit>> {
     override fun onPointerKeyPressed(pointerKey: PointerKey) {
@@ -29,12 +29,12 @@ fun button(
         trigger addObserver { onClick() }
     }
 
-    var longPressedTask: ScheduledFuture<*>? = null
+    //var longPressedTask: ScheduledFuture<*>? = null
 
     override fun onPointerKeyPressed(pointerKey: PointerKey) {
         super.onPointerKeyPressed(pointerKey)
 
-        longPressedTask = scheduleDelayed(delayInMs = 700) {
+        /*longPressedTask = scheduleDelayed(delayInMs = 700) {
             try {
                 longPressedTask = null
                 onPointerKeyLongPressed(pointerKey)
@@ -42,12 +42,12 @@ fun button(
                 // TODO better throw it in main thread
                 ex.printStackTrace()
             }
-        }
+        }*/
     }
 
     override fun onPointerKeyReleased(pointerKey: PointerKey) {
-        longPressedTask?.cancel(false)
-        longPressedTask = null
+        /*longPressedTask?.cancel(false)
+        longPressedTask = null*/
     }
 
     fun onPointerKeyLongPressed(pointerKey: PointerKey) {

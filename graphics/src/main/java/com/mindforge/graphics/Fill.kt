@@ -1,7 +1,7 @@
 package com.mindforge.graphics
 
 import com.mindforge.graphics.*
-import java.util.SortedMap
+// not available in JS yet: import java.util.SortedMap
 
 trait Fill {
     fun colorAt(location: Vector2): Color
@@ -18,13 +18,13 @@ object Fills {
 
     val invisible = object : InvisibleFill {}
 
-    fun linearGradient(stops: SortedMap<out Number, Color>) = object : LinearGradient {
+    /*fun linearGradient(stops: SortedMap<out Number, Color>) = object : LinearGradient {
         override val stops = stops
     }
 
     fun radialGradient(stops: SortedMap<out Number, Color>) = object : RadialGradient {
         override val stops = stops
-    }
+    }*/
 }
 
 trait TransformedFill : Fill {
@@ -42,7 +42,7 @@ trait SolidFill : Fill {
     override fun colorAt(location: Vector2) = color
 }
 
-trait Gradient : Fill {
+/*trait Gradient : Fill {
     val stops: SortedMap<out Number, Color>
     protected fun colorAt(location: Number): Color {
         val l = location.toDouble()
@@ -69,4 +69,4 @@ trait LinearGradient : Gradient {
 
 trait RadialGradient : Gradient {
     override fun colorAt(location: Vector2) = super<Gradient>.colorAt(location.length)
-}
+}*/
