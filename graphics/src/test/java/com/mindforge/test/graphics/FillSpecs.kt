@@ -30,7 +30,7 @@ class FillSpecs : Spek() {init {
         }
     }
 
-    given("a linear gradient fill from black to white stop 0 to 2") {
+    /*given("a linear gradient fill from black to white stop 0 to 2") {
         val x = Fills.linearGradient(sortedMapOf(Pair<Number, Color>(0, Colors.black), Pair<Number, Color>(2, Colors.white)))
 
         on("getting the color at a location with x-coordinate 0") {
@@ -116,6 +116,6 @@ class FillSpecs : Spek() {init {
                 shouldEqual(Colors.white, c)
             }
         }
-    }
+    }*/
 }
 }

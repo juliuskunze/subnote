@@ -10,7 +10,7 @@ fun observableArrayListOf<T>(vararg elements: T) = ObservableArrayList<T>(elemen
 class ObservableArrayList<T>(elements: Iterable<T> = listOf()) : ArrayList<T>(), ObservableList<T> {
 
     init {
-        addAll(elements map { it })
+        super<ArrayList>.addAll(elements map { it })
     }
 
     override val added = trigger<T>()
