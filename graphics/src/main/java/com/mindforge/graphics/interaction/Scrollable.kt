@@ -4,7 +4,7 @@ import com.mindforge.graphics.*
 import com.mindforge.graphics.math.*
 
 // TODO remove duplication to Draggable, why the differences?
-class Scrollable(val element: Element<*>) : Composed<Any?>, PointersElement<Any?> {
+class Scrollable(val element: Element<*>, val nearestValidLocation: (Vector2) -> Vector2 = {it}) : Composed<Any?>, PointersElement<Any?> {
     override val content: Any? get() = element.content
     override val changed = trigger<Unit>()
     var scrollLocation = zeroVector2
@@ -27,7 +27,7 @@ class Scrollable(val element: Element<*>) : Composed<Any?>, PointersElement<Any?
         val last = lastLocation
         val current = pointer.location
         if (last != null) {
-            scrollLocation += current - last
+            scrollLocation = nearestValidLocation(scrollLocation + current - last)
             lastLocation = current
             changed()
         }

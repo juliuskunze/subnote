@@ -41,7 +41,7 @@ class Shell(val screen: Screen,
 
     val infinity = 5000000
 
-    private var activeNote by Delegates.observed<TopicImpl>(workbook.getPrimarySheet().getRootTopic() as TopicImpl, { old, new ->
+    private var activeNote by Delegates.observed(workbook.getPrimarySheet().getRootTopic() as TopicImpl, { old, new ->
         old.dispatchIsActiveChanged()
         new.dispatchIsActiveChanged()
 
@@ -120,6 +120,7 @@ class Shell(val screen: Screen,
     }
 
     val ancestorsLineHeight = lineHeight(1)
+    val ancestorsLineHeightVector = vector(0, -defaultFont.shape(" ", ancestorsLineHeight).boxWithBorder().size.y.toDouble())
 
     private fun ancestorHeadlineElements() = root.ancestors().flatMap {
         fun stackable(text: String = it.getTitleText(), color: Color = Colors.black) : Stackable {
@@ -132,21 +133,32 @@ class Shell(val screen: Screen,
         listOf(stackable(), stackable(" > ", Colors.gray))
     }
 
-    private fun parentHeadline() = composed(observableArrayListOf<TransformedElement<*>>(
-            transformedElement(horizontalStack(observableIterable(ancestorHeadlineElements())), Transforms2.translation(vector(0, -defaultFont.shape(" ", ancestorsLineHeight).boxWithBorder().size.y.toDouble())))
-    ))
+    private fun parentHeadline(): Composed<Unit> {
+        return composed(observableArrayListOf<TransformedElement<*>>(
+                transformedElement(horizontalStack(observableIterable(ancestorHeadlineElements())), Transforms2.translation(ancestorsLineHeightVector))
+        ))
+    }
 
-    private fun mainContent() = composed(
+    private fun inner() = composed(
             observableArrayListOf(
-                    transformedElement(parentHeadline(), Transforms2.translation(-screen.shape.halfSize.xComponent() + screen.shape.halfSize.yComponent())),
-                    transformedElement(Scrollable(
-                            composed(observableArrayListOf(
-                                    transformedElement(draggable),
-                                    transformedElement(rootElement)
-                            )))
+                    transformedElement(parentHeadline()),
+                    transformedElement(
+                            Scrollable(
+                                    composed(observableArrayListOf(
+                                            transformedElement(draggable),
+                                            transformedElement(rootElement)
+                                    )),
+                                    nearestValidLocation = {
+                                        val xCorrected = if (it.x.toDouble() > 0) it.yComponent() else it
+                                        if (xCorrected.y.toDouble() < 0) xCorrected.xComponent() else xCorrected
+                                    }
+                            ),
+                            Transforms2.translation(ancestorsLineHeightVector)
                     )
             )
     )
+
+    private fun mainContent() = composed(observableArrayListOf<TransformedElement<*>>(transformedElement(inner(), Transforms2.translation(-screen.shape.halfSize.xComponent() + screen.shape.halfSize.yComponent()))))
 
 
     private fun initializeNewNote(newNote: ITopic, text: String) {
