@@ -1,18 +1,13 @@
 package com.mindforge.app
 
 import android.app.Activity
-import android.app.PendingIntent
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.ServiceConnection
 import android.os.Bundle
-import android.os.IBinder
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.ViewConfiguration
-import com.android.vending.billing.IInAppBillingService
 import com.evernote.client.android.EvernoteSession
 import com.evernote.client.android.OnClientCallback
 import com.evernote.edam.type.Notebook
@@ -37,8 +32,6 @@ import org.jetbrains.anko.browse
 import org.jetbrains.anko.longToast
 import org.jetbrains.anko.toast
 import org.jetbrains.anko.vibrator
-import org.json.JSONException
-import org.json.JSONObject
 import org.xmind.core.Core
 import org.xmind.core.ITopic
 import org.xmind.core.IWorkbook
@@ -47,6 +40,7 @@ import org.xmind.core.internal.dom.WorkbookImpl
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
+import java.net.URI
 import kotlin.properties.Delegates
 
 /*
@@ -226,7 +220,11 @@ public class MainActivity : Activity() {
 
                 true
             }
+            R.id.open_xmind_from_dropbox -> {
+                DropboxChooser("7v2e1k3njlfbz9a").forResultType(DropboxChooser.ResultType.FILE_CONTENT).launch(this, IntentCode.openFileFromDropbox)
 
+                true
+            }
             else -> {
                 super.onOptionsItemSelected(item)
             }
@@ -411,6 +409,11 @@ public class MainActivity : Activity() {
                     }
                 }
             }
+            IntentCode.openFileFromDropbox -> {
+                if (resultCode == Activity.RESULT_OK) {
+                    open(File(URI(DropboxChooser.Result(data).getLink().toString())))
+                }
+            }
         }
     }
 
@@ -505,6 +508,7 @@ public class MainActivity : Activity() {
     private object IntentCode {
         val googleClientResolution = 0
         val openFileFromDrive = 1
-        val donate = 2
+        val openFileFromDropbox = 2
+        val donate = 3
     }
 }

@@ -40,8 +40,8 @@
         android:showAsAction="never"/>
 
     <item
-        android:id="@+id/save_xmind_to_drive"
-        android:title="@string/save_xmind_to_drive"
+        android:id="@+id/open_xmind_from_dropbox"
+        android:title="@string/open_xmind_from_dropbox"
         android:showAsAction="never"/>
 
     <item
