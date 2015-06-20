@@ -19,7 +19,7 @@ apply plugin: 'kotlin2js'
 sourceSets {
     main {
         kotlin {
-            srcDir '../graphics/src/main/java'
+            srcDir 'src/lib/kotlin'
             srcDir 'src/main/kotlin'
         }
     }
