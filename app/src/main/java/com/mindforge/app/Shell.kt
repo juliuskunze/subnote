@@ -120,7 +120,7 @@ class Shell(val screen: Screen,
     }
 
     val ancestorsLineHeight = lineHeight(1)
-    val ancestorsLineHeightVector = vector(0, -defaultFont.shape(" ", ancestorsLineHeight).boxWithBorder().size.y.toDouble())
+    val ancestorsLineHeightWithBorderVector = vector(0, -defaultFont.shape(" ", ancestorsLineHeight).boxWithBorder().size.y.toDouble())
 
     private fun ancestorHeadlineElements() = root.ancestors().flatMap {
         fun stackable(text: String = it.getTitleText(), color: Color = Colors.black) : Stackable {
@@ -134,8 +134,11 @@ class Shell(val screen: Screen,
     }
 
     private fun parentHeadline(): Composed<Unit> {
+        val stack = horizontalStack(observableIterable(ancestorHeadlineElements()))
+        val transform = Transforms2.translation(ancestorsLineHeightWithBorderVector)
         return composed(observableArrayListOf<TransformedElement<*>>(
-                transformedElement(horizontalStack(observableIterable(ancestorHeadlineElements())), Transforms2.translation(ancestorsLineHeightVector))
+                transformedElement(stack, transform),
+                transformedElement(coloredElement(rectangle(vector(stack.length(), 0) + ancestorsLineHeightWithBorderVector, quadrant = 4), Fills.solid(Colors.white)), transform)
         ))
     }
 
@@ -149,11 +152,23 @@ class Shell(val screen: Screen,
                                             transformedElement(rootElement)
                                     )),
                                     nearestValidLocation = {
-                                        val xCorrected = if (it.x.toDouble() > 0) it.yComponent() else it
-                                        if (xCorrected.y.toDouble() < 0) xCorrected.xComponent() else xCorrected
+                                        val root = cachedElementOrAdd(root)
+                                        val overWidth = root.maxWidth() - screen.shape.size.x.toDouble()
+                                        val truncatedOverWidth = - if(overWidth > 0) overWidth else 0.0
+
+                                        val lowerScreenFractionAllowedToBeEmpty = 0.7
+                                        val overHeight = root.maxHeight() - screen.shape.size.y.toDouble() * (1 - lowerScreenFractionAllowedToBeEmpty)
+                                        val truncatedOverHeight = if(overHeight > 0) overHeight else 0.0
+
+                                        val xMinCorrected = if(it.x.toDouble() > 0) it.yComponent() else it
+                                        val xMaxCorrected = if(xMinCorrected.x.toDouble() < truncatedOverWidth) xMinCorrected.yComponent() + vector(truncatedOverWidth, 0) else xMinCorrected
+                                        val yMinCorrected = if(xMaxCorrected.y.toDouble() < 0) xMaxCorrected.xComponent() else xMaxCorrected
+                                        val yMaxCorrected = if(yMinCorrected.y.toDouble() > truncatedOverHeight) yMinCorrected.xComponent() + vector(0, truncatedOverHeight) else yMinCorrected
+
+                                        yMaxCorrected
                                     }
                             ),
-                            Transforms2.translation(ancestorsLineHeightVector)
+                            Transforms2.translation(ancestorsLineHeightWithBorderVector)
                     )
             )
     )
@@ -253,6 +268,9 @@ class Shell(val screen: Screen,
 
         private fun mainColor() = Fills.solid(if (activeNote == content) Colors.red else Colors.black)
         private fun text() = content.getTitleText()
+
+        fun maxWidth(): Double = (listOf(mainLine.stack.length().toDouble()) + subStackables.map { (it.element as TopicElement).maxWidth() + indent }).max()!!
+        fun maxHeight(): Double = stackable.shape.size.y.toDouble()
 
         fun initElementsAndStackable() {
             toStop()
