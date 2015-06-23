@@ -1,16 +1,22 @@
 package net.pureal.subnote.prototree
 
-import org.w3c.dom.Text
-import kotlin.js.dom.html.document
+import jquery.JQuery
 import kotlin.js.dom.html.window
 
-public class Counter(val el: Text) {
+public class Counter(val el: JQuery) {
+
+    private var d = 1
+
     fun step(n: Int) {
-        el.textContent="Counter: $n"
-        window.setTimeout({step(n+1)}, 1000)
+        el.text("Counter: $n")
+        window.setTimeout({ step(n + d) }, 1000)
     }
 
     fun start() {
         step(0)
+    }
+
+    fun reverse() {
+        d *= -1;
     }
 }

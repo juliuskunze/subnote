@@ -1,0 +1,19 @@
+.site-wrapper {
+    background: url('../img/tree.jpg') center;
+}
+
+.inner.cover {
+    background: whitesmoke;
+    padding: 50px;
+    box-shadow: 0 0 10px black;
+    color: black;
+    text-shadow: none;
+}
+
+/* Custom default button */
+.btn-default,
+.btn-default:hover,
+.btn-default:focus {
+    color: #fff;
+    background-color: #333;
+}

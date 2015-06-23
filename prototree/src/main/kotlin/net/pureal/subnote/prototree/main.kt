@@ -1,17 +1,18 @@
 package net.pureal.subnote.prototree
 
-import kotlin.js.dom.html.document
+import jquery.jq
 
 fun main(args: Array<String>) {
-    val el = document.createElement("div")
-    el.appendChild(document.createTextNode("Hello Kotlin!"))
-    document.body.appendChild(el)
 
-    val counterDiv = document.createElement("div")
-    val counterText = document.createTextNode("Counter!")
-    counterDiv.appendChild(counterText)
-    document.body.appendChild(counterDiv)
+    val heading = jq("#heading")
 
-    val counter = Counter(counterText)
+    heading.text("Hello Kotlin!")
+    val counter = Counter(jq("#main"))
     counter.start()
+
+    jq("#dontclick").click {
+        heading.text("I said, don't click!")
+        counter.reverse()
+    }
+
 }
