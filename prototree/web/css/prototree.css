@@ -1,5 +1,6 @@
 .site-wrapper {
     background: url('../img/tree.jpg') center;
+    background-size: cover;
 }
 
 .inner.cover {
