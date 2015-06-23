@@ -1,5 +1,5 @@
 .site-wrapper {
-    background: url('../img/tree.jpg') center;
+    background: url('../img/tree.jpg') center no-repeat;
 }
 
 @media
