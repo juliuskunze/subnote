@@ -1,22 +1,45 @@
 .site-wrapper {
-    background: url('../img/tree.jpg') center no-repeat;
+    background: #8BC34A;
+    box-shadow: none;
 }
 
-@media
-only screen and (-webkit-min-device-pixel-ratio: 2),
-only screen and (   min--moz-device-pixel-ratio: 2),
-only screen and (     -o-min-device-pixel-ratio: 2/1),
-only screen and (        min-device-pixel-ratio: 2),
-only screen and (                min-resolution: 192dpi),
-only screen and (                min-resolution: 2dppx) {
-    .site-wrapper {
-        background-size: cover;
+.site-wrapper {
+    background-size: cover;
+}
+
+.masthead {
+    background: #009688;
+    box-shadow: 0 0 10px black;
+    text-shadow: none;
+    position: relative;
+}
+
+.cover-container {
+    height: 75%;
+}
+
+@media (min-width: 768px) {
+    .cover-container {
+        height: 50%;
+    }
+    .masthead {
+        position: fixed;
+    }
+}
+
+@media (min-width: 992px) {
+    .masthead,
+    .mastfoot,
+    .cover-container {
+        width: 50%;
     }
 }
 
 .inner.cover {
+    width: 100%;
+    height: 100%;
+    padding: 0;
     background: whitesmoke;
-    padding: 50px;
     box-shadow: 0 0 10px black;
     color: black;
     text-shadow: none;

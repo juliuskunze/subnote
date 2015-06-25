@@ -2559,6 +2559,68 @@
     }),
     net: Kotlin.definePackage(null, /** @lends _.net */ {
       pureal: Kotlin.definePackage(null, /** @lends _.net.pureal */ {
+        graphics: Kotlin.definePackage(null, /** @lends _.net.pureal.graphics */ {
+          js: Kotlin.definePackage(function () {
+            this.hexDigits = Kotlin.modules['stdlib'].kotlin.plus_84aay$(new Kotlin.CharRange('0', '9'), new Kotlin.CharRange('A', 'F'));
+          }, /** @lends _.net.pureal.graphics.js */ {
+            CanvasScreen: Kotlin.createClass(function () {
+              return [_.com.mindforge.graphics.Screen];
+            }, function (canvas) {
+              var tmp$0;
+              this.canvas = canvas;
+              this.context = (tmp$0 = this.canvas.getContext('2d')) != null ? tmp$0 : Kotlin.throwNPE();
+              window.setInterval(_.net.pureal.graphics.js.CanvasScreen.CanvasScreen$f(this), 20);
+              this.$content_tfpozv$ = _.com.mindforge.graphics.composed(_.com.mindforge.graphics.observableIterable(Kotlin.modules['stdlib'].kotlin.emptyList()));
+            }, /** @lends _.net.pureal.graphics.js.CanvasScreen.prototype */ {
+              content: {
+                get: function () {
+                  return this.$content_tfpozv$;
+                },
+                set: function (content) {
+                  this.$content_tfpozv$ = content;
+                }
+              },
+              shape: {
+                get: function () {
+                  return _.com.mindforge.graphics.math.rectangle(_.com.mindforge.graphics.vector(this.canvas.width, this.canvas.height));
+                }
+              }
+            }, /** @lends _.net.pureal.graphics.js.CanvasScreen */ {
+              CanvasScreen$f: function (this$CanvasScreen) {
+                return function () {
+                  this$CanvasScreen.context.fillStyle = _.net.pureal.graphics.js.get_htmlCode(_.com.mindforge.graphics.Colors.white);
+                  this$CanvasScreen.context.fillRect(0.0, 0.0, this$CanvasScreen.canvas.width, this$CanvasScreen.canvas.height);
+                };
+              }
+            }),
+            toHexNibble: function ($receiver) {
+              return _.net.pureal.graphics.js.hexDigits.get_za3lpa$($receiver % 16);
+            },
+            toHexByte: function ($receiver) {
+              return _.net.pureal.graphics.js.toHexNibble($receiver / 16 | 0).toString() + _.net.pureal.graphics.js.toHexNibble($receiver);
+            },
+            get_htmlCode: {value: function ($receiver) {
+              var tmp$0;
+              var $receiver_0 = Kotlin.modules['stdlib'].kotlin.listOf_9mqe4v$([$receiver.r, $receiver.g, $receiver.b]);
+              var map_m3yiqg$result;
+              var tmp$3;
+              var destination = new Kotlin.ArrayList();
+              var mapTo_e7zafy$result;
+              var tmp$2, tmp$1;
+              tmp$2 = $receiver_0.iterator();
+              while (tmp$2.hasNext()) {
+                var item = tmp$2.next();
+                tmp$1 = _.net.pureal.graphics.js.toHexByte(Kotlin.numberToDouble(item) * 255 | 0);
+                destination.add_za3rmp$(tmp$1);
+              }
+              mapTo_e7zafy$result = destination;
+              tmp$3 = mapTo_e7zafy$result;
+              map_m3yiqg$result = tmp$3;
+              tmp$0 = map_m3yiqg$result;
+              return Kotlin.modules['stdlib'].kotlin.joinToString_ynm5fa$(tmp$0, '', '#');
+            }}
+          })
+        }),
         subnote: Kotlin.definePackage(null, /** @lends _.net.pureal.subnote */ {
           prototree: Kotlin.definePackage(null, /** @lends _.net.pureal.subnote.prototree */ {
             Counter: Kotlin.createClass(null, function (el) {
@@ -2582,18 +2644,11 @@
                 };
               }
             }),
-            main$f: function (heading, counter) {
-              return function (it) {
-                heading.text("I said, don't click!");
-                counter.reverse();
-              };
+            main$f: function () {
+              var screen = new _.net.pureal.graphics.js.CanvasScreen(document.getElementById('canvas'));
             },
             main: function (args) {
-              var heading = $('#heading');
-              heading.text('Hello Kotlin!');
-              var counter = new _.net.pureal.subnote.prototree.Counter($('#main'));
-              counter.start();
-              $('#dontclick').click(_.net.pureal.subnote.prototree.main$f(heading, counter));
+              $(_.net.pureal.subnote.prototree.main$f);
             }
           })
         })
