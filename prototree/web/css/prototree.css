@@ -7,7 +7,7 @@
 
 .masthead {
     background: #009688;
-    box-shadow: 0 0 5px black;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
     text-shadow: none;
     position: relative;
 }
@@ -20,6 +20,7 @@
     .cover-container {
         height: 75%;
     }
+
     .masthead {
         position: fixed;
     }
@@ -40,7 +41,7 @@
     height: 100%;
     padding: 0;
     background: whitesmoke;
-    box-shadow: 0 0 5px black;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
     color: black;
     text-shadow: none;
 }
