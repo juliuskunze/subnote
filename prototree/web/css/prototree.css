@@ -1,15 +1,13 @@
 .site-wrapper {
-    background: #8BC34A;
+    background: #4caf50;
+    background: url(../img/material_swirls.png);
     box-shadow: none;
-}
-
-.site-wrapper {
     background-size: cover;
 }
 
 .masthead {
     background: #009688;
-    box-shadow: 0 0 10px black;
+    box-shadow: 0 0 5px black;
     text-shadow: none;
     position: relative;
 }
@@ -20,7 +18,7 @@
 
 @media (min-width: 768px) {
     .cover-container {
-        height: 50%;
+        height: 75%;
     }
     .masthead {
         position: fixed;
@@ -31,8 +29,10 @@
     .masthead,
     .mastfoot,
     .cover-container {
-        width: 50%;
+        width: 75%;
+        max-width: 1500px;
     }
+
 }
 
 .inner.cover {
@@ -40,7 +40,7 @@
     height: 100%;
     padding: 0;
     background: whitesmoke;
-    box-shadow: 0 0 10px black;
+    box-shadow: 0 0 5px black;
     color: black;
     text-shadow: none;
 }
