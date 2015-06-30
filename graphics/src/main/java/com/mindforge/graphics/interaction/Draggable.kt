@@ -5,25 +5,9 @@ import java.util.ArrayList
 import java.util.HashMap
 import kotlin.properties.Delegates
 
-open class Draggable(val element: Element<*>, dragLocation: Vector2 = zeroVector2) : Composed<Any?>, PointersElement<Any?> {
-    override val changed = trigger<Unit>()
-
-    var dragLocation by Delegates.observed(dragLocation, changed)
-    override val content: Any? get() = element.content
-
-    override val elements: ObservableIterable<TransformedElement<*>> = observableIterable(listOf(object : TransformedElement<Any?> {
-        override val element: Element<Any?> = this@Draggable.element
-        override val transform: Transform2 get() = Transforms2.translation(this@Draggable.dragLocation)
-        override val transformChanged = this@Draggable.changed
-    }))
-
-    fun onMoved(pointerKey: PointerKey) {
-        dragLocation = pointerKey.pointer.location
-        moved(pointerKey)
-    }
-
+open class Draggable(element: Element<*>, startLocation: Vector2 = zeroVector2) : DraggableBase(element, startLocation) {
     val dropped = trigger<PointerKey>()
-    val moved = trigger<PointerKey>()
+    val moved = trigger<Pointer>()
 
     private val observers = ArrayList<Observer>()
 
@@ -32,7 +16,7 @@ open class Draggable(val element: Element<*>, dragLocation: Vector2 = zeroVector
     }
 
     fun startDrag(pointerKey: PointerKey) {
-        observers.add(pointerKey.pointer.moved addObserver { onMoved(pointerKey) })
+        observers.add(pointerKey.pointer.moved addObserver { onMoved(pointerKey.pointer) })
 
         pointerKey.key.released addObserver {
             stop()
@@ -41,4 +25,21 @@ open class Draggable(val element: Element<*>, dragLocation: Vector2 = zeroVector
             dropped(pointerKey)
         }
     }
+
+    fun onMoved(pointer: Pointer) {
+        location = pointer.location
+        moved(pointer)
+    }
+}
+
+open class DraggableBase(val element: Element<*>, startLocation: Vector2 = zeroVector2) : Composed<Any?>, PointersElement<Any?> {
+    override val content: Any? get() = element.content
+    override val changed = trigger<Unit>()
+    var location by Delegates.observed(startLocation, changed)
+
+    override val elements: ObservableIterable<TransformedElement<*>> = observableIterable(listOf(object : TransformedElement<Any?> {
+        override val element: Element<Any?> = this@DraggableBase.element
+        override val transform: Transform2 get() = Transforms2.translation(this@DraggableBase.location)
+        override val transformChanged = this@DraggableBase.changed
+    }))
 }

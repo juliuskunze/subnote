@@ -55,7 +55,7 @@ class Shell(val screen: Screen,
     class DropInfo(val dragged: TopicImpl, val newParent: TopicImpl, val newSubIndex: Int)
 
     fun updateByDragLocation(dragged: TopicImpl) {
-        val dropInfoIfChanged = rootElement.dropInfoIfChanged(dragged, draggable.dragLocation)
+        val dropInfoIfChanged = rootElement.dropInfoIfChanged(dragged, draggable.location)
         if (dropInfoIfChanged != null) {
             dropInfo = dropInfoIfChanged
         }
@@ -69,7 +69,7 @@ class Shell(val screen: Screen,
     })
 
     fun startDrag(dragged: TopicImpl, dragLocation: Vector2, pointerKey: PointerKey) {
-        draggable.dragLocation = dragLocation
+        draggable.location = dragLocation
         dragged.setFolded(true)
 
         updateByDragLocation(dragged)
@@ -150,7 +150,8 @@ class Shell(val screen: Screen,
                             Scrollable(
                                     composed(observableArrayListOf(
                                             transformedElement(draggable),
-                                            transformedElement(rootElement)
+                                            transformedElement(rootElement),
+                                            transformedElement(coloredElement(rectangle(vector(1000000, 1000000)), Fills.solid(Colors.white)))
                                     )),
                                     nearestValidLocation = {
                                         val root = cachedElementOrAdd(root)
@@ -451,7 +452,8 @@ class Shell(val screen: Screen,
                 if (element is PointersElement<*>) {
                     element.onPointerKeyPressed(pointerKey(pk.pointer transformed { it.transform }, pk.key))
 
-                    break
+                    //TODO resolve root of problem by using a full input event layer model, like bubbling/tunneling/cancelable/... events:
+                    //break
                 }
             }
         }
@@ -467,7 +469,7 @@ class Shell(val screen: Screen,
                     }
                     element.onPointerMoved(p transformed { it.transform })
 
-                    break
+                    //TODO break
                 }
             }
 
@@ -484,7 +486,7 @@ class Shell(val screen: Screen,
                     val pointerKey = pointerKey(pk.pointer transformed { it.transform }, pk.key)
                     element.onPointerKeyReleased(pointerKey)
 
-                    break
+                    //TODO break
                 }
             }
         }
