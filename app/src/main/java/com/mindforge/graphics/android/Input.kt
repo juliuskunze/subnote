@@ -62,6 +62,12 @@ class AndroidPointer : Pointer {
     override val moved = trigger<Pointer>()
     override var location: Vector2 = zeroVector2
 
+    override val appeared = trigger<Pointer>()
+    override val disappeared = trigger<Pointer>()
+
+    fun appear() = appeared(this)
+    fun disappear() = disappeared(this)
+
     fun move(location: Vector2) {
         this.location = location
         moved(this)

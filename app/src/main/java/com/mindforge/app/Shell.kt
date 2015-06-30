@@ -10,6 +10,7 @@ import org.xmind.core.ITopic
 import org.xmind.core.IWorkbook
 import org.xmind.core.event.CoreEvent
 import org.xmind.core.internal.dom.TopicImpl
+import java.util.ArrayList
 import java.util.HashMap
 import kotlin.properties.Delegates
 
@@ -408,44 +409,86 @@ class Shell(val screen: Screen,
         }
     }
 
-    fun registerInputs() {
-        pointers mapObservable { it.pressed } startKeepingAllObserved { pk ->
-            loop@ for (it in screen.elementsAt(pk.pointer.location)) {
-                val element = it.element
-                val pointerKey = pointerKey(pk.pointer transformed it.transform, pk.key)
-                when (element) {
-                    is PointersElement<*> -> {
-                        element.onPointerKeyPressed(pointerKey)
+    class HoveredElements {
+        val hoveredPointerElements = hashMapOf<Pointer, ArrayList<TransformedElement<*>>>()
+        private fun get2(pointer: Pointer) = hoveredPointerElements.getOrPut(pointer, { arrayListOf<TransformedElement<*>>() })
 
-                        break@loop
-                    }
+        fun get(pointer: Pointer): List<TransformedElement<*>> = get2(pointer)
+
+        fun onEntered(pointer: Pointer, element: TransformedElement<*>) {
+            get2(pointer).add(element)
+            (element.element as PointersElement<*>).onPointerEntered(pointer transformed { element.transform })
+        }
+
+        fun onLeft(pointer: Pointer, element: TransformedElement<*>) {
+            get2(pointer).remove(element)
+            (element.element as PointersElement<*>).onPointerLeft(pointer transformed { element.transform })
+        }
+    }
+
+    val hoveredElements = HoveredElements()
+
+    fun registerInputs() {
+        pointers mapObservable { it.pointer.appeared } startKeepingAllObserved { p ->
+            val element = screen.elementsAt(p.location).firstOrNull { it.element is PointersElement<*> }
+
+            if (element != null) {
+                hoveredElements.onEntered(p, element)
+            }
+        }
+
+        pointers mapObservable { it.pointer.disappeared } startKeepingAllObserved { p ->
+            val element = screen.elementsAt(p.location).firstOrNull { it.element is PointersElement<*> }
+
+            if (element != null) {
+                hoveredElements.onLeft(p, element)
+            }
+        }
+
+        pointers mapObservable { it.pressed } startKeepingAllObserved { pk ->
+            for (it in screen.elementsAt(pk.pointer.location)) {
+                val element = it.element
+                if (element is PointersElement<*>) {
+                    element.onPointerKeyPressed(pointerKey(pk.pointer transformed { it.transform }, pk.key))
+
+                    break
                 }
             }
         }
+
         pointers mapObservable { it.pointer.moved } startKeepingAllObserved { p ->
-            loop@ for (it in screen.elementsAt(p.location)) {
+            val elementsHere = screen.elementsAt(p.location)
+
+            for (it in elementsHere) {
                 val element = it.element
-                val pointer = p transformed it.transform
-                when (element) {
-                    is PointersElement<*> -> {
-                        element.onPointerMoved(pointer)
-                        break@loop
+                if (element is PointersElement<*>) {
+                    if (!hoveredElements.get(p).any {e -> e.element == it.element }) {
+                        hoveredElements.onEntered(p, it)
                     }
+                    element.onPointerMoved(p transformed { it.transform })
+
+                    break
                 }
             }
+
+            val left = hoveredElements.get(p).filter { !elementsHere.any {e -> e.element == it.element }}.toArrayList()
+            for (element in left) {
+                hoveredElements.onLeft(p, element)
+            }
         }
+
         pointers mapObservable { it.released } startKeepingAllObserved { pk ->
-            loop@ for (it in screen.elementsAt(pk.pointer.location)) {
+            for (it in screen.elementsAt(pk.pointer.location)) {
                 val element = it.element
-                val pointerKey = pointerKey(pk.pointer transformed it.transform, pk.key)
-                when (element) {
-                    is PointersElement<*> -> {
-                        element.onPointerKeyReleased(pointerKey)
-                        break@loop
-                    }
+                if (element is PointersElement<*>) {
+                    val pointerKey = pointerKey(pk.pointer transformed { it.transform }, pk.key)
+                    element.onPointerKeyReleased(pointerKey)
+
+                    break
                 }
             }
         }
+
         keys mapObservable { it.pressed } startKeepingAllObserved { k ->
             screen.content.elements forEach {
                 val element = it.element

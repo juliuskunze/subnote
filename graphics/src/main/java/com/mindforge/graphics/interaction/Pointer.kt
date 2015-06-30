@@ -6,16 +6,23 @@ interface Pointer {
     val moved: Observable<Pointer>
     val location: Vector2
 
-    fun transformed(transform: Transform2): Pointer = object : Pointer {
+    //TODO: replace throught dynamic list of pointers
+    val appeared: Observable<Pointer>
+    val disappeared: Observable<Pointer>
+
+    fun transformed(transform: () -> Transform2): Pointer = object : Pointer {
         override val moved: Observable<Pointer> = observable(this@Pointer.moved) { this }
-        override val location: Vector2 get() = transform.inverse()(this@Pointer.location)
+        override val appeared: Observable<Pointer> = observable(this@Pointer.appeared) { this }
+        override val disappeared: Observable<Pointer> = observable(this@Pointer.disappeared) { this }
+
+        override val location: Vector2 get() = transform().inverse()(this@Pointer.location)
     }
 }
 interface PointerKey {
     val pointer: Pointer
     val key: Key
 
-    fun transformed(transform: Transform2) = pointerKey(pointer.transformed(transform), key)
+    fun transformed(transform: Transform2) = pointerKey(pointer.transformed({ transform }), key)
 }
 
 fun pointerKey(pointer: Pointer, key: Key): PointerKey = object : PointerKey {
@@ -35,8 +42,4 @@ fun pointerKeys(pointer: Pointer, keys: Iterable<Key>) = object : PointerKeys {
     override val keys = keys
     override val pressed = observable((keys map { it.pressed })) { pointerKey(pointer, it) }
     override val released = observable((keys map { it.released })) { pointerKey(pointer, it) }
-}
-
-interface Scroll {
-    val scrolled: Observable<Number>
 }

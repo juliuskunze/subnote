@@ -168,16 +168,17 @@ class GlScreen (context: Context, onReady: (GlScreen) -> Unit) : GLSurfaceView(c
         locations.map { Transforms2.scale(1, -1)(it - shape.halfSize) }.forEach {
             when (event.getAction()) {
                 MotionEvent.ACTION_DOWN -> {
+                    touchPointer.appear()
                     touchPointer.move(it)
                     touchKey.press()
                 }
                 MotionEvent.ACTION_UP -> {
+                    touchPointer.disappear()
                     touchPointer.move(it)
                     touchKey.release()
                 }
                 MotionEvent.ACTION_MOVE -> touchPointer.move(it)
             }
-
         }
 
         return true

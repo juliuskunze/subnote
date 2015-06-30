@@ -65,6 +65,10 @@ fun button(
         cancelLongPressed()
     }
 
+    override fun onPointerLeft(pointer: Pointer) {
+        cancelLongPressed()
+    }
+
     private fun cancelLongPressed() {
         longPressedTask?.cancel(false)
         longPressedTask = null

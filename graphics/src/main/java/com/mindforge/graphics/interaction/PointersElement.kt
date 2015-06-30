@@ -14,5 +14,5 @@ interface PointersElement<T> : Element<T> {
     fun onPointerKeyReleased(pointerKey: PointerKey) {}
     fun onPointerMoved(pointer: Pointer) {}
     fun onPointerEntered(pointer: Pointer) {}
-    fun onPointerLeaved(pointer: Pointer) {}
+    fun onPointerLeft(pointer: Pointer) {}
 }
