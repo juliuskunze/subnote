@@ -447,13 +447,27 @@ class Shell(val screen: Screen,
         }
 
         pointers mapObservable { it.pressed } startKeepingAllObserved { pk ->
-            for (it in screen.elementsAt(pk.pointer.location)) {
+            val allElements = screen.elementsAt(pk.pointer.location)
+            for (it in allElements) {
                 val element = it.element
                 if (element is PointersElement<*>) {
+                    if (element is LongClickable<*>) {
+                        val observers = ArrayList<Observer>()
+                        observers.add(element.longClickCanceled.addObserver {
+                            observers.forEach { it.stop() }
+                            val s = allElements.filter {it.element is Scrollable}.singleOrNull()
+                            if (s != null) {
+                                (s.element as Scrollable).onPointerKeyPressed(pointerKey(pk.pointer transformed { s.transform }, pk.key))
+                            }
+                        })
+                        observers.add(element.longClick.addObserver {
+                            observers.forEach { it.stop() }
+                        })
+                    }
                     element.onPointerKeyPressed(pointerKey(pk.pointer transformed { it.transform }, pk.key))
 
                     //TODO resolve root of problem by using a full input event layer model, like bubbling/tunneling/cancelable/... events:
-                    //break
+                    break
                 }
             }
         }

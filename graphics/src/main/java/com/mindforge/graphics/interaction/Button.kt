@@ -4,7 +4,7 @@ import com.mindforge.graphics.*
 import com.mindforge.graphics.math.Shape
 import java.util.concurrent.ScheduledFuture
 
-interface Button : PointersElement<Trigger<Unit>>, Composed<Trigger<Unit>> {
+interface Button : LongClickable<Trigger<Unit>>, Composed<Trigger<Unit>> {
     override fun onPointerKeyPressed(pointerKey: PointerKey) {
         content()
     }
@@ -30,6 +30,7 @@ fun button(
 
     var longPressedTask: ScheduledFuture<*>? = null
     var longPressedStartLocation: Vector2? = null
+    var longPressedPointerKey: PointerKey? = null
     var lastPressedInMs: Long? = null
 
     private val longTapDelayInMs: Long = 700
@@ -40,11 +41,14 @@ fun button(
         super.onPointerKeyPressed(pointerKey)
 
         longPressedStartLocation = pointerKey.pointer.location
+        longPressedPointerKey = pointerKey
         longPressedTask = scheduleDelayed(delayInMs = longTapDelayInMs) {
             try {
-                longPressedTask = null
                 lastPressedInMs = null
+
+                longPressedTask = null
                 longPressedStartLocation = null
+                longPressedPointerKey = null
 
                 onPointerKeyLongClicked(pointerKey)
             } catch(ex: Exception) {
@@ -81,14 +85,25 @@ fun button(
     }
 
     private fun cancelLongClicked() {
+        val l = longPressedPointerKey
         longPressedTask?.cancel(false)
+
         longPressedTask = null
         longPressedStartLocation = null
+        longPressedPointerKey = null
+
+        if(l != null) {
+            longClickCanceled(l)
+        }
     }
 
     fun onPointerKeyLongClicked(pointerKey: PointerKey) {
+        longClick(pointerKey)
         onLongClicked(pointerKey)
     }
+
+    override val longClick = trigger<PointerKey>()
+    override val longClickCanceled = trigger<PointerKey>()
 }
 
 fun textRectangleButton(inner: TextElement, onLongPressed: (PointerKey) -> Unit = {}, onDoubleClick: (PointerKey) -> Unit = {}, onClick: () -> Unit) = button(

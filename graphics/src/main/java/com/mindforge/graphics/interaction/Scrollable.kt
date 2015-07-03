@@ -4,7 +4,6 @@ import com.mindforge.graphics.*
 import com.mindforge.graphics.math.*
 import kotlin.properties.Delegates
 
-// TODO remove duplication to Draggable, why the differences?
 class Scrollable(element: Element<*>, val nearestValidLocation: (Vector2) -> Vector2 = {it}, startLocation: Vector2 = zeroVector2) : DraggableBase(element, startLocation) {
     private var lastLocation: Vector2? = null
 
