@@ -18,26 +18,21 @@ import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GooglePlayServicesUtil
 import com.google.android.gms.common.api.GoogleApiClient
 import com.google.android.gms.common.api.ResultCallback
-import com.google.android.gms.drive.Drive
-import com.google.android.gms.drive.DriveApi
-import com.google.android.gms.drive.DriveFile
-import com.google.android.gms.drive.DriveId
+import com.google.android.gms.drive.*
 import com.mindforge.graphics.android.GlFont
 import com.mindforge.graphics.android.GlScreen
 import com.mindforge.graphics.invoke
 import com.mindforge.graphics.observableIterable
 import com.mindforge.graphics.trigger
 import kotlinx.android.synthetic.activity_main.mindMapLayout
-import org.jetbrains.anko.browse
-import org.jetbrains.anko.longToast
-import org.jetbrains.anko.toast
-import org.jetbrains.anko.vibrator
+import org.jetbrains.anko.*
 import org.xmind.core.Core
 import org.xmind.core.ITopic
 import org.xmind.core.IWorkbook
 import org.xmind.core.internal.dom.WorkbookBuilderImpl
 import org.xmind.core.internal.dom.WorkbookImpl
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.net.URI
@@ -176,6 +171,10 @@ public class MainActivity : Activity() {
                 openFromDrive()
                 true
             }
+            R.id.save_xmind_to_drive -> {
+                saveToDrive()
+                true
+            }
             R.id.newNoteButton -> {
                 showInputDialog("New Note", "") {
                     if (it != null && it != "") {
@@ -221,13 +220,19 @@ public class MainActivity : Activity() {
                 true
             }
             R.id.open_xmind_from_dropbox -> {
-                DropboxChooser("7v2e1k3njlfbz9a").forResultType(DropboxChooser.ResultType.FILE_CONTENT).launch(this, IntentCode.openFileFromDropbox)
+                openFromDropbox()
 
                 true
             }
             else -> {
                 super.onOptionsItemSelected(item)
             }
+        }
+    }
+
+    private fun openFromDropbox() {
+        showSaveQuestionBefore {
+            DropboxChooser("7v2e1k3njlfbz9a").forResultType(DropboxChooser.ResultType.FILE_CONTENT).launch(this, IntentCode.openFileFromDropbox)
         }
     }
 
@@ -286,15 +291,42 @@ public class MainActivity : Activity() {
         save(localWorkbookFile)
     }
 
-    private fun openFromDrive() {
-        if (!driveFileOpenerClient.isConnected()) {
-            driveFileOpenerClient.connect()
+    private var onDriveConnected: () -> Unit = {}
 
-            // chooseFileFromDrive() called in onConnected()
-            return
+    private fun connectToDrive(onConnected: () -> Unit) {
+        driveFileClient.connect()
+        this.onDriveConnected = onConnected
+    }
+
+    private fun withDriveConnection(withConnection: () -> Unit) {
+        if (!driveFileClient.isConnected()) {
+            connectToDrive {
+                withConnection()
+            }
+        } else {
+            withConnection()
         }
+    }
 
-        chooseFileFromDrive()
+    private fun openFromDrive() {
+        showSaveQuestionBefore {
+            withDriveConnection {
+                chooseFileFromDrive()
+            }
+        }
+    }
+
+    private fun showSaveQuestionBefore(action: () -> Unit) {
+        alert("Save current map to Google Drive? It will be lost otherwise.", "Save?") {
+            positiveButton("Yes") {
+                saveToDrive {
+                    action()
+                }
+            }
+            negativeButton("No") {
+                action()
+            }
+        }.show()
     }
 
     fun importFromEvernote() {
@@ -314,10 +346,11 @@ public class MainActivity : Activity() {
 
     private val workbookBuilder: WorkbookBuilderImpl by Delegates.lazy { AndroidWorkbookBuilder(cacheDirectory = getCacheDir())() }
 
-    private val driveFileOpenerClient: GoogleApiClient by Delegates.lazy {
+    private val driveFileClient: GoogleApiClient by Delegates.lazy {
         GoogleApiClient.Builder(this).addApi(Drive.API).addScope(Drive.SCOPE_FILE).addConnectionCallbacks(object : GoogleApiClient.ConnectionCallbacks {
             override fun onConnected(connectionHint: Bundle?) {
-                chooseFileFromDrive()
+                onDriveConnected()
+                onDriveConnected = {}
             }
 
             override fun onConnectionSuspended(cause: Int) {
@@ -341,9 +374,44 @@ public class MainActivity : Activity() {
     }
 
     private fun chooseFileFromDrive() {
-        val intentSender = Drive.DriveApi.newOpenFileActivityBuilder().build(driveFileOpenerClient)
+        val intentSender = Drive.DriveApi.newOpenFileActivityBuilder().build(driveFileClient)
 
         startIntentSenderForResult(intentSender, IntentCode.openFileFromDrive, null, 0, 0, 0);
+    }
+
+    private var onSaved: () -> Unit = {}
+    private fun saveToDrive(onSaved: () -> Unit = {}) {
+        this.onSaved = onSaved
+        withDriveConnection {
+            Drive.DriveApi.newDriveContents(driveFileClient)
+                    .setResultCallback(object : ResultCallback<DriveApi.DriveContentsResult> {
+                        override fun onResult(result: DriveApi.DriveContentsResult) {
+                            if (!result.getStatus().isSuccess()) {
+                                toast("Failed to create new contents.")
+                                return
+                            }
+                            val outputStream = result.getDriveContents().getOutputStream()
+                            val fileToStore = FileInputStream(localWorkbookFile)
+                            while (true) {
+                                val next = fileToStore.read()
+                                if (next == -1) break
+                                outputStream.write(next)
+                            }
+
+                            val metaData = MetadataChangeSet.Builder().
+                                    setMimeType("image/jpeg").
+                                    setTitle(ApplicationState.workbook.getPrimarySheet().getRootTopic().getTitleText() + ".xmind").
+                                    build()
+                            val intentSender = Drive.DriveApi
+                                    .newCreateFileActivityBuilder()
+                                    .setInitialMetadata(metaData)
+                                    .setInitialDriveContents(result.getDriveContents())
+                                    .build(driveFileClient)
+
+                            startIntentSenderForResult(intentSender, IntentCode.saveFileToDrive, null, 0, 0, 0)
+                        }
+                    })
+        }
     }
 
     fun withAuthenticatedEvernoteSession(action: EvernoteSession.() -> Unit) =
@@ -373,9 +441,9 @@ public class MainActivity : Activity() {
                 }
             IntentCode.openFileFromDrive ->
                 if (resultCode == Activity.RESULT_OK) {
-                    val driveFile = Drive.DriveApi.getFile(driveFileOpenerClient, data!!.getExtras().get("response_drive_id") as DriveId)
+                    val driveFile = Drive.DriveApi.getFile(driveFileClient, data!!.getExtras().get("response_drive_id") as DriveId)
 
-                    driveFile.open(driveFileOpenerClient, DriveFile.MODE_READ_ONLY, object : DriveFile.DownloadProgressListener {
+                    driveFile.open(driveFileClient, DriveFile.MODE_READ_ONLY, object : DriveFile.DownloadProgressListener {
                         override fun onProgress(bytesDownloaded: Long, bytesExpected: Long) {
                             //TODO: mainTextView.setText("loading... " + if (bytesExpected > 0) "$bytesDownloaded / $bytesExpected bytes" else "")
                         }
@@ -389,12 +457,18 @@ public class MainActivity : Activity() {
                         }
 
                     })
-
                 }
+            IntentCode.saveFileToDrive ->
+                if (resultCode == Activity.RESULT_OK) {
+                    onSaved()
+                    onSaved = {}
+                }
+
             IntentCode.googleClientResolution ->
                 if (resultCode == Activity.RESULT_OK) {
                     openFromDrive()
                 }
+
             IntentCode.donate -> {
                 if (resultCode == Activity.RESULT_OK) {
                     try {
@@ -452,7 +526,6 @@ public class MainActivity : Activity() {
                 saveToDocuments()
             }
         }
-
     }
 
     private fun updateLinks(topic: ITopic) {
@@ -484,7 +557,6 @@ public class MainActivity : Activity() {
         )
     }
 
-
     private fun InputStream.writeToFile(file: File) {
         try {
             val output = FileOutputStream(file)
@@ -509,6 +581,7 @@ public class MainActivity : Activity() {
         val googleClientResolution = 0
         val openFileFromDrive = 1
         val openFileFromDropbox = 2
-        val donate = 3
+        val saveFileToDrive = 4
+        val donate = 5
     }
 }

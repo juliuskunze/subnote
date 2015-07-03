@@ -45,6 +45,11 @@
         android:showAsAction="never"/>
 
     <item
+        android:id="@+id/save_xmind_to_drive"
+        android:title="@string/save_xmind_to_drive"
+        android:showAsAction="never"/>
+
+    <item
         android:id="@+id/giveFeedback"
         android:title="@string/give_feedback"
         android:showAsAction="never"/>

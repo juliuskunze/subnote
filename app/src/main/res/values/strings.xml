@@ -3,6 +3,7 @@
 
     <string name="open_xmind_from_drive">Open XMind File from Drive</string>
     <string name="open_xmind_from_dropbox">Open XMind File from Dropbox</string>
+    <string name="save_xmind_to_drive">Save XMind File to Drive</string>
     <string name="drive_title">XMind File</string>
     <string name="new_subnote">New Subnote</string>
     <string name="remove_note">Delete Note</string>
