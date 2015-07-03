@@ -2,7 +2,6 @@ package com.mindforge.graphics.interaction
 
 import com.mindforge.graphics.*
 import com.mindforge.graphics.math.Shape
-import com.mindforge.graphics.math.rectangle
 import java.util.concurrent.ScheduledFuture
 
 interface Button : PointersElement<Trigger<Unit>>, Composed<Trigger<Unit>> {
@@ -16,7 +15,7 @@ fun button(
         elements: ObservableIterable<TransformedElement<*>>,
         changed: Observable<Unit> = observable(),
         trigger: Trigger<Unit> = trigger<Unit>(),
-        onLongPressed: (PointerKey) -> Unit = {},
+        onLongClicked: (PointerKey) -> Unit = {},
         onDoubleClick: ((PointerKey) -> Unit)? = null,
         onClick: () -> Unit
 ) = object : Button {
@@ -30,21 +29,24 @@ fun button(
     }
 
     var longPressedTask: ScheduledFuture<*>? = null
-
+    var longPressedStartLocation: Vector2? = null
     var lastPressedInMs: Long? = null
 
     private val longTapDelayInMs: Long = 700
     private val maxDoubleClickDelayInMs = 700
+    private val maxLongClickMoveDistance = 20
 
     override fun onPointerKeyPressed(pointerKey: PointerKey) {
         super.onPointerKeyPressed(pointerKey)
 
+        longPressedStartLocation = pointerKey.pointer.location
         longPressedTask = scheduleDelayed(delayInMs = longTapDelayInMs) {
             try {
                 longPressedTask = null
                 lastPressedInMs = null
+                longPressedStartLocation = null
 
-                onPointerKeyLongPressed(pointerKey)
+                onPointerKeyLongClicked(pointerKey)
             } catch(ex: Exception) {
                 // TODO better throw it in main thread
                 ex.printStackTrace()
@@ -54,7 +56,7 @@ fun button(
         val l = lastPressedInMs
 
         if (onDoubleClick != null && l != null && System.currentTimeMillis() - l < maxDoubleClickDelayInMs) {
-            cancelLongPressed()
+            cancelLongClicked()
             onDoubleClick(pointerKey)
         }
 
@@ -62,20 +64,30 @@ fun button(
     }
 
     override fun onPointerKeyReleased(pointerKey: PointerKey) {
-        cancelLongPressed()
+        cancelLongClicked()
+    }
+
+    override fun onPointerMoved(pointer: Pointer) {
+        val start = longPressedStartLocation
+        if (start != null) {
+            if ((pointer.location - start).length.toDouble() > maxLongClickMoveDistance) {
+                cancelLongClicked()
+            }
+        }
     }
 
     override fun onPointerLeft(pointer: Pointer) {
-        cancelLongPressed()
+        cancelLongClicked()
     }
 
-    private fun cancelLongPressed() {
+    private fun cancelLongClicked() {
         longPressedTask?.cancel(false)
         longPressedTask = null
+        longPressedStartLocation = null
     }
 
-    fun onPointerKeyLongPressed(pointerKey: PointerKey) {
-        onLongPressed(pointerKey)
+    fun onPointerKeyLongClicked(pointerKey: PointerKey) {
+        onLongClicked(pointerKey)
     }
 }
 
@@ -87,7 +99,7 @@ fun textRectangleButton(inner: TextElement, onLongPressed: (PointerKey) -> Unit 
                 transformedElement(coloredElement(rectangle(vector(10, 1)), Fills.solid(Colors.blue))),
                 transformedElement(coloredElement(rectangle(vector(1, 10)), Fills.solid(Colors.blue))) */
         )),
-        onLongPressed = onLongPressed,
+        onLongClicked = onLongPressed,
         onDoubleClick = onDoubleClick,
         onClick = onClick
 )
