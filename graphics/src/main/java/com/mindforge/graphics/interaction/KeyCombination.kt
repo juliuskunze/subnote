@@ -1,6 +1,6 @@
 package com.mindforge.graphics.interaction
 
-trait KeyCombination {
+interface KeyCombination {
     val keys: Iterable<Key>
     val meaning: Command?
 }

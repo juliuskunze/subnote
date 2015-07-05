@@ -1,6 +1,6 @@
 package com.mindforge.graphics
 
-trait Observable<T> {
+interface Observable<T> {
     fun addObserver(action: Observer.(T) -> Unit): Observer {
         val observer = object : ObserverAction<T> {
             override fun invoke(value: T) = this.action(value)
@@ -28,11 +28,11 @@ trait Observable<T> {
     }
 }
 
-trait ObserverAction<T> : Observer {
+interface ObserverAction<T> : Observer {
     fun invoke(value: T)
 }
 
-trait Observer {
+interface Observer {
     fun stop()
 }
 

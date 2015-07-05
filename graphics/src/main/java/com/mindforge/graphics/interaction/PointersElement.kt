@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit*/
     Executors.newSingleThreadScheduledExecutor().schedule(action, delayInMs, TimeUnit.MILLISECONDS)*/
 
 
-trait PointersElement<T> : Element<T> {
+interface PointersElement<T> : Element<T> {
     fun onPointerKeyPressed(pointerKey: PointerKey) {}
     fun onPointerKeyReleased(pointerKey: PointerKey) {}
     fun onPointerMoved(pointer: Pointer) {}

@@ -3,7 +3,7 @@ package com.mindforge.graphics
 import com.mindforge.graphics.*
 // not available in JS yet: import java.util.SortedMap
 
-trait Fill {
+interface Fill {
     fun colorAt(location: Vector2): Color
     fun transform(transform: Transform2): TransformedFill = object : TransformedFill {
         override val original = this@Fill
@@ -27,17 +27,17 @@ object Fills {
     }*/
 }
 
-trait TransformedFill : Fill {
+interface TransformedFill : Fill {
     val original: Fill
     val transform: Transform2
     override fun colorAt(location: Vector2) = original.colorAt(transform.inverse()(location))
 }
 
-trait InvisibleFill : SolidFill {
+interface InvisibleFill : SolidFill {
     override val color: Color get() = Colors.transparent
 }
 
-trait SolidFill : Fill {
+interface SolidFill : Fill {
     val color: Color
     override fun colorAt(location: Vector2) = color
 }

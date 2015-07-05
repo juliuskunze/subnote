@@ -1,24 +1,72 @@
 package net.pureal.graphics.js
 
 import com.mindforge.graphics.*
+import com.mindforge.graphics.math.Circle
 import com.mindforge.graphics.math.Rectangle
 import com.mindforge.graphics.math.rectangle
-import kotlin.js.dom.html.window
-import kotlin.js.dom.html5.HTMLCanvasElement
+import jquery.jq
+import org.w3c.dom.CanvasRenderingContext2D
+import org.w3c.dom.HTMLCanvasElement
+import kotlin.browser.window
 
 class CanvasScreen(var canvas: HTMLCanvasElement) : Screen {
 
-    val context = canvas.getContext("2d")!!
+    val context = canvas.getContext("2d") as CanvasRenderingContext2D
 
     init {
-        window.setInterval({
+        window.setInterval( {
             context.fillStyle = Colors.white.htmlCode
-            context.fillRect(0.0, 0.0, canvas.width, canvas.height)
+            context.resetTransform()
+            context.fillRect(0.0, 0.0, canvas.width.toDouble(), canvas.height.toDouble())
+            context.draw(content)
         }, 20)
+        window.onresize = {
+            val parent = jq(canvas.parentElement!!)
+            canvas.width = parent.width().toInt()
+            canvas.height = Math.min(parent.height().toInt(), window.innerHeight.toInt())
+            true
+        }
     }
 
     override var content: Composed<*> = composed(observableIterable(emptyList()))
 
     override val shape: Rectangle get() = rectangle(vector(canvas.width, canvas.height))
 
+}
+
+fun CanvasRenderingContext2D.draw(element: Element<*>) {
+    when (element) {
+        is Composed<*> -> {
+            val originalTransform = currentTransform
+            element.elements.forEach {
+                transform(it.transform)
+                draw(it.element)
+                currentTransform = originalTransform
+            }
+        }
+        is ColoredElement<*> -> {
+            val fill = element.fill
+            val shape = element.shape
+            when (fill) {
+                is SolidFill -> fillStyle = fill.color.htmlCode
+                else -> throw UnsupportedOperationException("Cannot draw fill $fill.")
+            }
+            when (shape) {
+                is Circle -> fillPath { arc(0.0, 0.0, shape.radius.toDouble(), 0.0, 2 * Math.PI, false) }
+                else -> throw UnsupportedOperationException("Cannot draw shape $shape.")
+            }
+        }
+        else -> throw UnsupportedOperationException("Cannot draw element $element.")
+    }
+}
+
+fun CanvasRenderingContext2D.fillPath(constructPath: CanvasRenderingContext2D.() -> Unit) {
+    beginPath()
+    constructPath()
+    closePath()
+    fill()
+}
+
+fun CanvasRenderingContext2D.transform(transform: Transform2) = transform.matrix.let {
+    this.transform(it.a.toDouble(), it.d.toDouble(), it.b.toDouble(), it.e.toDouble(), it.c.toDouble(), it.f.toDouble())
 }

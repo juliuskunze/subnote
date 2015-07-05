@@ -3,7 +3,7 @@ package com.mindforge.graphics.math
 import com.mindforge.graphics.Vector2
 import com.mindforge.graphics.zeroVector2
 
-trait Rectangle : Shape {
+interface Rectangle : Shape {
     val size: Vector2
     val center: Vector2
     val halfSize: Vector2 get() = size / 2

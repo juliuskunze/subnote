@@ -1,6 +1,6 @@
 package com.mindforge.graphics
 
-trait Matrix3 : Iterable<Number> {
+interface Matrix3 : Iterable<Number> {
     val a: Number
     val b: Number
     val c: Number

@@ -46,7 +46,7 @@ class GlTransformedElement(val originalTransformedElement: TransformedElement<*>
 
 class GlComposed(val originalComposed: Composed<*>, screen: GlScreen) : GlElement(originalComposed, screen), Composed<Any?> {
     val glElementList = CopyOnWriteArrayList(originalComposed.elements.mapObservable { GlTransformedElement(it, screen) }.toList())
-    private trait DetachableObservableIterable<T> : ObservableIterable<T> {
+    private interface DetachableObservableIterable<T> : ObservableIterable<T> {
         fun detach()
     }
     override val elements = object : DetachableObservableIterable<TransformedElement<*>> {

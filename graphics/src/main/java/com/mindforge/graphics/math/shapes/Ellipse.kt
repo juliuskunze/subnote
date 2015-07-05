@@ -3,7 +3,7 @@ package com.mindforge.graphics.math
 import com.mindforge.graphics.Vector2
 import com.mindforge.graphics
 
-trait Ellipse : Shape {
+interface Ellipse : Shape {
     val size: Vector2
     val boundRectangle: Rectangle get() = rectangle(size)
 

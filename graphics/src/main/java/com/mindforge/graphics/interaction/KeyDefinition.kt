@@ -2,7 +2,7 @@ package com.mindforge.graphics.interaction
 
 import com.mindforge.graphics.*
 
-trait KeyDefinition {
+interface KeyDefinition {
     val command: Command
     val alternativeCommands: Iterable<Command> get() = listOf()
     val name: String get() = command.name

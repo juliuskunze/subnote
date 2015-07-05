@@ -5,7 +5,7 @@ import com.mindforge.graphics.math.Shape
 import com.mindforge.graphics.math.rectangle
 // not available in JS: import java.util.concurrent.ScheduledFuture
 
-trait Button : PointersElement<Trigger<Unit>>, Composed<Trigger<Unit>> {
+interface Button : PointersElement<Trigger<Unit>>, Composed<Trigger<Unit>> {
     override fun onPointerKeyPressed(pointerKey: PointerKey) {
         content()
     }

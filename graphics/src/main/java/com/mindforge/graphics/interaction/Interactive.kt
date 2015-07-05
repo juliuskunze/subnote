@@ -1,5 +1,5 @@
 package com.mindforge.graphics.interaction
 
-trait Interactive<out T> {
+interface Interactive<out T> {
     val content: T
 }

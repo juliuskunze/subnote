@@ -4,7 +4,7 @@ import com.mindforge.graphics.math.Shape
 import com.mindforge.graphics.math.rectangle
 import kotlin.properties.Delegates
 
-trait TextElement : ColoredElement<String> {
+interface TextElement : ColoredElement<String> {
     val font: Font
     val lineHeight: Number
     override val shape: TextShape get() = font.shape(content, lineHeight)
@@ -35,12 +35,12 @@ class TextElementImpl(content: String, font: Font, lineHeight: Number, fill: Fil
     val character: Char
 }*/
 
-trait LineShape : Shape {
+interface LineShape : Shape {
     // YAGNI val glyphs: List<GlyphShape>
     val width: Number
 }
 
-trait TextShape : Shape {
+interface TextShape : Shape {
     val text: String
 
     val lineHeight: Number
@@ -57,7 +57,7 @@ trait TextShape : Shape {
     fun box() = rectangle(size(), quadrant = 4)
 }
 
-trait Font {
+interface Font {
     fun shape(text: String, lineHeight: Number): TextShape
 }
 

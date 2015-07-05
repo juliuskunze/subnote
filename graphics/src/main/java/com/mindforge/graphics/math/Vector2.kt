@@ -1,6 +1,6 @@
 package com.mindforge.graphics
 
-trait Vector2 : Iterable<Number> {
+interface Vector2 : Iterable<Number> {
     fun plus(other: Vector2): Vector2 = vector(x.toDouble() + other.x.toDouble(), y.toDouble() + other.y.toDouble())
     fun times(other: Number): Vector2 {
         val s = other.toDouble()

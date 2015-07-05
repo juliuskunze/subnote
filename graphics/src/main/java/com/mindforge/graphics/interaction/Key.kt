@@ -2,7 +2,7 @@ package com.mindforge.graphics.interaction
 
 import com.mindforge.graphics.Observable
 
-trait Key {
+interface Key {
     val definition: KeyDefinition
     val isPressed: Boolean
     val pressed: Observable<Key>

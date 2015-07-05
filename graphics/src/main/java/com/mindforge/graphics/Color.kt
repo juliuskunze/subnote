@@ -1,6 +1,6 @@
 package com.mindforge.graphics
 
-trait Color {
+interface Color {
     val r: Number
     val g: Number
     val b: Number
