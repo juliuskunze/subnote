@@ -14,18 +14,21 @@ class CanvasScreen(var canvas: HTMLCanvasElement) : Screen {
     val context = canvas.getContext("2d") as CanvasRenderingContext2D
 
     init {
-        window.setInterval( {
+        resize()
+        window.setInterval({
             context.fillStyle = Colors.white.htmlCode
             context.resetTransform()
             context.fillRect(0.0, 0.0, canvas.width.toDouble(), canvas.height.toDouble())
             context.draw(content)
         }, 20)
-        window.onresize = {
-            val parent = jq(canvas.parentElement!!)
-            canvas.width = parent.width().toInt()
-            canvas.height = Math.min(parent.height().toInt(), window.innerHeight.toInt())
-            true
-        }
+        window.onresize = { resize() }
+    }
+
+    private fun resize(): Boolean {
+        val parent = jq(canvas.parentElement!!)
+        canvas.width = parent.width().toInt()
+        canvas.height = Math.min(parent.height().toInt(), window.innerHeight.toInt())
+        return true
     }
 
     override var content: Composed<*> = composed(observableIterable(emptyList()))

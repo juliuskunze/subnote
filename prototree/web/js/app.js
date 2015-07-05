@@ -85,8 +85,8 @@
             }, /** @lends _.net.pureal.graphics.js.CanvasScreen */ {
               CanvasScreen$f: function (this$CanvasScreen) {
                 return function () {
-                  this$CanvasScreen.context.resetTransform();
                   this$CanvasScreen.context.fillStyle = _.net.pureal.graphics.js.get_htmlCode(_.com.mindforge.graphics.Colors.white);
+                  this$CanvasScreen.context.resetTransform();
                   this$CanvasScreen.context.fillRect(0.0, 0.0, this$CanvasScreen.canvas.width, this$CanvasScreen.canvas.height);
                   _.net.pureal.graphics.js.draw(this$CanvasScreen.context, this$CanvasScreen.content);
                 };
