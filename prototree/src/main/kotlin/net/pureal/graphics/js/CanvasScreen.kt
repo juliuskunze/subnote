@@ -40,11 +40,11 @@ class CanvasScreen(var canvas: HTMLCanvasElement) : Screen {
 fun CanvasRenderingContext2D.draw(element: Element<*>) {
     when (element) {
         is Composed<*> -> {
-            val originalTransform = currentTransform
             element.elements.forEach {
+                save()
                 transform(it.transform)
                 draw(it.element)
-                currentTransform = originalTransform
+                restore()
             }
         }
         is ColoredElement<*> -> {

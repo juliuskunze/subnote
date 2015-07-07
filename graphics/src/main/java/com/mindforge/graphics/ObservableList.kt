@@ -5,7 +5,7 @@ import kotlin.IndexedValue
 
 interface ObservableList<T> : ObservableIterable<T>, MutableList<T>
 
-fun observableArrayListOf<T>(vararg elements: T) = ObservableArrayList<T>(elements map { it })
+fun observableArrayListOf<T>(vararg elements: T) = ObservableArrayList<T>(elements.asIterable())
 
 class ObservableArrayList<T>(elements: Iterable<T> = listOf()) : ArrayList<T>(), ObservableList<T> {
 

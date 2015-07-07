@@ -5,36 +5,104 @@
       pureal: Kotlin.definePackage(null, /** @lends _.net.pureal */ {
         subnote: Kotlin.definePackage(null, /** @lends _.net.pureal.subnote */ {
           prototree: Kotlin.definePackage(null, /** @lends _.net.pureal.subnote.prototree */ {
-            f: function (screen, location, direction, radius, ball) {
-              return function () {
-                var width = Kotlin.numberToDouble(screen.shape.size.x);
-                var height = Kotlin.numberToDouble(screen.shape.size.y);
-                if (Kotlin.numberToDouble(location.v.plus_rkhl8y$(direction.v).x) < radius)
-                  direction.v = _.com.mindforge.graphics.vector(Math.abs(Kotlin.numberToDouble(direction.v.x)), direction.v.y);
-                if (Kotlin.numberToDouble(location.v.plus_rkhl8y$(direction.v).x) > width - radius)
-                  direction.v = _.com.mindforge.graphics.vector(-Math.abs(Kotlin.numberToDouble(direction.v.x)), direction.v.y);
-                if (Kotlin.numberToDouble(location.v.plus_rkhl8y$(direction.v).y) < radius)
-                  direction.v = _.com.mindforge.graphics.vector(direction.v.x, Math.abs(Kotlin.numberToDouble(direction.v.y)));
-                if (Kotlin.numberToDouble(location.v.plus_rkhl8y$(direction.v).y) > height - radius)
-                  direction.v = _.com.mindforge.graphics.vector(direction.v.x, -Math.abs(Kotlin.numberToDouble(direction.v.y)));
-                location.v = location.v.plus_rkhl8y$(direction.v);
-                ball.transform = _.com.mindforge.graphics.Transforms2.translation(location.v);
-                return true;
-              };
-            },
             main$f: function () {
               var tmp$0;
               var screen = new _.net.pureal.graphics.js.CanvasScreen((tmp$0 = document.getElementById('canvas')) != null ? tmp$0 : Kotlin.throwNPE());
-              var radius = 50;
-              var ball = new _.com.mindforge.graphics.MutableTransformedElement(_.com.mindforge.graphics.coloredElement(_.com.mindforge.graphics.math.circle(radius), _.com.mindforge.graphics.Fills.solid(_.com.mindforge.graphics.Colors.red)));
-              var elements = _.com.mindforge.graphics.observableArrayListOf([ball]);
-              screen.content = _.com.mindforge.graphics.composed(elements);
-              var direction = {v: _.com.mindforge.graphics.vector(10, 10)};
-              var location = {v: _.com.mindforge.graphics.vector(radius, radius)};
-              window.setInterval(_.net.pureal.subnote.prototree.f(screen, location, direction, radius, ball), 20);
+              screen.content = new _.net.pureal.subnote.prototree.TreeNodeElement(new _.net.pureal.subnote.prototree.Tree(_.net.pureal.subnote.prototree.randomNode()));
             },
             main: function (args) {
               $(_.net.pureal.subnote.prototree.main$f);
+            },
+            Node: Kotlin.createClass(null, function (children) {
+              this.children = children;
+            }),
+            Tree: Kotlin.createClass(null, function (root) {
+              this.root = root;
+            }, /** @lends _.net.pureal.subnote.prototree.Tree.prototype */ {
+              parent: function (child, search) {
+                var tmp$0;
+                if (search === void 0)
+                  search = this.root;
+                if (search.children.contains_za3rmp$(child)) {
+                  return search;
+                }
+                 else {
+                  tmp$0 = search.children.iterator();
+                  while (tmp$0.hasNext()) {
+                    var it = tmp$0.next();
+                    var found = this.parent(child, it);
+                    if (found != null)
+                      return found;
+                  }
+                  return null;
+                }
+              },
+              siblingIndex: function (node) {
+                var tmp$0, tmp$1, tmp$2;
+                return (tmp$2 = (tmp$1 = (tmp$0 = this.parent(node)) != null ? tmp$0.children : null) != null ? tmp$1.indexOf_za3rmp$(node) : null) != null ? tmp$2 : -1;
+              }
+            }),
+            TreeNodeElement: Kotlin.createClass(function () {
+              return [_.com.mindforge.graphics.Composed];
+            }, function (tree, node) {
+              if (node === void 0)
+                node = tree.root;
+              this.tree = tree;
+              this.node = node;
+              this.$content_f87ond$ = Kotlin.modules['stdlib'].kotlin.to_l1ob02$(this.tree, this.node);
+              this.body = _.com.mindforge.graphics.coloredElement(_.com.mindforge.graphics.math.circle(50 - 5 * this.tree.siblingIndex(this.node)), _.com.mindforge.graphics.Fills.solid(_.com.mindforge.graphics.color(Math.random(), Math.random(), Math.random())));
+              var tmp$0 = Kotlin.modules['stdlib'].kotlin.listOf_za3rmp$(_.com.mindforge.graphics.transformedElement(this.body));
+              var $receiver = this.node.children;
+              var transform = _.net.pureal.subnote.prototree.TreeNodeElement.elements$f(this);
+              var destination = new Kotlin.ArrayList(Kotlin.modules['stdlib'].kotlin.collectionSizeOrDefault_pjxt3m$($receiver, 10));
+              var tmp$1;
+              tmp$1 = $receiver.iterator();
+              while (tmp$1.hasNext()) {
+                var item = tmp$1.next();
+                destination.add_za3rmp$(transform(item));
+              }
+              this.$elements_fwd7vd$ = new _.com.mindforge.graphics.ObservableArrayList(Kotlin.modules['stdlib'].kotlin.plus_84aay$(tmp$0, destination));
+            }, /** @lends _.net.pureal.subnote.prototree.TreeNodeElement.prototype */ {
+              content: {
+                get: function () {
+                  return this.$content_f87ond$;
+                }
+              },
+              elements: {
+                get: function () {
+                  return this.$elements_fwd7vd$;
+                }
+              }
+            }, /** @lends _.net.pureal.subnote.prototree.TreeNodeElement */ {
+              elements$f: function (this$TreeNodeElement) {
+                return function (node) {
+                  return _.com.mindforge.graphics.transformedElement(new _.net.pureal.subnote.prototree.TreeNodeElement(this$TreeNodeElement.tree, node), _.com.mindforge.graphics.Transforms2.translation(_.com.mindforge.graphics.vector(50, this$TreeNodeElement.tree.siblingIndex(node) * 50)));
+                };
+              }
+            }),
+            random: function (max) {
+              return Math.random() * max | 0;
+            },
+            randomNode: function (maxDepth, maxWidth) {
+              if (maxDepth === void 0)
+                maxDepth = 8;
+              if (maxWidth === void 0)
+                maxWidth = 8;
+              var tmp$0;
+              if (maxDepth === 0)
+                tmp$0 = Kotlin.modules['stdlib'].kotlin.emptyList();
+              else {
+                var $receiver = new Kotlin.NumberRange(1, _.net.pureal.subnote.prototree.random(maxWidth));
+                var destination = new Kotlin.ArrayList(Kotlin.modules['stdlib'].kotlin.collectionSizeOrDefault_pjxt3m$($receiver, 10));
+                var tmp$1;
+                tmp$1 = $receiver.iterator();
+                while (tmp$1.hasNext()) {
+                  var item = tmp$1.next();
+                  destination.add_za3rmp$(_.net.pureal.subnote.prototree.randomNode(maxDepth - 1, maxWidth));
+                }
+                tmp$0 = destination;
+              }
+              return new _.net.pureal.subnote.prototree.Node(tmp$0);
             }
           })
         }),
@@ -65,10 +133,18 @@
               var tmp$0;
               this.canvas = canvas;
               this.context = (tmp$0 = this.canvas.getContext('2d')) != null ? tmp$0 : Kotlin.throwNPE();
+              this.resize();
               window.setInterval(_.net.pureal.graphics.js.CanvasScreen.CanvasScreen$f(this), 20);
               window.onresize = _.net.pureal.graphics.js.CanvasScreen.CanvasScreen$f_0(this);
               this.$content_tfpozv$ = _.com.mindforge.graphics.composed(_.com.mindforge.graphics.observableIterable(Kotlin.modules['stdlib'].kotlin.emptyList()));
             }, /** @lends _.net.pureal.graphics.js.CanvasScreen.prototype */ {
+              resize: function () {
+                var tmp$0;
+                var parent = $((tmp$0 = this.canvas.parentElement) != null ? tmp$0 : Kotlin.throwNPE());
+                this.canvas.width = Kotlin.numberToInt(parent.width());
+                this.canvas.height = Math.min(Kotlin.numberToInt(parent.height()), window.innerHeight | 0);
+                return true;
+              },
               content: {
                 get: function () {
                   return this.$content_tfpozv$;
@@ -93,11 +169,7 @@
               },
               CanvasScreen$f_0: function (this$CanvasScreen) {
                 return function (it) {
-                  var tmp$0;
-                  var parent = $((tmp$0 = this$CanvasScreen.canvas.parentElement) != null ? tmp$0 : Kotlin.throwNPE());
-                  this$CanvasScreen.canvas.width = Kotlin.numberToInt(parent.width());
-                  this$CanvasScreen.canvas.height = Math.min(Kotlin.numberToInt(parent.height()), window.innerHeight | 0);
-                  return true;
+                  return this$CanvasScreen.resize();
                 };
               }
             }),
@@ -108,14 +180,14 @@
             },
             draw: function ($receiver, element) {
               if (Kotlin.isType(element, _.com.mindforge.graphics.Composed)) {
-                var originalTransform = $receiver.currentTransform;
                 var tmp$0;
                 tmp$0 = element.elements.iterator();
                 while (tmp$0.hasNext()) {
                   var element_0 = tmp$0.next();
+                  $receiver.save();
                   _.net.pureal.graphics.js.transform($receiver, element_0.transform);
                   _.net.pureal.graphics.js.draw($receiver, element_0.element);
-                  $receiver.currentTransform = originalTransform;
+                  $receiver.restore();
                 }
               }
                else if (Kotlin.isType(element, _.com.mindforge.graphics.ColoredElement)) {
@@ -462,120 +534,6 @@
               changed = _.com.mindforge.graphics.observable([]);
             return _.com.mindforge.graphics.coloredElement_1(Kotlin.modules['builtins'].kotlin.Unit, shape, fill, changed);
           },
-          ObservableList: Kotlin.createTrait(function () {
-            return [Kotlin.modules['builtins'].kotlin.MutableList, _.com.mindforge.graphics.ObservableIterable];
-          }),
-          observableArrayListOf$f: function (it) {
-            return it;
-          },
-          observableArrayListOf: function (elements) {
-            return new _.com.mindforge.graphics.ObservableArrayList(Kotlin.modules['stdlib'].kotlin.map_rie7ol$(elements, _.com.mindforge.graphics.observableArrayListOf$f));
-          },
-          ObservableArrayList: Kotlin.createClass(function () {
-            return [_.com.mindforge.graphics.ObservableList, Kotlin.ArrayList];
-          }, function $fun(elements) {
-            if (elements === void 0)
-              elements = Kotlin.modules['stdlib'].kotlin.listOf();
-            $fun.baseInitializer.call(this);
-            Kotlin.ArrayList.prototype.addAll_4fm7v2$.call(this, Kotlin.modules['stdlib'].kotlin.map_m3yiqg$(elements, _.com.mindforge.graphics.ObservableArrayList.ObservableArrayList$f));
-            this.$added_8cwyzb$ = _.com.mindforge.graphics.trigger();
-            this.$removed_ur5o21$ = _.com.mindforge.graphics.trigger();
-            this.$addedAt_6afjlw$ = _.com.mindforge.graphics.trigger();
-            this.$removedAt_63ge1o$ = _.com.mindforge.graphics.trigger();
-          }, /** @lends _.com.mindforge.graphics.ObservableArrayList.prototype */ {
-            added: {
-              get: function () {
-                return this.$added_8cwyzb$;
-              }
-            },
-            removed: {
-              get: function () {
-                return this.$removed_ur5o21$;
-              }
-            },
-            addedAt: {
-              get: function () {
-                return this.$addedAt_6afjlw$;
-              }
-            },
-            removedAt: {
-              get: function () {
-                return this.$removedAt_63ge1o$;
-              }
-            },
-            add_za3rmp$: function (e) {
-              Kotlin.ArrayList.prototype.add_za3rmp$.call(this, e);
-              this.added.invoke_za3rmp$(e);
-              return true;
-            },
-            addAll_4fm7v2$: function (c) {
-              var operation = _.com.mindforge.graphics.ObservableArrayList.addAll_4fm7v2$f(this);
-              var tmp$0;
-              tmp$0 = c.iterator();
-              while (tmp$0.hasNext()) {
-                var element = tmp$0.next();
-                operation(element);
-              }
-              return Kotlin.modules['stdlib'].kotlin.any_ir3nkc$(c);
-            },
-            remove_za3rmp$: function (o) {
-              if (!Kotlin.ArrayList.prototype.remove_za3rmp$.call(this, o)) {
-                return false;
-              }
-              this.removed.invoke_za3rmp$(o);
-              return true;
-            },
-            removeAll_4fm7v2$: function (c) {
-              var tmp$0;
-              var result = false;
-              tmp$0 = Kotlin.modules['stdlib'].kotlin.reversed_lufotp$(Kotlin.modules['stdlib'].kotlin.get_indices_4m3c68$(c)).iterator();
-              while (tmp$0.hasNext()) {
-                var index = tmp$0.next();
-                result = this.remove_za3rmp$(Kotlin.modules['stdlib'].kotlin.elementAt_pjxt3m$(c, index)) || result;
-              }
-              return result;
-            },
-            clear: function () {
-              this.removeAll_4fm7v2$(this);
-            },
-            clearAndAddAll: function (newElements) {
-              this.clear();
-              Kotlin.modules['stdlib'].kotlin.addAll_p6ac9a$(this, newElements);
-            },
-            addAll_9cca64$: function (index, c) {
-              var tmp$0;
-              tmp$0 = c.iterator();
-              while (tmp$0.hasNext()) {
-                var e = tmp$0.next();
-                this.add_vux3hl$(index, e);
-              }
-              return Kotlin.modules['stdlib'].kotlin.any_ir3nkc$(c);
-            },
-            add_vux3hl$: function (index, element) {
-              Kotlin.ArrayList.prototype.add_vux3hl$.call(this, index, element);
-              this.addedAt.invoke_za3rmp$(new Kotlin.modules['stdlib'].kotlin.IndexedValue(index, element));
-            },
-            remove_za3lpa$: function (index) {
-              var o = Kotlin.ArrayList.prototype.remove_za3lpa$.call(this, index);
-              this.removedAt.invoke_za3rmp$(new Kotlin.modules['stdlib'].kotlin.IndexedValue(index, o));
-              return o;
-            },
-            retainAll_4fm7v2$: function (c) {
-              throw new Kotlin.UnsupportedOperationException();
-            },
-            set_vux3hl$: function (index, element) {
-              throw new Kotlin.UnsupportedOperationException();
-            }
-          }, /** @lends _.com.mindforge.graphics.ObservableArrayList */ {
-            ObservableArrayList$f: function (it) {
-              return it;
-            },
-            addAll_4fm7v2$f: function (this$ObservableArrayList) {
-              return function (it) {
-                this$ObservableArrayList.add_za3rmp$(it);
-              };
-            }
-          }),
           Trigger: Kotlin.createTrait(function () {
             return [_.com.mindforge.graphics.Observable];
           }, /** @lends _.com.mindforge.graphics.Trigger.prototype */ {
@@ -1153,6 +1111,117 @@
               }
             });
           },
+          ObservableList: Kotlin.createTrait(function () {
+            return [Kotlin.modules['builtins'].kotlin.MutableList, _.com.mindforge.graphics.ObservableIterable];
+          }),
+          observableArrayListOf: function (elements) {
+            return new _.com.mindforge.graphics.ObservableArrayList(Kotlin.modules['stdlib'].kotlin.asIterable_eg9ybj$(elements));
+          },
+          ObservableArrayList: Kotlin.createClass(function () {
+            return [_.com.mindforge.graphics.ObservableList, Kotlin.ArrayList];
+          }, function $fun(elements) {
+            if (elements === void 0)
+              elements = Kotlin.modules['stdlib'].kotlin.listOf();
+            $fun.baseInitializer.call(this);
+            Kotlin.ArrayList.prototype.addAll_4fm7v2$.call(this, Kotlin.modules['stdlib'].kotlin.map_m3yiqg$(elements, _.com.mindforge.graphics.ObservableArrayList.ObservableArrayList$f));
+            this.$added_8cwyzb$ = _.com.mindforge.graphics.trigger();
+            this.$removed_ur5o21$ = _.com.mindforge.graphics.trigger();
+            this.$addedAt_6afjlw$ = _.com.mindforge.graphics.trigger();
+            this.$removedAt_63ge1o$ = _.com.mindforge.graphics.trigger();
+          }, /** @lends _.com.mindforge.graphics.ObservableArrayList.prototype */ {
+            added: {
+              get: function () {
+                return this.$added_8cwyzb$;
+              }
+            },
+            removed: {
+              get: function () {
+                return this.$removed_ur5o21$;
+              }
+            },
+            addedAt: {
+              get: function () {
+                return this.$addedAt_6afjlw$;
+              }
+            },
+            removedAt: {
+              get: function () {
+                return this.$removedAt_63ge1o$;
+              }
+            },
+            add_za3rmp$: function (e) {
+              Kotlin.ArrayList.prototype.add_za3rmp$.call(this, e);
+              this.added.invoke_za3rmp$(e);
+              return true;
+            },
+            addAll_4fm7v2$: function (c) {
+              var operation = _.com.mindforge.graphics.ObservableArrayList.addAll_4fm7v2$f(this);
+              var tmp$0;
+              tmp$0 = c.iterator();
+              while (tmp$0.hasNext()) {
+                var element = tmp$0.next();
+                operation(element);
+              }
+              return Kotlin.modules['stdlib'].kotlin.any_ir3nkc$(c);
+            },
+            remove_za3rmp$: function (o) {
+              if (!Kotlin.ArrayList.prototype.remove_za3rmp$.call(this, o)) {
+                return false;
+              }
+              this.removed.invoke_za3rmp$(o);
+              return true;
+            },
+            removeAll_4fm7v2$: function (c) {
+              var tmp$0;
+              var result = false;
+              tmp$0 = Kotlin.modules['stdlib'].kotlin.reversed_lufotp$(Kotlin.modules['stdlib'].kotlin.get_indices_4m3c68$(c)).iterator();
+              while (tmp$0.hasNext()) {
+                var index = tmp$0.next();
+                result = this.remove_za3rmp$(Kotlin.modules['stdlib'].kotlin.elementAt_pjxt3m$(c, index)) || result;
+              }
+              return result;
+            },
+            clear: function () {
+              this.removeAll_4fm7v2$(this);
+            },
+            clearAndAddAll: function (newElements) {
+              this.clear();
+              Kotlin.modules['stdlib'].kotlin.addAll_p6ac9a$(this, newElements);
+            },
+            addAll_9cca64$: function (index, c) {
+              var tmp$0;
+              tmp$0 = c.iterator();
+              while (tmp$0.hasNext()) {
+                var e = tmp$0.next();
+                this.add_vux3hl$(index, e);
+              }
+              return Kotlin.modules['stdlib'].kotlin.any_ir3nkc$(c);
+            },
+            add_vux3hl$: function (index, element) {
+              Kotlin.ArrayList.prototype.add_vux3hl$.call(this, index, element);
+              this.addedAt.invoke_za3rmp$(new Kotlin.modules['stdlib'].kotlin.IndexedValue(index, element));
+            },
+            remove_za3lpa$: function (index) {
+              var o = Kotlin.ArrayList.prototype.remove_za3lpa$.call(this, index);
+              this.removedAt.invoke_za3rmp$(new Kotlin.modules['stdlib'].kotlin.IndexedValue(index, o));
+              return o;
+            },
+            retainAll_4fm7v2$: function (c) {
+              throw new Kotlin.UnsupportedOperationException();
+            },
+            set_vux3hl$: function (index, element) {
+              throw new Kotlin.UnsupportedOperationException();
+            }
+          }, /** @lends _.com.mindforge.graphics.ObservableArrayList */ {
+            ObservableArrayList$f: function (it) {
+              return it;
+            },
+            addAll_4fm7v2$f: function (this$ObservableArrayList) {
+              return function (it) {
+                this$ObservableArrayList.add_za3rmp$(it);
+              };
+            }
+          }),
           Matrix2: Kotlin.createTrait(function () {
             return [Kotlin.modules['builtins'].kotlin.Iterable];
           }, /** @lends _.com.mindforge.graphics.Matrix2.prototype */ {
