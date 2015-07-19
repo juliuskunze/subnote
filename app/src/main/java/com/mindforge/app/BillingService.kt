@@ -117,6 +117,8 @@ class BillingService(val activity: Activity, val service : IInAppBillingService)
     fun consume(purchase: PurchaseInfo) {
         val responseCode = service.consumePurchase(apiVersion, packageName, purchase.purchaseToken)
 
+        //TODO: tracker.send(TrackBuilder.transaction), see https://www.google.com/analytics/web/?hl=en#report/app-conversions-ecommerce-overview/a63277540w98715368p102724660/
+        
         if (responseCode != 0) throw BillingException(responseCode, "Failed to consume purchase: $responseCode).")
     }
 
