@@ -26,7 +26,8 @@ class Shell(val screen: Screen,
             val newNote: Trigger<String>,
             val newSubnote: Trigger<String>,
             val removeNote: Trigger<Unit>,
-            val vibrate: () -> Unit
+            val vibrate: () -> Unit,
+            val trackContentAction: (String, String) -> Unit
 ) {
     val topicElementCache = HashMap<ITopic, TopicElement>()
 
@@ -45,7 +46,7 @@ class Shell(val screen: Screen,
     private var activeNote by Delegates.observed(workbook.getPrimarySheet().getRootTopic() as TopicImpl, { old, new ->
         old.dispatchIsActiveChanged()
         new.dispatchIsActiveChanged()
-
+        trackContentAction("active note changed", "")
         onActiveTopicChanged(new)
     })
 
@@ -127,6 +128,7 @@ class Shell(val screen: Screen,
         fun stackable(text: String = it.getTitleText(), color: Color = Colors.black) : Stackable {
             val textElement = TextElementImpl(text, fill = Fills.solid(color), font = defaultFont, lineHeight = ancestorsLineHeight)
             return Stackable(textRectangleButton(textElement) {
+                trackContentAction("focused", "parent topic")
                 changeDisplayedRootTopicElement(it as TopicImpl)
             }, shape = textElement.shape.boxWithBorder())
         }
@@ -340,6 +342,7 @@ class Shell(val screen: Screen,
 
                 this@Shell.startDrag(dragged = content, dragLocation = pointerKeyRelativeToRoot.pointer.location, pointerKey = pointerKeyRelativeToRoot)
             }, onDoubleClick = {
+                trackContentAction("focused", "subtopic")
                 changeDisplayedRootTopicElement(content)
             }) {
                 activeNote = topic

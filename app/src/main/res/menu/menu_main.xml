@@ -46,7 +46,7 @@
 
     <item
         android:id="@+id/export_xmind_file"
-        android:title="@string/save_xmind_to_drive"
+        android:title="@string/export_xmind_file"
         android:showAsAction="never"/>
 
     <item

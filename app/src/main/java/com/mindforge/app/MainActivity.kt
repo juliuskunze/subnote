@@ -475,7 +475,7 @@ public class MainActivity : Activity() {
 
         val noteCount = workbook.getPrimarySheet().getRootTopic().childrenRecursively().count()
 
-        trackOpenedMap(noteCount)
+        tracker.trackOpenedMap(noteCount)
 
         updateLinks(workbook.getPrimarySheet().getRootTopic())
 
@@ -491,7 +491,9 @@ public class MainActivity : Activity() {
                     newNote = newNote,
                     newSubnote = newSubnote,
                     removeNote = removeNote,
-                    vibrate = { vibrator.vibrate(70) })
+                    vibrate = { vibrator.vibrate(70) },
+                    trackContentAction = {action, label -> tracker.trackContentAction(action, label) }
+            )
         }
 
         mindMapLayout.removeAllViews()
@@ -524,12 +526,21 @@ public class MainActivity : Activity() {
         topic.getAllChildren().forEach { updateLinks (it) }
     }
 
-    private fun trackOpenedMap(noteCount: Int) {
-        tracker.send(HitBuilders.EventBuilder()
+    private fun Tracker.trackOpenedMap(noteCount: Int) {
+        send(HitBuilders.EventBuilder()
                 .setCategory("Content")
                 .setAction("Opened Map")
                 .setLabel("Note Count")
                 .setValue(noteCount.toLong())
+                .build()
+        )
+    }
+
+    private fun Tracker.trackContentAction(action: String, label: String) {
+        send(HitBuilders.EventBuilder()
+                .setCategory("Content")
+                .setAction(action)
+                .setLabel(label)
                 .build()
         )
     }
