@@ -3,7 +3,9 @@ package com.mindforge.app
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.support.v4.content.FileProvider
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -171,8 +173,8 @@ public class MainActivity : Activity() {
                 openFromDrive()
                 true
             }
-            R.id.save_xmind_to_drive -> {
-                saveToDrive()
+            R.id.export_xmind_file -> {
+                export()
                 true
             }
             R.id.newNoteButton -> {
@@ -228,6 +230,16 @@ public class MainActivity : Activity() {
                 super.onOptionsItemSelected(item)
             }
         }
+    }
+
+    var onExported: () -> Unit = {}
+    private fun export(onExported : () -> Unit = {}) {
+        this.onExported = onExported
+        val shareIntent = Intent()
+        shareIntent.setAction(Intent.ACTION_SEND)
+        shareIntent.setType("application/zip")
+        shareIntent.putExtra(Intent.EXTRA_STREAM, FileProvider.getUriForFile(this, "com.mindforge.app.fileprovider", localWorkbookFile))
+        startActivityForResult(Intent.createChooser(shareIntent, "Share XMind file..."), IntentCode.exportedFile)
     }
 
     private fun openFromDropbox() {
@@ -317,9 +329,9 @@ public class MainActivity : Activity() {
     }
 
     private fun showSaveQuestionBefore(action: () -> Unit) {
-        alert("Save current map to Google Drive? It will be lost otherwise.", "Save?") {
+        alert("Export this map? It will be lost otherwise.", "Save?") {
             positiveButton("Yes") {
-                saveToDrive {
+                export {
                     action()
                 }
             }
@@ -379,41 +391,6 @@ public class MainActivity : Activity() {
         startIntentSenderForResult(intentSender, IntentCode.openFileFromDrive, null, 0, 0, 0);
     }
 
-    private var onSaved: () -> Unit = {}
-    private fun saveToDrive(onSaved: () -> Unit = {}) {
-        this.onSaved = onSaved
-        withDriveConnection {
-            Drive.DriveApi.newDriveContents(driveFileClient)
-                    .setResultCallback(object : ResultCallback<DriveApi.DriveContentsResult> {
-                        override fun onResult(result: DriveApi.DriveContentsResult) {
-                            if (!result.getStatus().isSuccess()) {
-                                toast("Failed to create new contents.")
-                                return
-                            }
-                            val outputStream = result.getDriveContents().getOutputStream()
-                            val fileToStore = FileInputStream(localWorkbookFile)
-                            while (true) {
-                                val next = fileToStore.read()
-                                if (next == -1) break
-                                outputStream.write(next)
-                            }
-
-                            val metaData = MetadataChangeSet.Builder().
-                                    setMimeType("image/jpeg").
-                                    setTitle(ApplicationState.workbook.getPrimarySheet().getRootTopic().getTitleText() + ".xmind").
-                                    build()
-                            val intentSender = Drive.DriveApi
-                                    .newCreateFileActivityBuilder()
-                                    .setInitialMetadata(metaData)
-                                    .setInitialDriveContents(result.getDriveContents())
-                                    .build(driveFileClient)
-
-                            startIntentSenderForResult(intentSender, IntentCode.saveFileToDrive, null, 0, 0, 0)
-                        }
-                    })
-        }
-    }
-
     fun withAuthenticatedEvernoteSession(action: EvernoteSession.() -> Unit) =
             EvernoteSession.getInstance(this, Evernote.consumerKey, Evernote.consumerSecret, Evernote.evernoteService, true)
                     .let { session ->
@@ -458,12 +435,6 @@ public class MainActivity : Activity() {
 
                     })
                 }
-            IntentCode.saveFileToDrive ->
-                if (resultCode == Activity.RESULT_OK) {
-                    onSaved()
-                    onSaved = {}
-                }
-
             IntentCode.googleClientResolution ->
                 if (resultCode == Activity.RESULT_OK) {
                     openFromDrive()
@@ -486,6 +457,12 @@ public class MainActivity : Activity() {
             IntentCode.openFileFromDropbox -> {
                 if (resultCode == Activity.RESULT_OK) {
                     open(File(URI(DropboxChooser.Result(data).getLink().toString())))
+                }
+            }
+            IntentCode.exportedFile -> {
+                if (resultCode == Activity.RESULT_OK) {
+                    onExported()
+                    onExported = {}
                 }
             }
         }
@@ -581,7 +558,7 @@ public class MainActivity : Activity() {
         val googleClientResolution = 0
         val openFileFromDrive = 1
         val openFileFromDropbox = 2
-        val saveFileToDrive = 4
-        val donate = 5
+        val exportedFile = 3
+        val donate = 4
     }
 }
